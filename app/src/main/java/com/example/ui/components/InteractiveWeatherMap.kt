@@ -50,21 +50,22 @@ fun InteractiveWeatherMap(
     var timelineStep by remember { mutableIntStateOf(0) } // 0: Now, 1: +1h, 2: +2h, 3: +3h, 4: +6h
     var inspectedPin by remember { mutableStateOf<MapLocationPin?>(null) }
 
-    // Map Locations Pins (Geographical coordinates normalized roughly)
+    // Map Locations Pins (Syrian cities and meteorological stations)
     val mapPins = remember {
         listOf(
-            MapLocationPin("الرياض", "السعودية", 0.58, 0.54, 29.0, WeatherConditionType.CLEAR, 0.0, 18.0),
-            MapLocationPin("القاهرة", "مصر", 0.38, 0.44, 24.0, WeatherConditionType.PARTLY_CLOUDY, 0.0, 14.0),
-            MapLocationPin("دبي", "الإمارات", 0.72, 0.52, 31.0, WeatherConditionType.CLEAR, 0.0, 16.0),
-            MapLocationPin("الدار البيضاء", "المغرب", 0.14, 0.40, 21.0, WeatherConditionType.RAIN, 3.2, 22.0),
-            MapLocationPin("مكة المكرمة", "السعودية", 0.52, 0.62, 34.0, WeatherConditionType.CLEAR, 0.0, 12.0),
-            MapLocationPin("عَمّان", "الأردن", 0.42, 0.40, 20.0, WeatherConditionType.PARTLY_CLOUDY, 0.0, 15.0),
-            MapLocationPin("الكويت", "الكويت", 0.62, 0.46, 27.0, WeatherConditionType.CLEAR, 0.0, 20.0),
-            MapLocationPin("الدوحة", "قطر", 0.67, 0.52, 30.0, WeatherConditionType.CLEAR, 0.0, 14.0),
-            MapLocationPin("بغداد", "العراق", 0.54, 0.38, 23.0, WeatherConditionType.CLOUDY, 0.2, 18.0),
-            MapLocationPin("إسطنبول", "تركيا", 0.40, 0.22, 16.0, WeatherConditionType.RAIN, 2.5, 25.0),
-            MapLocationPin("باريس", "فرنسا", 0.22, 0.14, 13.0, WeatherConditionType.RAIN, 4.1, 28.0),
-            MapLocationPin("لندن", "المملكة المتحدة", 0.20, 0.08, 11.0, WeatherConditionType.DRIZZLE, 1.8, 30.0)
+            MapLocationPin("دمشق", "سوريا", 0.42, 0.65, 18.0, WeatherConditionType.CLEAR, 0.0, 14.0),
+            MapLocationPin("حلب", "سوريا", 0.52, 0.28, 22.0, WeatherConditionType.PARTLY_CLOUDY, 0.0, 16.0),
+            MapLocationPin("اللاذقية", "سوريا", 0.32, 0.38, 20.0, WeatherConditionType.RAIN, 3.5, 22.0),
+            MapLocationPin("حمص", "سوريا", 0.45, 0.48, 19.0, WeatherConditionType.CLEAR, 0.0, 18.0),
+            MapLocationPin("طرطوس", "سوريا", 0.28, 0.45, 21.0, WeatherConditionType.RAIN, 4.2, 24.0),
+            MapLocationPin("حماة", "سوريا", 0.46, 0.38, 21.0, WeatherConditionType.CLEAR, 0.0, 15.0),
+            MapLocationPin("دير الزور", "سوريا", 0.72, 0.44, 26.0, WeatherConditionType.CLEAR, 0.0, 20.0),
+            MapLocationPin("القامشلي", "سوريا", 0.78, 0.22, 24.0, WeatherConditionType.CLEAR, 0.0, 22.0),
+            MapLocationPin("السويداء", "سوريا", 0.48, 0.75, 17.0, WeatherConditionType.CLEAR, 0.0, 12.0),
+            MapLocationPin("درعا", "سوريا", 0.40, 0.78, 19.0, WeatherConditionType.CLEAR, 0.0, 16.0),
+            MapLocationPin("إدلب", "سوريا", 0.45, 0.30, 20.0, WeatherConditionType.CLOUDY, 0.1, 19.0),
+            MapLocationPin("الرقة", "سوريا", 0.64, 0.34, 25.0, WeatherConditionType.CLEAR, 0.0, 21.0),
+            MapLocationPin("تدمر", "سوريا", 0.58, 0.55, 28.0, WeatherConditionType.CLEAR, 0.0, 25.0)
         )
     }
 

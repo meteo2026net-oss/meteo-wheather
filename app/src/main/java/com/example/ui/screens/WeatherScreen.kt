@@ -72,6 +72,26 @@ fun WeatherScreen(
         viewModel.toggleAlertsNotification(isGranted)
     }
 
+    val requestGpsAction = {
+        val hasFine = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val hasCoarse = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasFine || hasCoarse) {
+            fetchGpsLocation(context, viewModel)
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
     val weather = uiState.weatherData
     val condition = weather?.current?.conditionType ?: WeatherConditionType.CLEAR
     val isDay = weather?.current?.isDay ?: true
@@ -93,6 +113,7 @@ fun WeatherScreen(
                     onSearchClick = { viewModel.openSearchSheet() },
                     onCustomizeClick = { viewModel.openCustomizeSheet() },
                     onAdminClick = { viewModel.openAdminDashboard() },
+                    onGpsClick = { requestGpsAction() },
                     onUnitToggle = { viewModel.toggleUnit() },
                     onRefresh = { viewModel.refreshWeather() },
                     onToggleFavorite = { viewModel.toggleFavorite(uiState.selectedCity) }
@@ -267,25 +288,7 @@ fun WeatherScreen(
                     isLoadingSearch = uiState.isLoadingSearch,
                     onCitySelected = { viewModel.loadWeather(it) },
                     onToggleFavorite = { viewModel.toggleFavorite(it) },
-                    onRequestCurrentLocation = {
-                        val hasFine = ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.ACCESS_FINE_LOCATION
-                        ) == PackageManager.PERMISSION_GRANTED
-                        val hasCoarse = ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.ACCESS_COARSE_LOCATION
-                        ) == PackageManager.PERMISSION_GRANTED
-
-                        if (hasFine || hasCoarse) {
-                            fetchGpsLocation(context, viewModel)
-                        } else {
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                        }
-                    }
+                    onRequestCurrentLocation = { requestGpsAction() }
                 )
 
                 // Customizable Metrics & Alert Settings Sheet
@@ -333,6 +336,7 @@ fun WeatherTopBar(
     onSearchClick: () -> Unit,
     onCustomizeClick: () -> Unit,
     onAdminClick: () -> Unit,
+    onGpsClick: () -> Unit,
     onUnitToggle: () -> Unit,
     onRefresh: () -> Unit,
     onToggleFavorite: () -> Unit
@@ -400,6 +404,24 @@ fun WeatherTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            // GPS Location Button
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF0284C7).copy(alpha = 0.85f))
+                    .clickable { onGpsClick() }
+                    .testTag("gps_location_button"),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MyLocation,
+                    contentDescription = "تحديد موقعي GPS",
+                    tint = Color.White,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+
             // Admin Panel Button
             Box(
                 modifier = Modifier
