@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import android.speech.tts.TextToSpeech
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,30 +17,62 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AudioBulletinItem
 import kotlinx.coroutines.delay
+import java.util.*
 
 @Composable
 fun AudioBulletinSection(
     bulletin: AudioBulletinItem,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }
     var playbackProgress by remember { mutableFloatStateOf(0f) }
+    var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
+    var ttsInitialized by remember { mutableStateOf(false) }
 
-    // Simulate audio playback progress
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            delay(300)
-            playbackProgress += 0.05f
-            if (playbackProgress >= 1f) {
-                playbackProgress = 0f
-                isPlaying = false
+    // Initialize TextToSpeech engine for Arabic speech synthesis
+    DisposableEffect(context) {
+        val tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val result = ttsInstance?.setLanguage(Locale("ar"))
+                ttsInitialized = (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
             }
+        }
+        ttsInstance = tts
+        onDispose {
+            tts.stop()
+            tts.shutdown()
+        }
+    }
+
+    // Handle playback state & TTS speech
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            if (ttsInitialized && ttsInstance != null) {
+                ttsInstance?.speak(
+                    bulletin.bulletinScriptAr,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "mcnc_bulletin_utterance"
+                )
+            }
+            while (isPlaying) {
+                delay(400)
+                playbackProgress += 0.04f
+                if (playbackProgress >= 1f) {
+                    playbackProgress = 0f
+                    isPlaying = false
+                }
+            }
+        } else {
+            ttsInstance?.stop()
         }
     }
 
@@ -49,10 +82,10 @@ fun AudioBulletinSection(
             .clip(RoundedCornerShape(24.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF0284C7).copy(alpha = 0.35f), Color(0xFF0F172A).copy(alpha = 0.5f))
+                    listOf(Color(0xFF0284C7).copy(alpha = 0.38f), Color(0xFF0F172A).copy(alpha = 0.55f))
                 )
             )
-            .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f), RoundedCornerShape(24.dp))
+            .border(1.5.dp, Color(0xFF38BDF8).copy(alpha = 0.5f), RoundedCornerShape(24.dp))
             .padding(16.dp)
             .testTag("audio_bulletin_card")
     ) {
@@ -65,28 +98,28 @@ fun AudioBulletinSection(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF38BDF8)),
+                        .background(Color(0xFF0284C7)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Headphones,
+                        imageVector = Icons.Default.RecordVoiceOver,
                         contentDescription = null,
-                        tint = Color(0xFF0F172A),
+                        tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "النشرة الصوتية الرسمية (MCNC)",
+                        text = "النشرة الصوتية الرسمية (MCNC TTS)",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "إعداد وقراءة: ${bulletin.announcerName} | ${bulletin.dateFormatted}",
+                        text = "قراءة صوتية حية: ${bulletin.announcerName} | ${bulletin.dateFormatted}",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -96,12 +129,12 @@ fun AudioBulletinSection(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFFFFD54F).copy(alpha = 0.2f))
+                    .background(Color(0xFFFFD54F).copy(alpha = 0.25f))
                     .border(1.dp, Color(0xFFFFD54F), RoundedCornerShape(10.dp))
                     .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "صوتي HD",
+                    text = "صوت ناطق",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFFD54F)
@@ -125,8 +158,8 @@ fun AudioBulletinSection(
         Text(
             text = bulletin.bulletinScriptAr,
             fontSize = 12.sp,
-            color = Color.White.copy(alpha = 0.9f),
-            lineHeight = 18.sp
+            color = Color.White.copy(alpha = 0.92f),
+            lineHeight = 19.sp
         )
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -151,7 +184,7 @@ fun AudioBulletinSection(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = if (isPlaying) "جاري تشغيل النشرة الصوتية..." else "اضغط للاستماع إلى النشرة",
+                    text = if (isPlaying) "جاري قراءة النشرة الصوتية بصوت واضح..." else "اضغط لتشغيل القراءة الصوتية للنشرة",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.8f)
                 )
@@ -170,7 +203,7 @@ fun AudioBulletinSection(
                     // Play / Pause Button
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF0284C7))
                             .clickable { isPlaying = !isPlaying }
