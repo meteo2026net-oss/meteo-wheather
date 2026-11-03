@@ -1,0 +1,6 @@
+{
+  "name": "طقس MCNC",
+  "description": "التطبيق الرسمى للـ المركز الوطني للأرصاد الجوية والمناخ في الجمهورية العربية السورية (MCNC Weather)، يضم توقعات محطات الأرصاد السورية، تنبيهات كاب (CAP)، النشرة الصوتية، ولوحة الإدارة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
