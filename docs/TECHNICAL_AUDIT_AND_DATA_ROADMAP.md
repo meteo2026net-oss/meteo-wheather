@@ -114,3 +114,10 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Added boundary-focused JVM tests for every band and the unavailable sentinel.
 - These labels are descriptive estimates based on the provider's European AQI field; they are not official public-health alerts and do not replace local health guidance.
 - The new AQI helper and tests are committed on the development branch; CI verification is pending for the new branch head.
+
+## Air-quality alert wording correction (4 November 2026)
+
+- AQI-triggered advisory wording no longer attributes poor air quality to dust or a dust storm. European AQI is an aggregate air-quality indicator and does not, by itself, identify the pollutant source.
+- The advisory now names the European AQI explicitly, avoids claiming an unverified dust cause, and directs users to local health guidance.
+- The advisory remains an automated, non-official estimate. It is not an official warning and does not replace public-health advice.
+- CI verification is pending for the updated branch head.
