@@ -234,7 +234,7 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
                 });
 
                 L.tileLayer('$baseTile', {
-                    attribution: '&copy; OpenStreetMap & MCNC',
+                    attribution: '&copy; OpenStreetMap contributors / CARTO / Esri',
                     subdomains: 'abcd',
                     maxZoom: 18
                 }).addTo(map);
