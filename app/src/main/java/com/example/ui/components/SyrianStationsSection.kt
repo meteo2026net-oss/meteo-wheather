@@ -52,7 +52,7 @@ fun SyrianStationsSection(
                         color = Color.White
                     )
                     Text(
-                        text = "رصد حي ومباشر لمحطات المحافظات السورية (MCNC)",
+                        text = "عرض تجريبي — لا يمثل قياسات حية من المحطات",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -89,7 +89,7 @@ fun SyrianStationsSection(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(if (station.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                .background(if (station.isDemoData) Color(0xFFFACC15) else if (station.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
                         )
                     }
 
@@ -100,7 +100,14 @@ fun SyrianStationsSection(
                         color = Color.White.copy(alpha = 0.65f)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (station.isDemoData) "بيانات تجريبية غير حية" else if (station.isOnline) "متصلة" else "غير متصلة",
+                        fontSize = 9.sp,
+                        color = if (station.isDemoData) Color(0xFFFACC15) else Color.White.copy(alpha = 0.7f)
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
