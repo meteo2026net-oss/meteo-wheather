@@ -90,7 +90,7 @@ class WeatherRepository(private val context: Context) {
             val conditionNameAr = mapWeatherCodeToAr(currentWeatherCode)
             val isDay = currentIsDay == 1
 
-            val visMeters = forecastDto.hourly?.visibility?.firstOrNull()
+            val visMeters = ForecastValueValidation.nonNegativeFinite(forecastDto.hourly?.visibility?.firstOrNull())
             val visibilityAvailable = visMeters != null
             val visibilityKm = visMeters?.let { (it / 1000.0).coerceIn(0.0, 30.0) } ?: 0.0
 
@@ -101,7 +101,7 @@ class WeatherRepository(private val context: Context) {
                 windSpeedKmh = currentWindSpeed,
                 windDirectionDegrees = currentWindDirection,
                 pressureHpa = currentPressure,
-                uvIndex = currentDto.uvIndex?.takeIf { it.isFinite() } ?: 0.0,
+                uvIndex = ForecastValueValidation.nonNegativeFinite(currentDto.uvIndex) ?: 0.0,
                 weatherCode = currentWeatherCode,
                 conditionType = conditionType,
                 conditionNameAr = conditionNameAr,
@@ -110,7 +110,7 @@ class WeatherRepository(private val context: Context) {
                 precipitationMm = currentPrecipitation,
                 visibilityKm = visibilityKm,
                 visibilityAvailable = visibilityAvailable,
-                uvIndexAvailable = currentDto.uvIndex?.isFinite() == true
+                uvIndexAvailable = ForecastValueValidation.nonNegativeFinite(currentDto.uvIndex) != null
             )
 
             // Parse hourly forecasts (next 24 hours from current time)
@@ -133,10 +133,10 @@ class WeatherRepository(private val context: Context) {
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)
                 val code = hourlyCodes.getOrNull(i) ?: continue
                 // Treat non-finite provider measurements as missing, not as displayable readings.
-                val tempValue = hourlyTemps.getOrNull(i)?.takeIf { it.isFinite() }
-                val precipValue = hourlyPrecip.getOrNull(i)
-                val humidityValue = hourlyHum.getOrNull(i)
-                val windValue = hourlyWind.getOrNull(i)?.takeIf { it.isFinite() }
+                val tempValue = ForecastValueValidation.finite(hourlyTemps.getOrNull(i))
+                val precipValue = ForecastValueValidation.probabilityPercent(hourlyPrecip.getOrNull(i))
+                val humidityValue = ForecastValueValidation.humidityPercent(hourlyHum.getOrNull(i))
+                val windValue = ForecastValueValidation.nonNegativeFinite(hourlyWind.getOrNull(i))
                 val temp = tempValue ?: currentTemperature
                 val precip = precipValue ?: 0
                 val hum = humidityValue ?: currentHumidity
@@ -182,7 +182,11 @@ class WeatherRepository(private val context: Context) {
                 val sunriseFormatted = formatSunTime(dailySunrise.getOrNull(i))
                 val sunsetFormatted = formatSunTime(dailySunset.getOrNull(i))
                 // Reject NaN and infinite provider values just like current UV readings.
-                val dailyUvValue = dailyUv.getOrNull(i)?.takeIf { it.isFinite() }
+                val dailyUvValue = ForecastValueValidation.nonNegativeFinite(dailyUv.getOrNull(i))
+                val dailyTemperatureRange = ForecastValueValidation.temperatureRange(
+                    dailyMax.getOrNull(i), dailyMin.getOrNull(i)
+                ) ?: continue
+                val dailyPrecipValue = ForecastValueValidation.probabilityPercent(dailyPrecip.getOrNull(i))
 
                 dailyList.add(
                     DailyForecast(
@@ -193,13 +197,13 @@ class WeatherRepository(private val context: Context) {
                         conditionType = mapWeatherCodeToType(code),
                         weatherCode = code,
                         conditionNameAr = mapWeatherCodeToAr(code),
-                        maxTempCelsius = dailyMax.getOrNull(i) ?: continue,
-                        minTempCelsius = dailyMin.getOrNull(i) ?: continue,
-                        precipitationProb = dailyPrecip.getOrNull(i) ?: 0,
+                        maxTempCelsius = dailyTemperatureRange.first,
+                        minTempCelsius = dailyTemperatureRange.second,
+                        precipitationProb = dailyPrecipValue ?: 0,
                         uvIndexMax = dailyUvValue ?: 0.0,
                         sunrise = sunriseFormatted,
                         sunset = sunsetFormatted,
-                        precipitationProbabilityAvailable = dailyPrecip.getOrNull(i) != null,
+                        precipitationProbabilityAvailable = dailyPrecipValue != null,
                         uvIndexAvailable = dailyUvValue != null,
                         sunriseAvailable = dailySunrise.getOrNull(i) != null,
                         sunsetAvailable = dailySunset.getOrNull(i) != null

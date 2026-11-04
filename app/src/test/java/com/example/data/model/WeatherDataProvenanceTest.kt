@@ -252,4 +252,29 @@ class WeatherDataProvenanceTest {
         assertTrue(observation.windSpeedKmh == null)
     }
 
+    @Test
+    fun forecastValidationRejectsOutOfRangePercentages() {
+        assertNull(ForecastValueValidation.probabilityPercent(-1))
+        assertNull(ForecastValueValidation.probabilityPercent(101))
+        assertEquals(0, ForecastValueValidation.probabilityPercent(0))
+        assertEquals(100, ForecastValueValidation.probabilityPercent(100))
+        assertNull(ForecastValueValidation.humidityPercent(-1))
+        assertNull(ForecastValueValidation.humidityPercent(101))
+        assertEquals(50, ForecastValueValidation.humidityPercent(50))
+    }
+
+    @Test
+    fun forecastValidationRejectsNegativeAndNonFiniteValues() {
+        assertNull(ForecastValueValidation.nonNegativeFinite(-0.1))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.POSITIVE_INFINITY))
+        assertEquals(0.0, ForecastValueValidation.nonNegativeFinite(0.0) ?: -1.0, 0.0)
+    }
+
+    @Test
+    fun dailyTemperatureRangeMustBeFiniteAndOrdered() {
+        assertNull(ForecastValueValidation.temperatureRange(10.0, 12.0))
+        assertNull(ForecastValueValidation.temperatureRange(Double.NaN, 2.0))
+        assertEquals(15.0 to 5.0, ForecastValueValidation.temperatureRange(15.0, 5.0))
+    }
 }

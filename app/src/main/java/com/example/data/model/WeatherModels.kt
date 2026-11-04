@@ -53,6 +53,19 @@ data class DailyWeatherDto(
     @Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int>? = emptyList()
 )
 
+/** Range checks for forecast measurements before they enter UI/domain models. */
+object ForecastValueValidation {
+    fun finite(value: Double?): Double? = value?.takeIf { it.isFinite() }
+    fun nonNegativeFinite(value: Double?): Double? = value?.takeIf { it.isFinite() && it >= 0.0 }
+    fun probabilityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
+    fun humidityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
+    fun temperatureRange(max: Double?, min: Double?): Pair<Double, Double>? {
+        val validMax = finite(max) ?: return null
+        val validMin = finite(min) ?: return null
+        return if (validMax >= validMin) validMax to validMin else null
+    }
+}
+
 // DTOs for Open-Meteo Geocoding API
 @JsonClass(generateAdapter = true)
 data class GeocodingResponseDto(

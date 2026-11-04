@@ -157,3 +157,13 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Added Moshi parsing regression tests for a partially populated current-weather JSON object and an empty object.
 - GitHub Actions run [41768313852](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41768313852) completed successfully on commit `c099cb8867dd4da459168c4ef4a582ab0da2e484`, including unit tests, debug APK assembly and artifact upload.
 - This check verifies the source and tests on that commit; it does not establish live provider uptime, station observations, official alerts or production-release readiness.
+
+
+## Hourly and daily measurement range validation (4 November 2026)
+
+- Forecast precipitation probability and relative humidity are accepted only within 0–100%.
+- Hourly wind speed and visibility reject negative or non-finite values; current and daily UV reject negative or non-finite values.
+- Daily maximum/minimum temperatures are included only when both are finite and maximum is not below minimum.
+- Invalid optional values remain unavailable through the existing per-field availability flags.
+- Added JVM tests for percentage boundaries, non-finite/negative measurements and reversed daily temperature ranges.
+- CI verification is pending for this source change; no live provider or station feed is implied.
