@@ -91,10 +91,12 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Source inspection completed for the main repository, Android Gradle configuration, manifest, Open-Meteo API interfaces, repository, ViewModel and key Compose components.
 - Source files were fetched again from the development branch after each change and the targeted fallback patterns were checked.
 - Unit tests cover provenance, missing values, demo station defaults, unavailable environmental data, local CAP defaults, non-official alerts and demo bulletins.
-- Latest verified branch head: `234b812e00962eab994748bc1f9f19dc8c13144a` (4 November 2026).
-- GitHub Actions run `41755760607` completed successfully on that exact commit. Both `testDebugUnitTest` and `assembleDebug` passed, and the debug APK upload step succeeded.
-- Artifact: `mcnc-weather-debug-apk`, artifact ID `13288087751`, size 22,672,314 bytes, SHA-256 `fd7b9cc2185da515bd5c21ef275e2e0424a829bdcecc424514572ef73faf6b34`, expires 2 February 2027. This is a CI debug build signed with a temporary runner-only debug key, not a production-signed release.
-- The CI result verifies compilation, JVM unit tests and debug APK packaging; it does not verify live station ingestion, official alert distribution, provider coverage or production credentials.
+- Previous validated branch head: `511bf205c566f3365680d48c9e1a42d521a7a7ef` (4 November 2026).
+- GitHub Actions run `41760395138` completed successfully on that exact commit. The `testDebugUnitTest` and `assembleDebug` work completed successfully, and the debug APK upload step succeeded.
+- Artifact: `mcnc-weather-debug-apk`, artifact ID `13289999184`, size 22,674,249 bytes, SHA-256 `737f3869a615faa110406498c85af343c711a4c63cd2fe49dccc1568f0532683`, expires 2 February 2027. This is a CI debug build signed with a temporary runner-only debug key, not a production-signed release.
+- After that successful run, maintenance commits replaced deprecated `Locale("ar")` construction with `Locale.forLanguageTag("ar")` in the audio bulletin, voice conversation and weather screen; replaced deprecated direction-sensitive Compose icons with `Icons.AutoMirrored.Filled` variants in the admin, chat, voice, map and weather screens; and retained the explicit Moshi field annotations and WebView database-setting cleanup.
+- Current source head before this documentation update: `eae99196a74191b1f9e92aa05158801c37d98df0`. These follow-up source changes have not yet been covered by a confirmed CI run; the available CI wrapper returned no PR-triggered run for this head. Revalidate this exact head before treating it as build-verified.
+- The successful run verifies compilation, JVM unit tests and debug APK packaging for `511bf205`; it does not verify live station ingestion, official alert distribution, provider coverage or production credentials.
 - No external Syrian station feed or operational official radar provider was verified.
 - No production data was changed by this audit.
 
@@ -103,4 +105,4 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - CI builds the debug APK and runs JVM unit tests on GitHub Actions. A temporary debug signing key is created in the runner only; it is not the production signing key.
 - The existing Robolectric context test uses Android API 35. A machine-specific offline SDK cache is optional and is only enabled through `ROBOLECTRIC_DEPENDENCY_DIR` when that directory exists.
 - The map WebViews disallow mixed content, file/content access and automatic window opening. Remote map resources use HTTPS.
-- Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. The branch head identified above passed CI; any later branch commit requires its own successful verification.
+- Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. CI success applies only to the exact validated commit stated above; subsequent branch commits require their own successful verification.
