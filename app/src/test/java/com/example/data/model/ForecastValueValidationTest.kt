@@ -36,6 +36,45 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun currentHourIndexSelectsTheProviderCurrentLocalHour() {
+        val times = listOf(
+            "2026-11-05T00:00",
+            "2026-11-05T01:00",
+            "2026-11-05T02:00",
+            "2026-11-05T03:00"
+        )
+        assertEquals(2, ForecastValueValidation.currentHourIndex(
+            times, "2026-11-05T02:17", "2026-11-05T01"
+        ))
+    }
+
+    @Test
+    fun currentHourIndexUsesFallbackHourWhenProviderTimeIsMissingOrInvalid() {
+        val times = listOf("2026-11-05T00:00", "2026-11-05T01:00", "2026-11-05T02:00")
+        assertEquals(1, ForecastValueValidation.currentHourIndex(
+            times, null, "2026-11-05T01"
+        ))
+        assertEquals(2, ForecastValueValidation.currentHourIndex(
+            times, "invalid", "2026-11-05T02"
+        ))
+    }
+
+    @Test
+    fun currentHourIndexFallsBackToFirstSlotWhenNoHourMatches() {
+        val times = listOf("2026-11-05T00:00", "2026-11-05T01:00")
+        assertEquals(0, ForecastValueValidation.currentHourIndex(
+            times, "2026-11-06T12:00", "2026-11-06T12"
+        ))
+    }
+
+    @Test
+    fun currentHourIndexHandlesAnEmptyForecast() {
+        assertEquals(0, ForecastValueValidation.currentHourIndex(
+            emptyList(), "2026-11-05T12:00", "2026-11-05T12"
+        ))
+    }
+
+    @Test
     fun temperatureRangeRequiresTwoFiniteValuesAndMaximumNotBelowMinimum() {
         assertEquals(12.0 to -3.0, ForecastValueValidation.temperatureRange(12.0, -3.0))
         assertEquals(0.0 to 0.0, ForecastValueValidation.temperatureRange(0.0, 0.0))
