@@ -269,3 +269,13 @@ This section supersedes earlier "pending CI" statements in the chronological not
 - Updated the Android workflow actions to current major releases: `actions/checkout@v7`, `actions/setup-java@v6`, `gradle/actions/setup-gradle@v6` and `actions/upload-artifact@v7`.
 - The Java distribution and version remain Eclipse Temurin 17; Gradle remains pinned to 9.3.1. Build tasks, artifact names, retention settings, permissions and ephemeral signing behavior are unchanged.
 - This is a workflow-toolchain maintenance change only. Its compatibility and resulting build must be confirmed by CI on the new commit before it is considered verified.
+
+
+## Android CI action migration completed — 4 November 2026
+
+- The exact-head workflow migration commit `efc7452291f89368c7735cb5500a8827741d6f2b` completed [GitHub Actions run 41856717361](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41856717361) successfully.
+- `testDebugUnitTest`, `assembleDebug`, Debug APK upload, unit-test report upload and cleanup all succeeded.
+- Debug APK artifact: `mcnc-weather-debug-apk`, ID `13337917362`, 22,709,096 bytes; expires 2 February 2027. Artifact SHA-256 digest: `c801ca9695d1a8c45eeef05d8b116852865ad913e47d465e36c5b99bdf5802da`.
+- Unit-test report artifact: `android-unit-test-reports`, ID `13338926123`, 17,944 bytes; expires 18 November 2026. Artifact SHA-256 digest: `242c631504ced143d8b194fbf4cddf23afc2e6ac86305832bc1d15ac9b472d8e`.
+- The APK is a temporary-runner-key Debug build, not a production Release build.
+- The remaining unit-test-report upload action was then migrated from `actions/upload-artifact@v4` to `@v7`. This follow-up commit requires its own CI run before the full migration is considered verified.
