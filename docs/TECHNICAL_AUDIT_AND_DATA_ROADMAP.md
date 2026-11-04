@@ -148,3 +148,12 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Hourly forecast selection resets after list refresh, and a daily expanded row is cleared if its index no longer exists.
 - Daily temperature-range bars now position themselves relative to their actual available width rather than a fixed 100 dp offset.
 - CI verification is required for the latest source head; these changes are not yet marked as build-verified.
+
+## Missing current-observation fields are no longer fabricated (4 November 2026)
+
+- Every field in `CurrentWeatherDto` is nullable when absent from the Open-Meteo response; omitted values no longer become synthetic defaults such as 0 °C, 0% humidity, calm wind or 1013.25 hPa.
+- Before constructing the current-weather domain object, the repository validates the required current measurements for presence, finiteness and basic physical ranges. An incomplete current observation now returns a clear failure instead of presenting invented values as measured weather.
+- Optional current UV remains nullable and is exposed through its availability flag.
+- Added Moshi parsing regression tests for a partially populated current-weather JSON object and an empty object.
+- GitHub Actions run [41768313852](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41768313852) completed successfully on commit `c099cb8867dd4da459168c4ef4a582ab0da2e484`, including unit tests, debug APK assembly and artifact upload.
+- This check verifies the source and tests on that commit; it does not establish live provider uptime, station observations, official alerts or production-release readiness.
