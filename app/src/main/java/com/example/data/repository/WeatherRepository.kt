@@ -299,7 +299,7 @@ class WeatherRepository(private val context: Context) {
             }
 
             // Weather Insights
-            val currentDateRaw = currentTime.take(10).takeIf { Regex("""^\\d{4}-\\d{2}-\\d{2}$""").matches(it) }
+            val currentDateRaw = currentTime.take(10).takeIf { Regex("""^\d{4}-\d{2}-\d{2}$""").matches(it) }
             val todayForecast = DailyForecastSelection.forCurrentDate(dailyList, currentDateRaw)
             val insights = generateInsights(currentWeather, todayForecast)
 
