@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -464,7 +465,7 @@ fun WeatherTopBar(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = if (userEmail != null) Icons.Default.AccountCircle else Icons.Default.Login,
+                        imageVector = if (userEmail != null) Icons.Default.AccountCircle else Icons.AutoMirrored.Filled.Login,
                         contentDescription = "حساب Google",
                         tint = Color.White,
                         modifier = Modifier.size(17.dp)
