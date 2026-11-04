@@ -279,3 +279,11 @@ This section supersedes earlier "pending CI" statements in the chronological not
 - Unit-test report artifact: `android-unit-test-reports`, ID `13338926123`, 17,944 bytes; expires 18 November 2026. Artifact SHA-256 digest: `242c631504ced143d8b194fbf4cddf23afc2e6ac86305832bc1d15ac9b472d8e`.
 - The APK is a temporary-runner-key Debug build, not a production Release build.
 - The remaining unit-test-report upload action was then migrated from `actions/upload-artifact@v4` to `@v7`. This follow-up commit requires its own CI run before the full migration is considered verified.
+
+
+### Full upload-artifact v7 migration verified — 4 November 2026
+- Exact head `c2cf3963d0845c5b0df05ba0d1eb847230261cb7` passed [Android CI run 41895394509](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41895394509).
+- Both `actions/upload-artifact@v7` steps completed successfully: Debug APK and unit-test reports. Unit tests and `assembleDebug` also passed.
+- Debug APK artifact `13356445828`: 22,709,099 bytes; digest `890ab1ae3fe4d41769f050db221532d95399f76e3cedd14e911d880eb28e41a6`; expires 2 February 2027.
+- Unit-test report artifact `13356825599`: 17,929 bytes; digest `c7156f8c84cb7712bc6dfdff26b406b60cc8762df8b6f30bbd575791651d7be9`; expires 18 November 2026.
+- This is a temporary-key CI Debug APK, not a production Release build. The exact workflow action migration is now verified on this head.
