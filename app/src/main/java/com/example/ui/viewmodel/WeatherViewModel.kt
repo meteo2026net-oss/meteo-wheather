@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
 import com.example.data.repository.WeatherRepository
 import com.example.util.NotificationHelper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,6 +64,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+    private var weatherJob: Job? = null
 
     init {
         NotificationHelper.createNotificationChannel(application)
@@ -71,7 +73,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun loadWeather(city: CityLocation) {
-        viewModelScope.launch {
+        // A newer city selection supersedes the previous request; do not let a slow
+        // response overwrite the weather currently selected by the user.
+        weatherJob?.cancel()
+        weatherJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null, selectedCity = city) }
             val result = repository.getFullWeather(city)
             result.onSuccess { data ->
@@ -144,6 +149,8 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val forecasts = repository.getSyrianCityMapForecasts(forceRefresh)
                 _uiState.update { it.copy(cityMapForecasts = forecasts, isLoadingCityMapForecasts = false) }
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 _uiState.update {
                     it.copy(isLoadingCityMapForecasts = false, cityMapForecastError = error.localizedMessage ?: "تعذر تحميل توقعات المدن")

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.example.data.api.NetworkClient
 import com.example.data.model.*
 import com.example.util.NotificationHelper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -58,6 +59,8 @@ class WeatherRepository(private val context: Context) {
                     latitude = location.latitude,
                     longitude = location.longitude
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
@@ -305,6 +308,8 @@ class WeatherRepository(private val context: Context) {
                     insights = insights
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -365,6 +370,8 @@ class WeatherRepository(private val context: Context) {
                     isFavorite = isCityFavorite(dto.name, dto.country ?: "")
                 )
             } ?: emptyList()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             DEFAULT_CITIES.filter {
                 it.name.contains(query, ignoreCase = true) ||
