@@ -179,8 +179,8 @@ class WeatherRepository(private val context: Context) {
                 val dateRaw = dailyTimes[i]
                 val code = dailyCodes.getOrNull(i) ?: continue
                 val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, i == 0)
-                val sunriseFormatted = formatSunTime(dailySunrise.getOrNull(i))
-                val sunsetFormatted = formatSunTime(dailySunset.getOrNull(i))
+                val sunriseFormatted = ForecastValueValidation.formatSunTime(dailySunrise.getOrNull(i)) ?: "--:--"
+                val sunsetFormatted = ForecastValueValidation.formatSunTime(dailySunset.getOrNull(i)) ?: "--:--"
                 // Reject NaN and infinite provider values just like current UV readings.
                 val dailyUvValue = ForecastValueValidation.nonNegativeFinite(dailyUv.getOrNull(i))
                 val dailyTemperatureRange = ForecastValueValidation.temperatureRange(
@@ -205,8 +205,8 @@ class WeatherRepository(private val context: Context) {
                         sunset = sunsetFormatted,
                         precipitationProbabilityAvailable = dailyPrecipValue != null,
                         uvIndexAvailable = dailyUvValue != null,
-                        sunriseAvailable = dailySunrise.getOrNull(i) != null,
-                        sunsetAvailable = dailySunset.getOrNull(i) != null
+                        sunriseAvailable = sunriseFormatted != "--:--",
+                        sunsetAvailable = sunsetFormatted != "--:--"
                     )
                 )
             }
@@ -742,23 +742,6 @@ class WeatherRepository(private val context: Context) {
             Triple(arDay, enDay, formatted)
         } catch (e: Exception) {
             Triple(dateStr, dateStr, dateStr)
-        }
-    }
-
-    private fun formatSunTime(raw: String?): String {
-        if (raw.isNullOrEmpty()) return "--:--"
-        return try {
-            val timePart = raw.substringAfter("T").take(5)
-            val parts = timePart.split(":")
-            val hour = parts[0].toInt()
-            val minute = parts[1]
-            if (hour < 12) {
-                "${if (hour == 0) 12 else hour}:$minute ص"
-            } else {
-                "${if (hour == 12) 12 else hour - 12}:$minute م"
-            }
-        } catch (e: Exception) {
-            raw
         }
     }
 
