@@ -293,18 +293,8 @@ fun InteractiveWeatherMap(
 
 // Helper to build Leaflet HTML map string centered on Syria
 private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): String {
-    val baseTileUrl = when (tileStyle) {
-        "satellite" -> "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        "osm" -> "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        else -> "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    }
-
-    val overlayColor = when (overlay) {
-        MapWeatherOverlay.PRECIPITATION -> "#0284C7"
-        MapWeatherOverlay.TEMPERATURE -> "#EF4444"
-        MapWeatherOverlay.WIND -> "#38BDF8"
-        MapWeatherOverlay.CLOUDS -> "#94A3B8"
-    }
+    val baseMap = LeafletBaseMapConfigs.forStyle(tileStyle)
+    val subdomainsOption = baseMap.subdomains?.let { "subdomains: '$it'," }.orEmpty()
 
     return """
         <!DOCTYPE html>
@@ -344,10 +334,10 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                     zoomControl: false
                 });
 
-                L.tileLayer('$baseTileUrl', {
-                    attribution: '&copy; OpenStreetMap contributors / CARTO / Esri',
-                    subdomains: 'abcd',
-                    maxZoom: 18
+                L.tileLayer('${baseMap.urlTemplate}', {
+                    attribution: '${baseMap.attributionHtml}',
+                    $subdomainsOption
+                    maxZoom: ${baseMap.maxZoom}
                 }).addTo(map);
 
                 var radarLayer = null;
@@ -411,7 +401,7 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                 syrianCities.forEach(function(c) {
                     var circle = L.circleMarker([c.lat, c.lng], {
                         color: '#38BDF8',
-                        fillColor: '$overlayColor',
+                        fillColor: '#0284C7',
                         fillOpacity: 0.9,
                         radius: 8
                     }).addTo(map);

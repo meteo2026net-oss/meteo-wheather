@@ -213,11 +213,8 @@ fun InteractiveRadarView(
 }
 
 private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double, isSatellite: Boolean): String {
-    val baseTile = if (isSatellite) {
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-    } else {
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    }
+    val baseMap = LeafletBaseMapConfigs.forStyle(if (isSatellite) "satellite" else "dark")
+    val subdomainsOption = baseMap.subdomains?.let { "subdomains: '$it'," }.orEmpty()
 
     return """
         <!DOCTYPE html>
@@ -255,10 +252,10 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
                     zoomControl: false
                 });
 
-                L.tileLayer('$baseTile', {
-                    attribution: '&copy; OpenStreetMap contributors / CARTO / Esri',
-                    subdomains: 'abcd',
-                    maxZoom: 18
+                L.tileLayer('${baseMap.urlTemplate}', {
+                    attribution: '${baseMap.attributionHtml}',
+                    $subdomainsOption
+                    maxZoom: ${baseMap.maxZoom}
                 }).addTo(map);
 
                 var radarLayer = null;
