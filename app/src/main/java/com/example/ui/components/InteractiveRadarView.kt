@@ -94,7 +94,7 @@ fun InteractiveRadarView(
                         color = Color.White.copy(alpha = 0.75f)
                     )
                     Text(
-                        text = "المصدر RainViewer؛ التغطية والتوقيت حسب المزود وليست رصداً رسمياً من MCNC.",
+                        text = "المصدر RainViewer؛ يعرض آخر إطار تاريخي متاح فقط، وقد لا تتوفر تغطية لسوريا.",
                         fontSize = 10.sp,
                         color = Color(0xFFFACC15)
                     )

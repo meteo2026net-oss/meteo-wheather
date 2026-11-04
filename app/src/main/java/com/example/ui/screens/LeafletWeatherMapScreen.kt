@@ -422,7 +422,7 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                             attribution: 'Weather data by <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>',
                             maxZoom: 7
                         });
-                        radarLayer.addTo(map);
+                        if (selectedWeatherOverlay === 'precipitation') radarLayer.addTo(map);
                         var frameTime = new Date(frame.time * 1000);
                         radarStatusControl.getContainer().textContent =
                             'آخر إطار تاريخي متاح: ' + frameTime.toLocaleString('ar');
@@ -496,6 +496,7 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                 }
 
                 function switchWeatherOverlay(overlayType) {
+                    selectedWeatherOverlay = overlayType;
                     if (overlayType === 'precipitation') {
                         if (radarLayer && !map.hasLayer(radarLayer)) radarLayer.addTo(map);
                     } else if (radarLayer && map.hasLayer(radarLayer)) {

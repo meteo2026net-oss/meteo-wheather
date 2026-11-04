@@ -29,18 +29,22 @@
 
 Do not fabricate live values when no station feed is configured. An unavailable state is safer than a plausible-looking invented reading.
 
-### 2. Radar and map visuals are simulations
+### 2. Radar and map data
 
-- `InteractiveRadarView.kt` draws synthetic precipitation echoes and an animated sweep.
-- `InteractiveWeatherMap.kt` draws a stylized geographic background and synthetic overlay fields.
+- The map screens use RainViewer's public Weather Maps API metadata endpoint and select the newest frame in `radar.past`.
+- RainViewer discontinued its public nowcast/future frames on 1 January 2026. The app no longer hard-codes the retired `nowcast_latest` tile path.
+- The selected frame timestamp is displayed on the map. Tile zoom is capped at 7 according to the provider's current public API documentation.
+- The provider does not guarantee coverage or availability; an empty tile area must not be interpreted as no precipitation.
+- Temperature, wind and cloud map overlays remain unavailable; city pins intentionally show dashes rather than invented values.
+- The RainViewer layer is a third-party composite, not an official MCNC radar product.
 
-These are presentation prototypes, not verified radar or numerical weather-analysis layers. The UI now labels both views as demonstrations, not live radar or observations. Keep these labels until a real data provider, timestamp, geographic bounds, projection and legend are implemented.
+Keep source attribution and the historical-frame label visible. Do not call the latest historical frame "live" or "nowcast".
 
 ### 3. Default audio bulletin is static
 
 `WeatherRepository.getAudioBulletin()` supplies a hard-coded default bulletin and display time. The audio component uses Android TextToSpeech to read the text; this is speech synthesis, not a verified recorded official broadcast.
 
-The UI should identify synthesized speech and should display the actual publication/update timestamp supplied by the bulletin source.
+The UI identifies synthesized speech; a verified official recording and publication timestamp are not configured.
 
 ### 4. Alerts need provenance and lifecycle
 
@@ -89,3 +93,11 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - GitHub Actions CI is configured to run `testDebugUnitTest` and `assembleDebug`. The first attempt stopped during Android SDK setup because the action attempted to install the removed `tools` package; the workflow was corrected to request explicit SDK packages. The initial build attempt exposed a missing debug keystore in the runner. CI now creates a temporary debug keystore; the latest verification run is in progress.
 - No external Syrian station feed or operational radar provider was verified.
 - No production data was changed by this audit.
+
+
+## Verification notes
+
+- CI builds the debug APK and runs JVM unit tests on GitHub Actions. A temporary debug signing key is created in the runner only; it is not the production signing key.
+- The existing Robolectric context test uses Android API 35. A machine-specific offline SDK cache is optional and is only enabled through `ROBOLECTRIC_DEPENDENCY_DIR` when that directory exists.
+- The map WebViews disallow mixed content, file/content access and automatic window opening. Remote map resources use HTTPS.
+- Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. CI results must still be reviewed for the newest commit before merge.

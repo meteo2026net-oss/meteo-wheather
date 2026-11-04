@@ -104,7 +104,7 @@ fun InteractiveWeatherMap(
         }
 
         Text(
-            text = "تنبيه: طبقة الرادار من RainViewer؛ درجات الحرارة والرياح في علامات المدن غير متاحة حالياً.",
+            text = "تنبيه: طبقة RainViewer تعرض آخر إطار تاريخي متاح فقط؛ درجات الحرارة والرياح في علامات المدن غير متاحة.",
             fontSize = 10.sp,
             color = Color(0xFFFACC15)
         )
