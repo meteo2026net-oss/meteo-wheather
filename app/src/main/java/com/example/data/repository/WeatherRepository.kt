@@ -191,7 +191,11 @@ class WeatherRepository(private val context: Context) {
                 ozone = ozoneVal,
                 no2 = no2Val,
                 isAvailable = airAvailable,
-                isAqiAvailable = aqiAvailable
+                isAqiAvailable = aqiAvailable,
+                pm25Available = airCurrent?.pm25 != null,
+                pm10Available = airCurrent?.pm10 != null,
+                ozoneAvailable = airCurrent?.ozone != null,
+                no2Available = airCurrent?.nitrogenDioxide != null
             )
 
             // Pollen Information
@@ -200,14 +204,27 @@ class WeatherRepository(private val context: Context) {
             val oliveValue = airCurrent?.olivePollen
             val ragweedValue = airCurrent?.ragweedPollen
             val pollenAvailable = listOf(grassValue, birchValue, oliveValue, ragweedValue).any { it != null }
-            val pollenInfo = if (pollenAvailable) {
-                calculatePollenInfo(
-                    grassValue ?: 0.0, birchValue ?: 0.0,
-                    oliveValue ?: 0.0, ragweedValue ?: 0.0
-                ).copy(isAvailable = true)
+            val pollenComplete = listOf(grassValue, birchValue, oliveValue, ragweedValue).all { it != null }
+            val pollenInfo = if (pollenComplete) {
+                calculatePollenInfo(grassValue!!, birchValue!!, oliveValue!!, ragweedValue!!)
+                    .copy(isAvailable = true, grassAvailable = true, birchAvailable = true,
+                        oliveAvailable = true, ragweedAvailable = true)
             } else {
-                PollenInfo(0.0, 0.0, 0.0, 0.0, "غير متاح",
-                    "لا تتوفر بيانات حبوب اللقاح لهذا الموقع أو الوقت حالياً.", isAvailable = false)
+                PollenInfo(
+                    grassPollen = grassValue ?: 0.0,
+                    birchPollen = birchValue ?: 0.0,
+                    olivePollen = oliveValue ?: 0.0,
+                    ragweedPollen = ragweedValue ?: 0.0,
+                    overallLevelAr = if (pollenAvailable) "بيانات جزئية" else "غير متاح",
+                    adviceAr = if (pollenAvailable)
+                        "البيانات المتاحة جزئية؛ لا يمكن إصدار تقييم إجمالي موثوق لحبوب اللقاح."
+                    else "لا تتوفر بيانات حبوب اللقاح لهذا الموقع أو الوقت حالياً.",
+                    isAvailable = pollenAvailable,
+                    grassAvailable = grassValue != null,
+                    birchAvailable = birchValue != null,
+                    oliveAvailable = oliveValue != null,
+                    ragweedAvailable = ragweedValue != null
+                )
             }
 
             // Severe Weather Alerts detection
