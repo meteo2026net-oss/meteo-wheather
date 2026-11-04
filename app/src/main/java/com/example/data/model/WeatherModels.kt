@@ -130,7 +130,8 @@ data class CurrentWeather(
     val conditionNameEn: String,
     val isDay: Boolean,
     val precipitationMm: Double,
-    val visibilityKm: Double = 10.0
+    val visibilityKm: Double = 0.0,
+    val visibilityAvailable: Boolean = true
 )
 
 data class HourlyForecast(
