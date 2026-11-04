@@ -365,6 +365,16 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                 .city-title { font-size: 14px; font-weight: bold; color: #38BDF8; margin-bottom: 2px; }
                 .leaflet-popup-content-wrapper { background: #0F172A; color: #FFF; border-radius: 12px; border: 1.5px solid #0284C7; box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
                 .leaflet-popup-tip { background: #0F172A; }
+                .radar-status {
+                    background: rgba(15, 23, 42, 0.92);
+                    color: #fff;
+                    border: 1px solid #38BDF8;
+                    border-radius: 8px;
+                    padding: 6px 9px;
+                    font-size: 11px;
+                    direction: rtl;
+                    max-width: 260px;
+                }
             </style>
         </head>
         <body>
@@ -384,12 +394,46 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                     maxZoom: 18
                 }).addTo(map);
 
-                // RainViewer Real-Time Radar Layer Overlay
-                L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_latest/256/{z}/{x}/{y}/2/1_1.png', {
-                    opacity: 0.65,
-                    attribution: '&copy; RainViewer',
-                    maxZoom: 18
-                }).addTo(map);
+                var radarLayer = null;
+                var radarStatusControl = L.control({ position: 'bottomleft' });
+                radarStatusControl.onAdd = function() {
+                    var div = L.DomUtil.create('div', 'radar-status');
+                    div.textContent = 'جارٍ تحميل بيانات الرادار التاريخية...';
+                    return div;
+                };
+                radarStatusControl.addTo(map);
+
+                // RainViewer's public API now provides historical frames only.
+                // The old nowcast_latest endpoint was discontinued in January 2026.
+                fetch('https://api.rainviewer.com/public/weather-maps.json')
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('RainViewer metadata request failed');
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        var frames = data && data.radar && data.radar.past;
+                        if (!data.host || !frames || frames.length === 0) {
+                            throw new Error('No historical radar frames are available');
+                        }
+                        var frame = frames[frames.length - 1];
+                        var tileUrl = data.host + frame.path + '/256/{z}/{x}/{y}/2/1_1.png';
+                        radarLayer = L.tileLayer(tileUrl, {
+                            opacity: 0.65,
+                            attribution: 'Weather data by <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>',
+                            maxZoom: 7
+                        });
+                        radarLayer.addTo(map);
+                        var frameTime = new Date(frame.time * 1000);
+                        radarStatusControl.getContainer().textContent =
+                            'آخر إطار تاريخي متاح: ' + frameTime.toLocaleString('ar');
+                    })
+                    .catch(function(error) {
+                        radarStatusControl.getContainer().textContent =
+                            'بيانات الرادار غير متاحة حالياً؛ لا يعني ذلك عدم وجود أمطار.';
+                        console.warn('RainViewer radar unavailable', error);
+                    });
+
+
 
                 // Syrian Cities Meteorological Pins
                 var syrianCities = [
