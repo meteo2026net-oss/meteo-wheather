@@ -13,13 +13,14 @@ class CapXmlParserTest {
         status: String = "Actual",
         scope: String = "Public",
         messageType: String = "Alert",
-        expires: String = "2026-11-04T12:00:00+03:00"
+        expires: String = "2026-11-04T12:00:00+03:00",
+        sent: String = "2026-11-04T06:00:00+03:00"
     ) = """
         <?xml version="1.0" encoding="UTF-8"?>
         <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
           <identifier>sy-test-001</identifier>
           <sender>alerts@example.gov.sy</sender>
-          <sent>2026-11-04T06:00:00+03:00</sent>
+          <sent>$sent</sent>
           <status>$status</status>
           <msgType>$messageType</msgType>
           <scope>$scope</scope>
@@ -110,4 +111,33 @@ class CapXmlParserTest {
             // Expected.
         }
     }
+    @Test
+    fun rejectsFutureSentTimestampAndExpiryBeforeSentTimestamp() {
+        assertFalse(CapXmlParser.parse(
+            cap(sent = "2026-11-04T10:00:00+03:00")
+        ).isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+
+        assertFalse(CapXmlParser.parse(
+            cap(expires = "2026-11-04T07:00:00+03:00")
+        ).isPubliclyDisplayable(Instant.parse("2026-11-04T08:30:00Z")))
+    }
+
+    @Test
+    fun rejectsMissingOrInvalidSentTimestamp() {
+        val missingSent = cap().replace("<sent>2026-11-04T06:00:00+03:00</sent>", "")
+        try {
+            CapXmlParser.parse(missingSent)
+            throw AssertionError("Missing sent timestamp must be rejected")
+        } catch (_: IllegalArgumentException) {
+            // Expected.
+        }
+
+        try {
+            CapXmlParser.parse(cap(sent = "not-a-timestamp"))
+            throw AssertionError("Invalid sent timestamp must be rejected")
+        } catch (_: IllegalArgumentException) {
+            // Expected.
+        }
+    }
+
 }
