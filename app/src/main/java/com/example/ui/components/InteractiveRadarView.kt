@@ -81,6 +81,11 @@ fun InteractiveRadarView(
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
+                    Text(
+                        text = "لا يعرض قياسات رادارية حقيقية",
+                        fontSize = 10.sp,
+                        color = Color(0xFFFACC15)
+                    )
                 }
             }
 
