@@ -199,7 +199,6 @@ fun InteractiveWeatherMap(
                         settings.allowFileAccess = false
                         settings.allowContentAccess = false
                         settings.domStorageEnabled = true
-                        settings.databaseEnabled = true
                         settings.loadWithOverviewMode = true
                         settings.useWideViewPort = true
                         settings.builtInZoomControls = false
