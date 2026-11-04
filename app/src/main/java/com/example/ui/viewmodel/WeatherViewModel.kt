@@ -226,12 +226,24 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         val updatedFavorites = repository.getSavedFavoriteCities()
         _uiState.update { state ->
             val updatedSearchResults = state.searchResults.map {
-                if (it.name.equals(city.name, ignoreCase = true)) it.copy(isFavorite = isFav) else it
+                if (CityFavoriteMatching.matches(
+                        savedName = it.name,
+                        savedCountry = it.country,
+                        queryName = city.name,
+                        queryCountry = city.country
+                    )
+                ) it.copy(isFavorite = isFav) else it
             }
             state.copy(
                 favoriteCities = updatedFavorites,
                 searchResults = updatedSearchResults,
-                selectedCity = if (state.selectedCity.name.equals(city.name, ignoreCase = true)) {
+                selectedCity = if (CityFavoriteMatching.matches(
+                        savedName = state.selectedCity.name,
+                        savedCountry = state.selectedCity.country,
+                        queryName = city.name,
+                        queryCountry = city.country
+                    )
+                ) {
                     state.selectedCity.copy(isFavorite = isFav)
                 } else state.selectedCity
             )
