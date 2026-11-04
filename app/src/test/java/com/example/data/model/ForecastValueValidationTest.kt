@@ -82,6 +82,21 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun currentHourIndexIgnoresMalformedHourlySlotsAndMalformedMinuteSuffixes() {
+        val times = listOf(
+            "2026-11-05T02garbage",
+            "2026-11-05T02:99",
+            "2026-11-05T01:00"
+        )
+        assertEquals(2, ForecastValueValidation.currentHourIndex(
+            times, "2026-11-05T02:30", "2026-11-05T01"
+        ))
+        assertEquals(2, ForecastValueValidation.currentHourIndex(
+            times, "2026-11-05T02:99", "2026-11-05T01"
+        ))
+    }
+
+    @Test
     fun currentHourIndexFallsBackToFirstSlotWhenNoHourMatches() {
         val times = listOf("2026-11-05T00:00", "2026-11-05T01:00")
         assertEquals(0, ForecastValueValidation.currentHourIndex(

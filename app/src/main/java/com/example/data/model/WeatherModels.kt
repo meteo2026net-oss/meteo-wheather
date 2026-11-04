@@ -112,12 +112,14 @@ object ForecastValueValidation {
             val prefix = value?.takeIf { it.length >= 13 }?.take(13) ?: return null
             val validDate = validIsoDate(prefix.take(10)) ?: return null
             val validHour = Regex("""^([01]\d|2[0-3])$""").matches(prefix.substring(11, 13))
-            return prefix.takeIf { it.startsWith(validDate + "T") && validHour }
+            val suffix = value.substring(13)
+            val validRemainder = Regex("""^(:[0-5]\d(?::[0-5]\d(?:\.\d+)?)?)?$""").matches(suffix)
+            return prefix.takeIf { it.startsWith(validDate + "T") && validHour && validRemainder }
         }
 
         val hourPrefix = validHourPrefix(currentTime) ?: validHourPrefix(fallbackHourPrefix)
         return hourPrefix
-            ?.let { prefix -> hourlyTimes.indexOfFirst { it.startsWith(prefix) } }
+            ?.let { prefix -> hourlyTimes.indexOfFirst { validHourPrefix(it) == prefix } }
             ?.takeIf { it >= 0 }
             ?: 0
     }
