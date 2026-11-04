@@ -187,3 +187,13 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Frames older than two hours remain visibly marked as stale; unavailable metadata or invalid frames produce an explicit unavailable status and must not be interpreted as evidence of dry weather.
 - The app continues to expose only the historical precipitation radar frame. Temperature, wind and cloud overlays remain unavailable until connected to verified data sources.
 - CI verification for these latest map and radar changes is pending. This does not establish radar coverage quality, provider uptime or production readiness.
+
+## Historical radar timeline controls (4 November 2026)
+
+- Added a compact Arabic timeline to the interactive weather map, full-screen Leaflet map and city radar panel.
+- Valid historical RainViewer frames are sorted chronologically. The newest valid frame is selected initially.
+- Users can move one frame backward or forward, scrub the frame slider, and play/pause the historical sequence.
+- The timeline is shown only when at least two valid historical frames exist; the full-screen map hides it when the precipitation overlay is not selected.
+- Playback advances through provider-supplied historical frames at a visual interval of 900 ms. This is a display animation, not a precipitation forecast or a promise of fixed observation intervals.
+- RainViewer tiles remain limited to zoom level 7. Coverage over Syria and actual frame availability must be checked at runtime.
+- Android CI for this commit is pending; no successful build or device validation is claimed yet.
