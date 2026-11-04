@@ -358,11 +358,31 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                     })
                     .then(function(data) {
                         var frames = data && data.radar && data.radar.past;
-                        if (!data.host || !frames || frames.length === 0) {
+                        if (!data.host || !Array.isArray(frames) || frames.length === 0) {
                             throw new Error('No historical radar frames are available');
                         }
-                        var frame = frames[frames.length - 1];
-                        var tileUrl = data.host + frame.path + '/256/{z}/{x}/{y}/2/1_1.png';
+
+                        // Accept only HTTPS tile hosts owned by RainViewer and known radar paths.
+                        var radarHost = new URL(data.host);
+                        var trustedHost = radarHost.protocol === 'https:' &&
+                            (radarHost.hostname === 'rainviewer.com' ||
+                             radarHost.hostname.endsWith('.rainviewer.com'));
+                        if (!trustedHost) throw new Error('Untrusted radar tile host');
+
+                        var validFrames = frames.filter(function(candidate) {
+                            return candidate &&
+                                typeof candidate.path === 'string' &&
+                                /^\\/v2\\/radar\\/[0-9]+$/.test(candidate.path) &&
+                                Number.isFinite(candidate.time) &&
+                                candidate.time > 0 &&
+                                candidate.time * 1000 <= Date.now() + 5 * 60 * 1000;
+                        });
+                        if (validFrames.length === 0) throw new Error('No valid radar frames are available');
+
+                        var frame = validFrames.reduce(function(latest, candidate) {
+                            return candidate.time > latest.time ? candidate : latest;
+                        });
+                        var tileUrl = radarHost.origin + frame.path + '/256/{z}/{x}/{y}/2/1_1.png';
                         radarLayer = L.tileLayer(tileUrl, {
                             opacity: 0.65,
                             attribution: 'Weather data by <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a>',
@@ -370,8 +390,11 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                         });
                         radarLayer.addTo(map);
                         var frameTime = new Date(frame.time * 1000);
+                        var frameAgeMs = Date.now() - frame.time * 1000;
+                        var staleSuffix = frameAgeMs > 2 * 60 * 60 * 1000
+                            ? ' — الإطار قديم، تحقق من وقت التحديث' : '';
                         radarStatusControl.getContainer().textContent =
-                            'آخر إطار تاريخي متاح: ' + frameTime.toLocaleString('ar');
+                            'آخر إطار تاريخي متاح: ' + frameTime.toLocaleString('ar') + staleSuffix;
                     })
                     .catch(function(error) {
                         radarStatusControl.getContainer().textContent =
