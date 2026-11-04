@@ -197,3 +197,11 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Playback advances through provider-supplied historical frames at a visual interval of 900 ms. This is a display animation, not a precipitation forecast or a promise of fixed observation intervals.
 - RainViewer tiles remain limited to zoom level 7. Coverage over Syria and actual frame availability must be checked at runtime.
 - Android CI for this commit is pending; no successful build or device validation is claimed yet.
+
+## Latest Android CI verification (4 November 2026)
+
+- Commit `82e4a58ea04a5707def4783a1ca45273703d392e` completed GitHub Actions run [41773062187](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41773062187) successfully.
+- The `testDebugUnitTest` and `assembleDebug` work completed successfully, and the debug APK artifact upload also succeeded.
+- Artifact: `mcnc-weather-debug-apk`, ID `13295752530`, size 22,693,940 bytes, SHA-256 ZIP digest `30136f3e224bb2feccf7750fbcac4daec50e07e7bc32b0c0251df1182203d66b`, expires 2 February 2027.
+- The preceding CI failure on commit `47bb89c085dbc098f8b12d51a66d364f893ef72c` was a Kotlin compilation error caused by references to XMLConstants property-name constants unavailable in the Android compile environment. The parser now uses the equivalent standard property URI strings; its existing fail-closed XML features and entity resolver remain in place.
+- This artifact is a CI debug build signed with an ephemeral runner-only debug key. It is not a production-signed release and does not establish real-device, live-feed, official-station or operational-alert readiness.
