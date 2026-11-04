@@ -1,7 +1,9 @@
 package com.example.data.model
 
 import org.junit.Assert.assertEquals
+import com.squareup.moshi.Moshi
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,9 +19,32 @@ class WeatherDataProvenanceTest {
     )
 
     @Test
-    fun missingCurrentUvIndexRemainsUnavailableInDto() {
-        val dto = CurrentWeatherDto()
-        assertTrue(dto.uvIndex == null)
+    fun missingCurrentWeatherFieldsRemainNullWhenParsingPartialJson() {
+        val adapter = Moshi.Builder().build().adapter(CurrentWeatherDto::class.java)
+        val dto = adapter.fromJson("""{"temperature_2m": 18.5}""")!!
+
+        assertEquals(18.5, dto.temperature ?: -1.0, 0.0)
+        assertNull(dto.time)
+        assertNull(dto.relativeHumidity)
+        assertNull(dto.apparentTemperature)
+        assertNull(dto.isDay)
+        assertNull(dto.precipitation)
+        assertNull(dto.weatherCode)
+        assertNull(dto.surfacePressure)
+        assertNull(dto.windSpeed)
+        assertNull(dto.windDirection)
+        assertNull(dto.uvIndex)
+    }
+
+    @Test
+    fun emptyCurrentWeatherJsonDoesNotInventMeasurements() {
+        val adapter = Moshi.Builder().build().adapter(CurrentWeatherDto::class.java)
+        val dto = adapter.fromJson("{}")!!
+
+        assertNull(dto.temperature)
+        assertNull(dto.relativeHumidity)
+        assertNull(dto.surfacePressure)
+        assertNull(dto.windSpeed)
     }
 
     @Test
