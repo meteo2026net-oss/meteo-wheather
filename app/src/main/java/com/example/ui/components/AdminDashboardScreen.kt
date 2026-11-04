@@ -92,7 +92,7 @@ fun AdminDashboardScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "إدارة محطات الرصد، تنبيهات كاب (CAP)، ونشرk النشرات الصوتية",
+                            text = "إعدادات محلية تجريبية — لا يوجد بث مركزي أو تحقق صلاحيات",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.7f)
                         )
@@ -150,7 +150,7 @@ fun AdminDashboardScreen(
                     ) {
                         item {
                             Text(
-                                text = "إرسال تنبيه طوارئ بروتوكول كاب (CAP Broadcast)",
+                                text = "إنشاء تنبيه تجريبي محلي بصيغة مشابهة لـ CAP",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFFD54F)
@@ -246,7 +246,7 @@ fun AdminDashboardScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Send, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "بث الإنذار الفوري لجميع المستخدمين", fontWeight = FontWeight.Bold)
+                                Text(text = "إضافة التنبيه التجريبي لهذا الجهاز فقط", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -260,7 +260,14 @@ fun AdminDashboardScreen(
                     ) {
                         item {
                             Text(
-                                text = "حالة ربط محطات الأرصاد الجوية السورية",
+                                text = "لا توجد حالياً وصلة قياس فعلية؛ البيانات المعروضة تجريبية.",
+                                fontSize = 11.sp,
+                                color = Color(0xFFFACC15)
+                            )
+                        }
+                        item {
+                            Text(
+                                text = "حالة بيانات المحطات (تجريبي)",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFFD54F)
@@ -286,11 +293,11 @@ fun AdminDashboardScreen(
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
                                         Text(text = st.nameAr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(text = "${st.governorate} | ضغط: ${st.pressureHpa} hPa", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
+                                        Text(text = "${st.governorate} | ضغط: —", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
                                     }
                                 }
                                 Text(
-                                    text = "${st.temperatureCelsius.toInt()}°C",
+                                    text = if (st.isDemoData) "—" else "${st.temperatureCelsius.toInt()}°C",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFFD54F)
@@ -308,7 +315,7 @@ fun AdminDashboardScreen(
                     ) {
                         item {
                             Text(
-                                text = "تحديث ونشر النشرة الصوتية اليومية (MCNC)",
+                                text = "تعديل نص النشرة الصوتية المحلية",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFFD54F)
@@ -362,7 +369,7 @@ fun AdminDashboardScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Mic, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "نشر وتحديث النشرة الصوتية فورياً", fontWeight = FontWeight.Bold)
+                                Text(text = "حفظ النشرة على هذا الجهاز فقط", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
