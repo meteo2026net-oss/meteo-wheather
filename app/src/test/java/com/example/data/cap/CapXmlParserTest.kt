@@ -1,0 +1,107 @@
+package com.example.data.cap
+
+import com.example.data.model.AlertSeverity
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.time.Instant
+
+class CapXmlParserTest {
+
+    private fun cap(
+        status: String = "Actual",
+        scope: String = "Public",
+        messageType: String = "Alert",
+        expires: String = "2026-11-04T12:00:00+03:00"
+    ) = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+          <identifier>sy-test-001</identifier>
+          <sender>alerts@example.gov.sy</sender>
+          <sent>2026-11-04T06:00:00+03:00</sent>
+          <status>$status</status>
+          <msgType>$messageType</msgType>
+          <scope>$scope</scope>
+          <info>
+            <language>ar-SY</language>
+            <category>Met</category>
+            <event>أمطار غزيرة</event>
+            <urgency>Immediate</urgency>
+            <severity>Severe</severity>
+            <certainty>Likely</certainty>
+            <expires>$expires</expires>
+            <description>نص تجريبي للاختبار</description>
+            <instruction>تابع النشرات الرسمية</instruction>
+            <area><areaDesc>دمشق</areaDesc></area>
+          </info>
+        </alert>
+    """.trimIndent()
+
+    @Test
+    fun parsesPublicActualAlertAndArabicContent() {
+        val parsed = CapXmlParser.parse(cap())
+        assertEquals("sy-test-001", parsed.identifier)
+        assertEquals("أمطار غزيرة", parsed.event)
+        assertEquals("دمشق", parsed.areaDescription)
+        assertEquals(AlertSeverity.WARNING, parsed.severity)
+        assertTrue(parsed.isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+    }
+
+    @Test
+    fun testExerciseAndPrivateMessagesAreNeverPubliclyDisplayed() {
+        assertFalse(CapXmlParser.parse(cap(status = "Test")).isPubliclyDisplayable(
+            Instant.parse("2026-11-04T06:30:00Z")
+        ))
+        assertFalse(CapXmlParser.parse(cap(status = "Exercise")).isPubliclyDisplayable(
+            Instant.parse("2026-11-04T06:30:00Z")
+        ))
+        assertFalse(CapXmlParser.parse(cap(scope = "Private")).isPubliclyDisplayable(
+            Instant.parse("2026-11-04T06:30:00Z")
+        ))
+    }
+
+    @Test
+    fun expiredAndCancelledMessagesAreNotShownAsActiveWarnings() {
+        assertFalse(CapXmlParser.parse(cap(expires = "2026-11-04T07:00:00+03:00"))
+            .isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+        assertFalse(CapXmlParser.parse(cap(messageType = "Cancel"))
+            .isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+    }
+
+    @Test
+    fun updateMessagesCanBeDisplayedOnlyWhileActualPublicAndUnexpired() {
+        assertTrue(CapXmlParser.parse(cap(messageType = "Update"))
+            .isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+    }
+
+    @Test
+    fun rejectsDoctypeAndExternalEntityPayloads() {
+        val unsafe = """
+            <!DOCTYPE alert [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+            <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+              <identifier>&xxe;</identifier>
+            </alert>
+        """.trimIndent()
+        try {
+            CapXmlParser.parse(unsafe)
+            throw AssertionError("Unsafe XML must be rejected")
+        } catch (_: IllegalArgumentException) {
+            // Expected: parser fails closed for DTD/entity declarations.
+        }
+    }
+
+    @Test
+    fun rejectsMissingExpiryAndInvalidXml() {
+        val noExpiry = cap().replace("<expires>2026-11-04T12:00:00+03:00</expires>", "")
+        assertFalse(CapXmlParser.parse(noExpiry).isPubliclyDisplayable(
+            Instant.parse("2026-11-04T06:30:00Z")
+        ))
+        try {
+            CapXmlParser.parse("<not-cap>")
+            throw AssertionError("Malformed XML must be rejected")
+        } catch (_: IllegalArgumentException) {
+            // Expected.
+        }
+    }
+}
