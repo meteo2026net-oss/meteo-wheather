@@ -110,6 +110,36 @@ class WeatherDataProvenanceTest {
     }
 
     @Test
+    fun generatedWeatherAlertsAreNotOfficialByDefault() {
+        val alert = SevereWeatherAlert(
+            id = "test-alert",
+            titleAr = "اختبار",
+            severity = AlertSeverity.ADVISORY,
+            descriptionAr = "اختبار",
+            safetyInstructionsAr = "اختبار",
+            source = "test",
+            validUntil = "غير محدد"
+        )
+
+        assertFalse(alert.isOfficial)
+        assertFalse(alert.isLocalDemo)
+    }
+
+    @Test
+    fun audioBulletinsAreDemoByDefault() {
+        val bulletin = AudioBulletinItem(
+            id = "test-bulletin",
+            title = "اختبار",
+            dateFormatted = "غير محدد",
+            durationSec = 0,
+            announcerName = "صوت تجريبي",
+            bulletinScriptAr = "نص اختبار"
+        )
+
+        assertTrue(bulletin.isDemoData)
+    }
+
+    @Test
     fun simulatedValueCanBeDisplayedButMustRemainIdentifiedAsSimulation() {
         val value = QualifiedWeatherValue(
             value = 4.0,
