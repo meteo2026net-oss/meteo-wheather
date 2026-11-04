@@ -63,28 +63,51 @@ class WeatherRepository(private val context: Context) {
             }
 
             val currentDto = forecastDto.current ?: throw IllegalStateException("بيانات الطقس الحالية غير متاحة من مزود الخدمة")
-            val conditionType = mapWeatherCodeToType(currentDto.weatherCode)
-            val conditionNameAr = mapWeatherCodeToAr(currentDto.weatherCode)
-            val isDay = currentDto.isDay == 1
+
+            // Missing core measurements must not silently become plausible defaults (0 °C, 0%,
+            // calm wind, or standard pressure). Reject an incomplete current observation clearly.
+            val currentTime = currentDto.time.orEmpty()
+            val currentTemperature = currentDto.temperature?.takeIf { it.isFinite() }
+                ?: throw IllegalStateException("درجة الحرارة الحالية غير متاحة أو غير صالحة")
+            val currentHumidity = currentDto.relativeHumidity?.takeIf { it in 0..100 }
+                ?: throw IllegalStateException("الرطوبة الحالية غير متاحة أو غير صالحة")
+            val currentApparentTemperature = currentDto.apparentTemperature?.takeIf { it.isFinite() }
+                ?: throw IllegalStateException("درجة الحرارة المحسوسة غير متاحة أو غير صالحة")
+            val currentIsDay = currentDto.isDay?.takeIf { it == 0 || it == 1 }
+                ?: throw IllegalStateException("حالة النهار الحالية غير متاحة أو غير صالحة")
+            val currentPrecipitation = currentDto.precipitation?.takeIf { it.isFinite() && it >= 0.0 }
+                ?: throw IllegalStateException("الهطول الحالي غير متاح أو غير صالح")
+            val currentWeatherCode = currentDto.weatherCode
+                ?: throw IllegalStateException("رمز حالة الطقس الحالية غير متاح")
+            val currentPressure = currentDto.surfacePressure?.takeIf { it.isFinite() && it > 0.0 }
+                ?: throw IllegalStateException("الضغط السطحي الحالي غير متاح أو غير صالح")
+            val currentWindSpeed = currentDto.windSpeed?.takeIf { it.isFinite() && it >= 0.0 }
+                ?: throw IllegalStateException("سرعة الرياح الحالية غير متاحة أو غير صالحة")
+            val currentWindDirection = currentDto.windDirection?.takeIf { it.isFinite() && it in 0.0..360.0 }
+                ?: throw IllegalStateException("اتجاه الرياح الحالي غير متاح أو غير صالح")
+
+            val conditionType = mapWeatherCodeToType(currentWeatherCode)
+            val conditionNameAr = mapWeatherCodeToAr(currentWeatherCode)
+            val isDay = currentIsDay == 1
 
             val visMeters = forecastDto.hourly?.visibility?.firstOrNull()
             val visibilityAvailable = visMeters != null
             val visibilityKm = visMeters?.let { (it / 1000.0).coerceIn(0.0, 30.0) } ?: 0.0
 
             val currentWeather = CurrentWeather(
-                temperatureCelsius = currentDto.temperature,
-                feelsLikeCelsius = currentDto.apparentTemperature,
-                humidity = currentDto.relativeHumidity,
-                windSpeedKmh = currentDto.windSpeed,
-                windDirectionDegrees = currentDto.windDirection,
-                pressureHpa = currentDto.surfacePressure,
-                uvIndex = currentDto.uvIndex ?: 0.0,
-                weatherCode = currentDto.weatherCode,
+                temperatureCelsius = currentTemperature,
+                feelsLikeCelsius = currentApparentTemperature,
+                humidity = currentHumidity,
+                windSpeedKmh = currentWindSpeed,
+                windDirectionDegrees = currentWindDirection,
+                pressureHpa = currentPressure,
+                uvIndex = currentDto.uvIndex?.takeIf { it.isFinite() } ?: 0.0,
+                weatherCode = currentWeatherCode,
                 conditionType = conditionType,
                 conditionNameAr = conditionNameAr,
                 conditionNameEn = mapWeatherCodeToEn(currentDto.weatherCode),
                 isDay = isDay,
-                precipitationMm = currentDto.precipitation,
+                precipitationMm = currentPrecipitation,
                 visibilityKm = visibilityKm,
                 visibilityAvailable = visibilityAvailable,
                 uvIndexAvailable = currentDto.uvIndex?.isFinite() == true
@@ -99,7 +122,7 @@ class WeatherRepository(private val context: Context) {
             val hourlyHum = forecastDto.hourly?.relativeHumidity ?: emptyList()
             val hourlyWind = forecastDto.hourly?.windSpeed ?: emptyList()
 
-            val nowIsoPrefix = currentDto.time.takeIf { it.length >= 13 }?.take(13)
+            val nowIsoPrefix = currentTime.takeIf { it.length >= 13 }?.take(13)
                 ?: SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
             var startIndex = hourlyTimes.indexOfFirst { it.startsWith(nowIsoPrefix) }
             if (startIndex < 0) startIndex = 0
@@ -114,10 +137,10 @@ class WeatherRepository(private val context: Context) {
                 val precipValue = hourlyPrecip.getOrNull(i)
                 val humidityValue = hourlyHum.getOrNull(i)
                 val windValue = hourlyWind.getOrNull(i)?.takeIf { it.isFinite() }
-                val temp = tempValue ?: currentDto.temperature
+                val temp = tempValue ?: currentTemperature
                 val precip = precipValue ?: 0
-                val hum = humidityValue ?: currentDto.relativeHumidity
-                val wind = windValue ?: currentDto.windSpeed
+                val hum = humidityValue ?: currentHumidity
+                val wind = windValue ?: currentWindSpeed
                 val hourOfDay = try { rawTime.substring(11, 13).toInt() } catch (e: Exception) { 12 }
                 val hourIsDay = hourOfDay in 6..18
 
