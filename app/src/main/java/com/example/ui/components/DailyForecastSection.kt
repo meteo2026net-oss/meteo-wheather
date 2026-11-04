@@ -160,7 +160,12 @@ fun DailyForecastSection(
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.width(42.dp))
+                        Text(
+                            text = if (day.precipitationProbabilityAvailable) "0%" else "—",
+                            fontSize = 10.sp,
+                            color = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier.width(42.dp)
+                        )
                     }
 
                     // Min Temp
