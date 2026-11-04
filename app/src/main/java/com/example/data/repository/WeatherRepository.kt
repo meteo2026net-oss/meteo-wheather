@@ -166,12 +166,19 @@ class WeatherRepository(private val context: Context) {
             }
 
             // Air Quality
-            val aqiVal = airQualityDto?.current?.europeanAqi ?: 35
-            val pm25Val = airQualityDto?.current?.pm25 ?: 12.0
-            val pm10Val = airQualityDto?.current?.pm10 ?: 25.0
-            val ozoneVal = airQualityDto?.current?.ozone ?: 38.0
-            val no2Val = airQualityDto?.current?.nitrogenDioxide ?: 16.0
-            val (aqiCat, aqiAdvice) = getAqiDescription(aqiVal)
+            val airCurrent = airQualityDto?.current
+            val aqiAvailable = airCurrent?.europeanAqi != null
+            val aqiVal = airCurrent?.europeanAqi ?: -1
+            val pm25Val = airCurrent?.pm25 ?: 0.0
+            val pm10Val = airCurrent?.pm10 ?: 0.0
+            val ozoneVal = airCurrent?.ozone ?: 0.0
+            val no2Val = airCurrent?.nitrogenDioxide ?: 0.0
+            val airAvailable = airCurrent != null && listOf(
+                airCurrent.pm25, airCurrent.pm10, airCurrent.ozone,
+                airCurrent.nitrogenDioxide, airCurrent.europeanAqi
+            ).any { it != null }
+            val (aqiCat, aqiAdvice) = if (aqiAvailable) getAqiDescription(aqiVal)
+                else "غير متاح" to "لا تتوفر قراءة لمؤشر جودة الهواء حالياً."
 
             val airQuality = AirQualityInfo(
                 aqiValue = aqiVal,
@@ -180,18 +187,29 @@ class WeatherRepository(private val context: Context) {
                 pm25 = pm25Val,
                 pm10 = pm10Val,
                 ozone = ozoneVal,
-                no2 = no2Val
+                no2 = no2Val,
+                isAvailable = airAvailable,
+                isAqiAvailable = aqiAvailable
             )
 
             // Pollen Information
-            val grass = airQualityDto?.current?.grassPollen ?: 8.0
-            val birch = airQualityDto?.current?.birchPollen ?: 3.0
-            val olive = airQualityDto?.current?.olivePollen ?: 12.0
-            val ragweed = airQualityDto?.current?.ragweedPollen ?: 4.0
-            val pollenInfo = calculatePollenInfo(grass, birch, olive, ragweed)
+            val grassValue = airCurrent?.grassPollen
+            val birchValue = airCurrent?.birchPollen
+            val oliveValue = airCurrent?.olivePollen
+            val ragweedValue = airCurrent?.ragweedPollen
+            val pollenAvailable = listOf(grassValue, birchValue, oliveValue, ragweedValue).any { it != null }
+            val pollenInfo = if (pollenAvailable) {
+                calculatePollenInfo(
+                    grassValue ?: 0.0, birchValue ?: 0.0,
+                    oliveValue ?: 0.0, ragweedValue ?: 0.0
+                ).copy(isAvailable = true)
+            } else {
+                PollenInfo(0.0, 0.0, 0.0, 0.0, "غير متاح",
+                    "لا تتوفر بيانات حبوب اللقاح لهذا الموقع أو الوقت حالياً.", isAvailable = false)
+            }
 
             // Severe Weather Alerts detection
-            val alerts = detectSevereWeatherAlerts(location, currentWeather, dailyList, aqiVal, pollenInfo)
+            val alerts = detectSevereWeatherAlerts(location, currentWeather, dailyList, if (aqiAvailable) aqiVal else -1, pollenInfo)
 
             // Push notifications if enabled and severe alerts exist
             if (areAlertsEnabled()) {
