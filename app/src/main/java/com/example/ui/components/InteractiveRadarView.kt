@@ -156,6 +156,7 @@ fun InteractiveRadarView(
                         }
                         webChromeClient = WebChromeClient()
                         setBackgroundColor(0xFF0F172A.toInt())
+                        tag = htmlContent
                         loadDataWithBaseURL(
                             "https://openstreetmap.org",
                             htmlContent,
@@ -166,13 +167,23 @@ fun InteractiveRadarView(
                     }
                 },
                 update = { webView ->
-                    webView.loadDataWithBaseURL(
-                        "https://openstreetmap.org",
-                        htmlContent,
-                        "text/html",
-                        "UTF-8",
-                        null
-                    )
+                    if (shouldReloadEmbeddedMapHtml(webView.tag as? String, htmlContent)) {
+                        webView.tag = htmlContent
+                        webView.loadDataWithBaseURL(
+                            "https://openstreetmap.org",
+                            htmlContent,
+                            "text/html",
+                            "UTF-8",
+                            null
+                        )
+                    }
+                },
+                onRelease = { webView ->
+                    webView.stopLoading()
+                    webView.webChromeClient = null
+                    webView.webViewClient = null
+                    webView.removeAllViews()
+                    webView.destroy()
                 }
             )
         }
@@ -446,3 +457,7 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
         </html>
     """.trimIndent()
 }
+
+
+internal fun shouldReloadEmbeddedMapHtml(previousHtml: String?, currentHtml: String): Boolean =
+    previousHtml != currentHtml
