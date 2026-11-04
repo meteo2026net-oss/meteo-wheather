@@ -148,7 +148,7 @@ fun WeatherScreen(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "جاري جلب تنبؤات المركز الوطني (MCNC)...",
+                            text = "جاري جلب التوقعات الجوية من Open-Meteo...",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White
