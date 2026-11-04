@@ -44,7 +44,7 @@ data class QualifiedWeatherValue(
     val provenance: WeatherDataProvenance
 ) {
     val isDisplayable: Boolean
-        get() = value != null &&
+        get() = value?.isFinite() == true &&
             provenance.status != WeatherDataStatus.UNAVAILABLE
 }
 
