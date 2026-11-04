@@ -6,6 +6,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -279,7 +280,17 @@ fun LeafletWeatherMapScreen(
                                 "AndroidMapInterface"
                             )
 
-                            webViewClient = WebViewClient()
+                            // The map is a self-contained page. Block top-level navigation so
+                            // remote tile, metadata, or attribution links cannot replace the app map.
+                            // This does not block HTTPS subresources (Leaflet, tiles, RainViewer).
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    request: WebResourceRequest?
+                                ): Boolean {
+                                    return request?.isForMainFrame == true
+                                }
+                            }
                             webChromeClient = WebChromeClient()
                             setBackgroundColor(0xFF090D1A.toInt())
                             loadDataWithBaseURL(
