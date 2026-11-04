@@ -113,13 +113,13 @@ fun AudioBulletinSection(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "النشرة الصوتية الرسمية (MCNC TTS)",
+                        text = if (bulletin.isDemoData) "نشرة تجريبية — تحويل النص إلى صوت" else "النشرة الصوتية",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "قراءة صوتية حية: ${bulletin.announcerName} | ${bulletin.dateFormatted}",
+                        text = "صوت اصطناعي: ${bulletin.announcerName} | ${bulletin.dateFormatted}",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -134,7 +134,7 @@ fun AudioBulletinSection(
                     .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "صوت ناطق",
+                    text = if (bulletin.isDemoData) "تجريبي" else "TTS",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFFD54F)
