@@ -262,7 +262,7 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
                 radarStatusControl.addTo(map);
 
                 // RainViewer's public API now provides historical frames only.
-                // The old nowcast_latest endpoint was discontinued in January 2026.
+                // The provider discontinued public future radar frames in January 2026.
                 fetch('https://api.rainviewer.com/public/weather-maps.json')
                     .then(function(response) {
                         if (!response.ok) throw new Error('RainViewer metadata request failed');
