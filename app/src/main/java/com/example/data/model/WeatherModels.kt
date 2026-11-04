@@ -98,6 +98,19 @@ object ForecastValueValidation {
         return date.takeIf { day in 1..maxDay }
     }
 
+    /** Returns a validated 0..23 hour for an ISO local timestamp. */
+    fun hourOfDay(value: String?): Int? {
+        val raw = value?.takeIf { it.length >= 13 } ?: return null
+        val prefix = raw.take(13)
+        val date = validIsoDate(prefix.take(10)) ?: return null
+        if (!prefix.startsWith(date + "T")) return null
+        val hourText = prefix.substring(11, 13)
+        if (!Regex("""^([01]\\d|2[0-3])$""").matches(hourText)) return null
+        val suffix = raw.substring(13)
+        if (!Regex("""^(:[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?)?$""").matches(suffix)) return null
+        return hourText.toInt()
+    }
+
     /**
      * Finds the hourly forecast slot corresponding to the provider's current local time.
      * Falls back to the device's local hour prefix, then to the first available slot.
@@ -389,6 +402,24 @@ data class FullWeatherData(
 )
 
 object DailyForecastSelection {
+    /** Selects up to [limit] usable days, skipping malformed or incomplete raw records. */
+    fun validIndices(
+        dates: List<String>,
+        weatherCodes: List<Int>,
+        maxTemperatures: List<Double?>,
+        minTemperatures: List<Double?>,
+        limit: Int = 7
+    ): List<Int> {
+        if (limit <= 0) return emptyList()
+        return dates.indices.filter { index ->
+            ForecastValueValidation.validIsoDate(dates[index]) != null &&
+                weatherCodes.getOrNull(index) != null &&
+                ForecastValueValidation.temperatureRange(
+                    maxTemperatures.getOrNull(index), minTemperatures.getOrNull(index)
+                ) != null
+        }.take(limit)
+    }
+
     fun forCurrentDate(daily: List<DailyForecast>, currentDateRaw: String?): DailyForecast? =
         currentDateRaw?.let { date -> daily.firstOrNull { it.dateRaw == date } }
 }

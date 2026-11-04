@@ -47,6 +47,16 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun hourOfDayRejectsMalformedDatesHoursAndSuffixes() {
+        assertEquals(0, ForecastValueValidation.hourOfDay("2024-02-29T00:00"))
+        assertEquals(23, ForecastValueValidation.hourOfDay("2026-11-05T23:59:59") )
+        assertNull(ForecastValueValidation.hourOfDay("2026-02-30T12:00"))
+        assertNull(ForecastValueValidation.hourOfDay("2026-11-05T24:00"))
+        assertNull(ForecastValueValidation.hourOfDay("2026-11-05T12:99"))
+        assertNull(ForecastValueValidation.hourOfDay("2026-11-05T12garbage"))
+    }
+
+    @Test
     fun currentHourIndexSelectsTheProviderCurrentLocalHour() {
         val times = listOf(
             "2026-11-05T00:00",
@@ -152,6 +162,32 @@ class ForecastValueValidationTest {
 
 
 class DailyForecastSelectionTest {
+    @org.junit.Test
+    fun validIndicesCountsUsableDaysInsteadOfStoppingAtSevenRawRecords() {
+        val dates = listOf(
+            "2026-02-30", "2026-11-05", "2026-11-06", "2026-11-07",
+            "2026-11-08", "2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12"
+        )
+        val codes = listOf(0, 0, 1, 2, 3, 45, 61, 0, 2)
+        val maxima = listOf(20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0)
+        val minima = listOf(10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0)
+
+        assertEquals(listOf(1, 2, 3, 4, 5, 6, 7), DailyForecastSelection.validIndices(
+            dates, codes, maxima, minima
+        ))
+    }
+
+    @org.junit.Test
+    fun validIndicesSkipsMissingCodesAndInvalidTemperatureRanges() {
+        val dates = listOf("2026-11-05", "2026-11-06", "2026-11-07")
+        val codes = listOf(0, 1)
+        val maxima = listOf(10.0, 20.0, 30.0)
+        val minima = listOf(11.0, 10.0, 20.0)
+
+        assertEquals(listOf(1), DailyForecastSelection.validIndices(dates, codes, maxima, minima))
+        assertEquals(emptyList<Int>(), DailyForecastSelection.validIndices(dates, codes, maxima, minima, limit = 0))
+    }
+
     @org.junit.Test
     fun selectsForecastMatchingProviderCurrentDateRatherThanFirstAvailableDay() {
         val tomorrow = DailyForecast(

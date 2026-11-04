@@ -70,6 +70,7 @@ class WeatherRepository(private val context: Context) {
             // Missing core measurements must not silently become plausible defaults (0 °C, 0%,
             // calm wind, or standard pressure). Reject an incomplete current observation clearly.
             val currentTime = currentDto.time.orEmpty()
+            val currentDateRaw = ForecastValueValidation.validIsoDate(currentTime.take(10))
             val currentTemperature = currentDto.temperature?.takeIf { it.isFinite() }
                 ?: throw IllegalStateException("درجة الحرارة الحالية غير متاحة أو غير صالحة")
             val currentHumidity = currentDto.relativeHumidity?.takeIf { it in 0..100 }
@@ -138,6 +139,7 @@ class WeatherRepository(private val context: Context) {
             val endIndex = (startIndex + 24).coerceAtMost(hourlyTimes.size)
             for (i in startIndex until endIndex) {
                 val rawTime = hourlyTimes[i]
+                val hourOfDay = ForecastValueValidation.hourOfDay(rawTime) ?: continue
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)
                 val code = hourlyCodes.getOrNull(i) ?: continue
                 // Treat non-finite provider measurements as missing, not as displayable readings.
@@ -149,7 +151,6 @@ class WeatherRepository(private val context: Context) {
                 val precip = precipValue ?: 0
                 val hum = humidityValue ?: currentHumidity
                 val wind = windValue ?: currentWindSpeed
-                val hourOfDay = try { rawTime.substring(11, 13).toInt() } catch (e: Exception) { 12 }
                 val hourIsDay = hourOfDay in 6..18
 
                 hourlyList.add(
@@ -182,12 +183,16 @@ class WeatherRepository(private val context: Context) {
             val dailySunrise = forecastDto.daily?.sunrise ?: emptyList()
             val dailySunset = forecastDto.daily?.sunset ?: emptyList()
 
-            for (i in dailyTimes.indices) {
-                if (i >= 7) break
+            val validDailyIndices = DailyForecastSelection.validIndices(
+                dates = dailyTimes,
+                weatherCodes = dailyCodes,
+                maxTemperatures = dailyMax,
+                minTemperatures = dailyMin
+            )
+            for (i in validDailyIndices) {
                 val dateRaw = dailyTimes[i]
-                if (ForecastValueValidation.validIsoDate(dateRaw) == null) continue
                 val code = dailyCodes.getOrNull(i) ?: continue
-                val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, i == 0)
+                val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, dateRaw == currentDateRaw)
                 val sunriseFormatted = ForecastValueValidation.formatSunTime(dailySunrise.getOrNull(i)) ?: "--:--"
                 val sunsetFormatted = ForecastValueValidation.formatSunTime(dailySunset.getOrNull(i)) ?: "--:--"
                 // Reject NaN and infinite provider values just like current UV readings.
@@ -300,7 +305,6 @@ class WeatherRepository(private val context: Context) {
             }
 
             // Weather Insights
-            val currentDateRaw = ForecastValueValidation.validIsoDate(currentTime.take(10))
             val todayForecast = DailyForecastSelection.forCurrentDate(dailyList, currentDateRaw)
             val insights = generateInsights(currentWeather, todayForecast)
 
