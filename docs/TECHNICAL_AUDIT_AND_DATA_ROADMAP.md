@@ -167,3 +167,13 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Invalid optional values remain unavailable through the existing per-field availability flags.
 - Added JVM tests for percentage boundaries, non-finite/negative measurements and reversed daily temperature ranges.
 - CI verification is pending for this source change; no live provider or station feed is implied.
+
+
+## Environmental measurement range validation (4 November 2026)
+
+- Air-quality pollutant concentrations (PM2.5, PM10, ozone and NO₂) are considered available only when finite and non-negative.
+- European AQI is considered available only when the provider value is non-negative; missing or negative sentinel-like values do not trigger an AQI advisory.
+- Grass, birch, olive and ragweed pollen readings reject negative and non-finite values before completeness checks and category calculation.
+- Availability flags now reflect validated values rather than merely checking whether the JSON field was present.
+- Added JVM regression tests for negative, non-finite and zero environmental measurements.
+- CI verification is pending for this commit. Values and thresholds remain subject to provider documentation and units; this validation does not certify medical or official warning categories.

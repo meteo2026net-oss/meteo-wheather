@@ -213,16 +213,20 @@ class WeatherRepository(private val context: Context) {
 
             // Air Quality
             val airCurrent = airQualityDto?.current
-            val aqiAvailable = airCurrent?.europeanAqi != null
-            val aqiVal = airCurrent?.europeanAqi ?: -1
-            val pm25Val = airCurrent?.pm25 ?: 0.0
-            val pm10Val = airCurrent?.pm10 ?: 0.0
-            val ozoneVal = airCurrent?.ozone ?: 0.0
-            val no2Val = airCurrent?.nitrogenDioxide ?: 0.0
-            val airAvailable = airCurrent != null && listOf(
-                airCurrent.pm25, airCurrent.pm10, airCurrent.ozone,
-                airCurrent.nitrogenDioxide, airCurrent.europeanAqi
-            ).any { it != null }
+            // Reject invalid provider values; keep the availability flags tied to validated data.
+            val aqiValue = ForecastValueValidation.nonNegativeInt(airCurrent?.europeanAqi)
+            val aqiAvailable = aqiValue != null
+            val aqiVal = aqiValue ?: -1
+            val pm25Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.pm25)
+            val pm10Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.pm10)
+            val ozoneValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.ozone)
+            val no2Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.nitrogenDioxide)
+            val pm25Val = pm25Value ?: 0.0
+            val pm10Val = pm10Value ?: 0.0
+            val ozoneVal = ozoneValue ?: 0.0
+            val no2Val = no2Value ?: 0.0
+            val airAvailable = listOf(pm25Value, pm10Value, ozoneValue, no2Value, aqiValue)
+                .any { it != null }
             val (aqiCat, aqiAdvice) = if (aqiAvailable) getAqiDescription(aqiVal)
                 else "غير متاح" to "لا تتوفر قراءة لمؤشر جودة الهواء حالياً."
 
@@ -236,17 +240,17 @@ class WeatherRepository(private val context: Context) {
                 no2 = no2Val,
                 isAvailable = airAvailable,
                 isAqiAvailable = aqiAvailable,
-                pm25Available = airCurrent?.pm25 != null,
-                pm10Available = airCurrent?.pm10 != null,
-                ozoneAvailable = airCurrent?.ozone != null,
-                no2Available = airCurrent?.nitrogenDioxide != null
+                pm25Available = pm25Value != null,
+                pm10Available = pm10Value != null,
+                ozoneAvailable = ozoneValue != null,
+                no2Available = no2Value != null
             )
 
             // Pollen Information
-            val grassValue = airCurrent?.grassPollen
-            val birchValue = airCurrent?.birchPollen
-            val oliveValue = airCurrent?.olivePollen
-            val ragweedValue = airCurrent?.ragweedPollen
+            val grassValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.grassPollen)
+            val birchValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.birchPollen)
+            val oliveValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.olivePollen)
+            val ragweedValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.ragweedPollen)
             val pollenAvailable = listOf(grassValue, birchValue, oliveValue, ragweedValue).any { it != null }
             val pollenComplete = listOf(grassValue, birchValue, oliveValue, ragweedValue).all { it != null }
             val pollenInfo = if (pollenComplete) {

@@ -277,4 +277,14 @@ class WeatherDataProvenanceTest {
         assertNull(ForecastValueValidation.temperatureRange(Double.NaN, 2.0))
         assertEquals(15.0 to 5.0, ForecastValueValidation.temperatureRange(15.0, 5.0))
     }
+    @Test
+    fun environmentalMeasurementsRejectNegativeAndNonFiniteValues() {
+        assertNull(ForecastValueValidation.nonNegativeFinite(-0.01))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.NEGATIVE_INFINITY))
+        assertEquals(2.5, ForecastValueValidation.nonNegativeFinite(2.5) ?: -1.0, 0.0)
+        assertNull(ForecastValueValidation.nonNegativeInt(-1))
+        assertEquals(0, ForecastValueValidation.nonNegativeInt(0))
+        assertEquals(85, ForecastValueValidation.nonNegativeInt(85))
+    }
 }

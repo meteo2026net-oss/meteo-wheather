@@ -59,6 +59,7 @@ object ForecastValueValidation {
     fun nonNegativeFinite(value: Double?): Double? = value?.takeIf { it.isFinite() && it >= 0.0 }
     fun probabilityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
     fun humidityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
+    fun nonNegativeInt(value: Int?): Int? = value?.takeIf { it >= 0 }
     fun temperatureRange(max: Double?, min: Double?): Pair<Double, Double>? {
         val validMax = finite(max) ?: return null
         val validMin = finite(min) ?: return null
