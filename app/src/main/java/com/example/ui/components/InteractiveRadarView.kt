@@ -282,15 +282,16 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
 
                         // Accept only HTTPS tile hosts owned by RainViewer and known radar paths.
                         var radarHost = new URL(data.host);
+                        var trustedHostSuffix = '${RainViewerFramePolicy.HOST_SUFFIX}';
                         var trustedHost = radarHost.protocol === 'https:' &&
-                            (radarHost.hostname === 'rainviewer.com' ||
-                             radarHost.hostname.endsWith('.rainviewer.com'));
+                            (radarHost.hostname === trustedHostSuffix ||
+                             radarHost.hostname.endsWith('.' + trustedHostSuffix));
                         if (!trustedHost) throw new Error('Untrusted radar tile host');
 
                         var validFrames = frames.filter(function(candidate) {
                             return candidate &&
                                 typeof candidate.path === 'string' &&
-                                /^\/v2\/radar\/[A-Za-z0-9_-]+$/.test(candidate.path) &&
+                                new RegExp('${RainViewerFramePolicy.PATH_PATTERN}').test(candidate.path) &&
                                 Number.isFinite(candidate.time) &&
                                 candidate.time > 0 &&
                                 candidate.time * 1000 <= Date.now() + 5 * 60 * 1000;
