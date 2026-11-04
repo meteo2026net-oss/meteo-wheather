@@ -17,16 +17,16 @@ data class WeatherResponseDto(
 
 @JsonClass(generateAdapter = true)
 data class CurrentWeatherDto(
-    val time: String = "",
-    @Json(name = "temperature_2m") val temperature: Double = 0.0,
-    @Json(name = "relative_humidity_2m") val relativeHumidity: Int = 0,
-    @Json(name = "apparent_temperature") val apparentTemperature: Double = 0.0,
-    @Json(name = "is_day") val isDay: Int = 1,
-    val precipitation: Double = 0.0,
-    @Json(name = "weather_code") val weatherCode: Int = 0,
-    @Json(name = "surface_pressure") val surfacePressure: Double = 1013.25,
-    @Json(name = "wind_speed_10m") val windSpeed: Double = 0.0,
-    @Json(name = "wind_direction_10m") val windDirection: Double = 0.0,
+    val time: String? = null,
+    @Json(name = "temperature_2m") val temperature: Double? = null,
+    @Json(name = "relative_humidity_2m") val relativeHumidity: Int? = null,
+    @Json(name = "apparent_temperature") val apparentTemperature: Double? = null,
+    @Json(name = "is_day") val isDay: Int? = null,
+    val precipitation: Double? = null,
+    @Json(name = "weather_code") val weatherCode: Int? = null,
+    @Json(name = "surface_pressure") val surfacePressure: Double? = null,
+    @Json(name = "wind_speed_10m") val windSpeed: Double? = null,
+    @Json(name = "wind_direction_10m") val windDirection: Double? = null,
     @Json(name = "uv_index") val uvIndex: Double? = null
 )
 
