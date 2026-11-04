@@ -462,7 +462,7 @@ class WeatherRepository(private val context: Context) {
                     descriptionAr = "نشاط لخلايا رعدية مصحوبة برياح هابطة قوية وهطول غزير للأمطار، مع احتمالية تساقط حبات البَرَد.",
                     safetyInstructionsAr = "ابتعد عن الأماكن المكشوفة وأعمدة الإنارة، وتجنب النزول للأودية وتجمعات المياه.",
                     source = "Open-Meteo — تقدير آلي غير رسمي",
-                    validUntil = "خلال الـ 6 ساعات القادمة"
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -477,7 +477,7 @@ class WeatherRepository(private val context: Context) {
                     descriptionAr = "توقعات بهطول أمطار غزيرة تؤدي إلى ارتفاع منسوب المياه وضعف مدى الرؤية الأفقية على الطرق.",
                     safetyInstructionsAr = "توخَّ الحيطة أثناء القيادة، واترك مسافة أمان كافية، وابتعد تماماً عن مجاري السيول.",
                     source = "Open-Meteo — تقدير آلي غير رسمي",
-                    validUntil = "حتى منتصف الليل"
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -492,7 +492,7 @@ class WeatherRepository(private val context: Context) {
                     descriptionAr = "ارتفاع ملموس على درجات الحرارة يتجاوز المعدلات الموسمية، مع طقس شديد الحرارة وضربات شمس محتملة.",
                     safetyInstructionsAr = "تجنب التعرض المباشر لأشعة الشمس بين 11 صباحاً و 4 عصراً، واحرص على شرب السوائل بوفرة.",
                     source = "Open-Meteo — تقدير آلي غير رسمي",
-                    validUntil = "مستمرة حتى مساء اليوم"
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -507,7 +507,7 @@ class WeatherRepository(private val context: Context) {
                     descriptionAr = "رياح شديدة السرعة تتجاوز ${current.windSpeedKmh.toInt()} كم/س مع هبات قوية قد تثير الأتربة والغبار وتعيق حركة السير.",
                     safetyInstructionsAr = "تثبيت الأجسام القابلة للتطاير والحذر عند القيادة على الطرق السريعة المفتوحة.",
                     source = "Open-Meteo — تقدير آلي غير رسمي",
-                    validUntil = "خلال الساعات المقبلة"
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -522,7 +522,7 @@ class WeatherRepository(private val context: Context) {
                     descriptionAr = "تساقط متواصل للثلوج مع تشكل طبقات جليدية وانزلاقات خطيرة على المرتفعات والطرق.",
                     safetyInstructionsAr = "استخدم سلاسل الإطارات وتجنب السفر غير الضروري حتى انقشاع الحالة الجوية.",
                     source = "Open-Meteo — تقدير آلي غير رسمي",
-                    validUntil = "حتى صباح الغد"
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -552,7 +552,7 @@ class WeatherRepository(private val context: Context) {
                     descriptionAr = "تسجيل تركيزات استثنائية لحبوب اللقاح والأعشاب المسببة للحساسية الموسمية.",
                     safetyInstructionsAr = "إحكام إغلاق النوافذ، وغسل الوجه والعينين بعد العودة للمنزل، واستشارة الصيدلي.",
                     source = "Open-Meteo — تقدير آلي غير رسمي",
-                    validUntil = "مستمر خلال موسم التزهير"
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
