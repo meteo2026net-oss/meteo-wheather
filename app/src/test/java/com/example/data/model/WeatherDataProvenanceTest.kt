@@ -57,6 +57,6 @@ class WeatherDataProvenanceTest {
         )
 
         assertTrue(value.isDisplayable)
-        assertTrue(value.provenance.kind == WeatherDataKind.OBSERVATION)
+        assertTrue(value.provenance.status == WeatherDataStatus.SIMULATED)
     }
 }
