@@ -121,3 +121,5 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - The advisory now names the European AQI explicitly, avoids claiming an unverified dust cause, and directs users to local health guidance.
 - The advisory remains an automated, non-official estimate. It is not an official warning and does not replace public-health advice.
 - CI verification is pending for the updated branch head.
+
+- Automated weather-rule alerts no longer invent fixed expiry times such as "until midnight" or "for six hours". Until the source provides a defensible validity interval, the UI states that the alert end time is not available. Official CAP expiry remains a separate field that must come from the authenticated CAP source.
