@@ -19,11 +19,11 @@ data class SyrianWeatherStation(
 
 data class CapAlertItem(
     val identifier: String,
-    val sender: String = "MCNC.SY.CAP@meteo.gov.sy",
+    val sender: String = "local-demo@device.invalid",
     val sentTimestamp: String,
-    val status: String = "Actual", // Actual, Exercise, Test
+    val status: String = "Test", // Actual, Exercise, Test
     val msgType: String = "Alert", // Alert, Update, Cancel
-    val scope: String = "Public",
+    val scope: String = "Private",
     val eventAr: String,
     val severity: AlertSeverity, // ADVISORY, WATCH, WARNING, EMERGENCY
     val urgency: String = "Immediate",
@@ -40,5 +40,6 @@ data class AudioBulletinItem(
     val dateFormatted: String,
     val durationSec: Int,
     val announcerName: String,
-    val bulletinScriptAr: String
+    val bulletinScriptAr: String,
+    val isDemoData: Boolean = true
 )
