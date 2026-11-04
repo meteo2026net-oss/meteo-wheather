@@ -736,19 +736,19 @@ class WeatherRepository(private val context: Context) {
     // Syrian Weather Stations (محطات الأرصاد الجوية السورية)
     fun getSyrianWeatherStations(): List<SyrianWeatherStation> {
         return listOf(
-            SyrianWeatherStation("st_damascus", "محطة دمشق الدولي", "محطة رئيسية - دمشق", 33.5138, 36.2765, 24.0, 45, 1014.2, 14.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_aleppo", "محطة حلب الدولي", "محطة رئيسية - حلب", 36.2021, 37.1343, 21.0, 52, 1013.8, 16.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_latakia", "محطة اللاذقية البحرية", "محطة ساحلية - اللاذقية", 35.5317, 35.7915, 26.0, 78, 1012.5, 22.0, "رذاذ خفيف", WeatherConditionType.DRIZZLE, true),
-            SyrianWeatherStation("st_homs", "محطة حمص المركزية", "محطة داخلية - حمص", 34.7324, 36.7137, 23.0, 50, 1013.0, 18.0, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_tartus", "محطة طرطوس الميناء", "محطة ساحلية - طرطوس", 34.8890, 35.8866, 25.0, 74, 1012.8, 19.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_hama", "محطة حماة الزراعية", "محطة داخلية - حماة", 35.1318, 36.7578, 24.0, 48, 1013.2, 15.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_deir", "محطة دير الزور", "محطة الشرق - دير الزور", 35.3333, 40.1500, 28.0, 35, 1011.5, 12.0, "مشمس وجاف", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_qamishli", "محطة القامشلي", "محطة الجزيرة - القامشلي", 37.0494, 41.2268, 22.0, 42, 1013.5, 17.0, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_sweida", "محطة السويداء", "محطة الجبل - السويداء", 32.7130, 36.5694, 19.0, 55, 1015.0, 13.0, "لطيف", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_deraa", "محطة درعا السهل", "محطة الجنوب - درعا", 32.6186, 36.1011, 23.0, 46, 1014.0, 16.0, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_idlib", "محطة إدلب", "محطة الشمال - إدلب", 35.9306, 36.6339, 21.0, 58, 1013.1, 14.0, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_raqqa", "محطة الرقة", "محطة الفرات - الرقة", 35.9556, 39.0078, 27.0, 38, 1012.0, 15.5, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_palmyra", "محطة تدمر الأثرية", "محطة البادية - تدمر", 34.5577, 38.2753, 29.0, 30, 1011.0, 18.5, "مشمس", WeatherConditionType.CLEAR, true)
+            SyrianWeatherStation("st_damascus", "محطة دمشق الدولي", "محطة رئيسية - دمشق", 33.5138, 36.2765, 24.0, 45, 1014.2, 14.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_aleppo", "محطة حلب الدولي", "محطة رئيسية - حلب", 36.2021, 37.1343, 21.0, 52, 1013.8, 16.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_latakia", "محطة اللاذقية البحرية", "محطة ساحلية - اللاذقية", 35.5317, 35.7915, 26.0, 78, 1012.5, 22.0, "رذاذ خفيف", WeatherConditionType.DRIZZLE, false),
+            SyrianWeatherStation("st_homs", "محطة حمص المركزية", "محطة داخلية - حمص", 34.7324, 36.7137, 23.0, 50, 1013.0, 18.0, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_tartus", "محطة طرطوس الميناء", "محطة ساحلية - طرطوس", 34.8890, 35.8866, 25.0, 74, 1012.8, 19.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_hama", "محطة حماة الزراعية", "محطة داخلية - حماة", 35.1318, 36.7578, 24.0, 48, 1013.2, 15.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_deir", "محطة دير الزور", "محطة الشرق - دير الزور", 35.3333, 40.1500, 28.0, 35, 1011.5, 12.0, "مشمس وجاف", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_qamishli", "محطة القامشلي", "محطة الجزيرة - القامشلي", 37.0494, 41.2268, 22.0, 42, 1013.5, 17.0, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_sweida", "محطة السويداء", "محطة الجبل - السويداء", 32.7130, 36.5694, 19.0, 55, 1015.0, 13.0, "لطيف", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_deraa", "محطة درعا السهل", "محطة الجنوب - درعا", 32.6186, 36.1011, 23.0, 46, 1014.0, 16.0, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_idlib", "محطة إدلب", "محطة الشمال - إدلب", 35.9306, 36.6339, 21.0, 58, 1013.1, 14.0, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_raqqa", "محطة الرقة", "محطة الفرات - الرقة", 35.9556, 39.0078, 27.0, 38, 1012.0, 15.5, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_palmyra", "محطة تدمر الأثرية", "محطة البادية - تدمر", 34.5577, 38.2753, 29.0, 30, 1011.0, 18.5, "مشمس", WeatherConditionType.CLEAR, false)
         )
     }
 
