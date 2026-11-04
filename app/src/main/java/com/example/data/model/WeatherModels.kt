@@ -70,10 +70,19 @@ object ForecastValueValidation {
     /** Formats an Open-Meteo local sunrise/sunset timestamp; malformed values stay unavailable. */
     fun formatSunTime(raw: String?): String? {
         val value = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        val match = Regex("""^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):([0-5]\\d)(?::[0-5]\\d)?$""")
+        val match = Regex("""^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$""")
             .matchEntire(value) ?: return null
-        val hour = match.groupValues[1].toInt()
-        val minute = match.groupValues[2]
+        val year = match.groupValues[1].toInt()
+        val month = match.groupValues[2].toInt()
+        val day = match.groupValues[3].toInt()
+        val maxDay = when (month) {
+            2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
+            4, 6, 9, 11 -> 30
+            else -> 31
+        }
+        if (day !in 1..maxDay) return null
+        val hour = match.groupValues[4].toInt()
+        val minute = match.groupValues[5]
         return if (hour < 12) {
             "${if (hour == 0) 12 else hour}:$minute ص"
         } else {
