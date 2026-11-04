@@ -131,30 +131,34 @@ private fun RenderMetricCard(
                 icon = Icons.Default.WbSunny,
                 iconTint = Color(0xFFFFCA28)
             ) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = "$uv",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(color.copy(alpha = 0.25f))
-                            .border(1.dp, color, RoundedCornerShape(6.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(text = desc, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
+                if (!current.uvIndexAvailable) {
+                    Text("بيانات مؤشر الأشعة فوق البنفسجية غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = "$uv",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(color.copy(alpha = 0.25f))
+                                .border(1.dp, color, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(text = desc, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
+                        }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (uv <= 2) "لا حاجة للحماية" else if (uv <= 5) "نظارة شمسية" else "واقي شمس وقبعة",
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.75f)
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (uv <= 2) "لا حاجة للحماية" else if (uv <= 5) "نظارة شمسية" else "واقي شمس وقبعة",
-                    fontSize = 11.sp,
-                    color = Color.White.copy(alpha = 0.75f)
-                )
             }
         }
 
