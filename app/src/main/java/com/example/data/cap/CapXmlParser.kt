@@ -42,12 +42,15 @@ data class CapFeedMessage(
             (messageType.equals("Alert", ignoreCase = true) ||
                 messageType.equals("Update", ignoreCase = true)) &&
             sentAt?.let { !it.isAfter(now) } == true &&
-            expiresAt?.let { expiry -> sentAt?.let(expiry::isAfter) } == true &&
+            expiresAt?.let { expiry ->
+                expiry.isAfter(now) && sentAt?.let(expiry::isAfter) == true
+            } == true &&
             identifier.isNotBlank()
     }
 }
 
 object CapXmlParser {
+    private const val CAP_NAMESPACE = "urn:oasis:names:tc:emergency:cap:1.2"
     private const val MAX_DOCUMENT_CHARS = 512 * 1024
 
     fun parse(xml: String): CapFeedMessage {
@@ -81,7 +84,9 @@ object CapXmlParser {
 
         val root = document.documentElement
             ?: throw IllegalArgumentException("CAP root element is missing")
-        require(root.localTagName() == "alert") { "Root element is not CAP alert" }
+        require(
+            root.namespaceURI == CAP_NAMESPACE && root.localTagName() == "alert"
+        ) { "Root element is not a CAP 1.2 alert" }
 
         val identifier = root.directText("identifier").orEmpty()
         require(identifier.isNotBlank()) { "CAP identifier is missing" }
@@ -152,7 +157,9 @@ object CapXmlParser {
             val node = nodes.item(index)
             if (node.nodeType == Node.ELEMENT_NODE) {
                 val element = node as Element
-                if (element.localTagName() == name) result += element
+                if (element.namespaceURI == CAP_NAMESPACE && element.localTagName() == name) {
+                    result += element
+                }
             }
         }
         return result
