@@ -123,3 +123,11 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - CI verification is pending for the updated branch head.
 
 - Automated weather-rule alerts no longer invent fixed expiry times such as "until midnight" or "for six hours". Until the source provides a defensible validity interval, the UI states that the alert end time is not available. Official CAP expiry remains a separate field that must come from the authenticated CAP source.
+
+
+## Wind alert wording correction (4 November 2026)
+
+- The automated wind advisory no longer labels high wind speed alone as a dust storm or claims that dust is occurring.
+- The alert now reports the measured/modelled wind speed and explicitly distinguishes the possibility of airborne dust from a confirmed dust event.
+- This remains an automated, non-official forecast-rule advisory, not an observation or official warning.
+- GitHub Actions run [41763192852](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41763192852) completed successfully on the previous head `b72d875f785279c8c2e5dd2214952320eaf5af08`, including `testDebugUnitTest`, `assembleDebug` and artifact upload. The wording follow-up in this section requires its own CI run.
