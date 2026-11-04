@@ -157,7 +157,8 @@ fun HourlyForecastSection(
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.height(15.dp))
+                        Text("—", fontSize = 10.sp, color = Color.White.copy(alpha = 0.55f))
+                        Spacer(modifier = Modifier.height(5.dp))
                     }
                 }
             }
