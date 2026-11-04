@@ -118,8 +118,8 @@ class CapXmlParserTest {
         ).isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
 
         assertFalse(CapXmlParser.parse(
-            cap(expires = "2026-11-04T07:00:00+03:00")
-        ).isPubliclyDisplayable(Instant.parse("2026-11-04T08:30:00Z")))
+            cap(expires = "2026-11-04T05:00:00+03:00")
+        ).isPubliclyDisplayable(Instant.parse("2026-11-04T01:30:00Z")))
     }
 
     @Test
