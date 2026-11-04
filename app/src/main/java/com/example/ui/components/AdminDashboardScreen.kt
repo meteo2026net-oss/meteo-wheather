@@ -108,6 +108,12 @@ fun AdminDashboardScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "تنبيه: لوحة محلية تجريبية فقط؛ لا يوجد تحقق صلاحيات أو بث مركزي، ولا تستخدم لإرسال إنذارات رسمية.",
+                fontSize = 11.sp,
+                color = Color(0xFFFACC15)
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             // Admin Tabs
