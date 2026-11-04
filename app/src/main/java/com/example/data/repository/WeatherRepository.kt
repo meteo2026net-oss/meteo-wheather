@@ -687,15 +687,7 @@ class WeatherRepository(private val context: Context) {
         }
     }
 
-    private fun getAqiDescription(aqi: Int): Pair<String, String> {
-        return when {
-            aqi <= 20 -> "ممتاز" to "جودة الهواء نقية جداً ومثالية للأنشطة الخارجية والرياضة."
-            aqi <= 40 -> "جيد" to "جودة هواء مقبولة ومناسبة للجميع دون أي مخاطر صحية."
-            aqi <= 60 -> "معتدل" to "الهواء مقبول، قد يشعر الحساسون جداً بتهيج خفيف."
-            aqi <= 80 -> "غير صحي للحساسين" to "يفضل تقليل الأنشطة الشاقة في الهواء الطلق لمن يعانون من الحساسية."
-            else -> "غير صحي" to "ينصح بارتداء كمامة وتجنب البقاء في الهواء الطلق لفترات طويلة."
-        }
-    }
+    private fun getAqiDescription(aqi: Int): Pair<String, String> = EuropeanAqi.describe(aqi)
 
     private fun generateInsights(current: CurrentWeather, today: DailyForecast?): WeatherInsights {
         val temp = current.temperatureCelsius
