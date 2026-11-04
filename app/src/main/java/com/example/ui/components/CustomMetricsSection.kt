@@ -376,6 +376,9 @@ private fun RenderMetricCard(
                 icon = Icons.Default.Visibility,
                 iconTint = Color(0xFF2DD4BF)
             ) {
+                if (!current.visibilityAvailable) {
+                    Text("بيانات مدى الرؤية غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "${current.visibilityKm.toInt()}",
@@ -392,6 +395,7 @@ private fun RenderMetricCard(
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
+                }
             }
         }
     }
