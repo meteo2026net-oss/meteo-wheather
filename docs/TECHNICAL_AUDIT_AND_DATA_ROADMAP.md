@@ -106,3 +106,11 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - The existing Robolectric context test uses Android API 35. A machine-specific offline SDK cache is optional and is only enabled through `ROBOLECTRIC_DEPENDENCY_DIR` when that directory exists.
 - The map WebViews disallow mixed content, file/content access and automatic window opening. Remote map resources use HTTPS.
 - Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. CI success applies only to the exact validated commit stated above; subsequent branch commits require their own successful verification.
+
+## AQI classification correction (4 November 2026)
+
+- The Open-Meteo European AQI value is now classified using explicit bands: 0–20, 21–40, 41–60, 61–80, 81–100 and above 100.
+- Previously, every value above 80 shared one broad label, which obscured the distinction between very poor and extremely poor air quality. The classification is now centralized in `EuropeanAqi` and negative/unavailable values are never labelled as good air.
+- Added boundary-focused JVM tests for every band and the unavailable sentinel.
+- These labels are descriptive estimates based on the provider's European AQI field; they are not official public-health alerts and do not replace local health guidance.
+- The new AQI helper and tests are committed on the development branch; CI verification is pending for the new branch head.
