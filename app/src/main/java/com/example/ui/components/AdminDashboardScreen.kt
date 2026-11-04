@@ -231,8 +231,11 @@ fun AdminDashboardScreen(
                             Button(
                                 onClick = {
                                     val newAlert = CapAlertItem(
-                                        identifier = "MCNC_CAP_${System.currentTimeMillis()}",
+                                        identifier = "LOCAL_TEST_${System.currentTimeMillis()}",
+                                        sender = "local-demo@device.invalid",
                                         sentTimestamp = "الآن",
+                                        status = "Test",
+                                        scope = "Private",
                                         eventAr = alertTitle,
                                         severity = alertSeverity,
                                         areaDescAr = alertArea,
@@ -294,7 +297,7 @@ fun AdminDashboardScreen(
                                         modifier = Modifier
                                             .size(10.dp)
                                             .clip(CircleShape)
-                                            .background(if (st.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                            .background(if (st.isDemoData) Color(0xFFFACC15) else if (st.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
