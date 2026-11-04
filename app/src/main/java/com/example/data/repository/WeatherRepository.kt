@@ -692,7 +692,9 @@ class WeatherRepository(private val context: Context) {
 
     private fun generateInsights(current: CurrentWeather, today: DailyForecast?): WeatherInsights {
         val temp = current.temperatureCelsius
-        val uv = current.uvIndex
+        // A missing UV measurement is not a zero reading and must not
+        // produce "low UV" or "ideal for outdoor activity" advice.
+        val uv = current.uvIndex.takeIf { current.uvIndexAvailable }
         val rain = current.precipitationMm > 0.5 || (today?.precipitationProb ?: 0) > 40
         val wind = current.windSpeedKmh
 
@@ -709,14 +711,14 @@ class WeatherRepository(private val context: Context) {
         val activityScore = when {
             rain || current.conditionType == WeatherConditionType.THUNDERSTORM -> "يفضل البقاء بالداخل"
             wind > 45.0 -> "رياح نشطة - احذر القيادة"
-            temp in 18.0..28.0 && uv < 7 -> "مثالي للمشي والرياضة"
-            temp > 35.0 || uv >= 8.0 -> "تجنب التعرض المباشر للشمس"
+            temp in 18.0..28.0 && uv != null && uv < 7.0 -> "مثالي للمشي والرياضة"
+            temp > 35.0 || (uv ?: 0.0) >= 8.0 -> "تجنب التعرض المباشر للشمس"
             else -> "طقس ملائم للأنشطة"
         }
 
         val title = when {
             umbrellaNeeded -> "فرصة لهطول الأمطار ☔"
-            uv >= 8 -> "تحذير أشعة شمس قوية ☀️"
+            uv != null && uv >= 8.0 -> "تحذير أشعة شمس قوية ☀️"
             wind > 40 -> "رياح نشطة وموجات هواء 💨"
             temp in 20.0..27.0 -> "أجواء مثالية للخروج 🌿"
             temp > 35.0 -> "طقس حار وموجة دافئة 🌡️"
@@ -725,7 +727,7 @@ class WeatherRepository(private val context: Context) {
 
         val summary = buildString {
             if (umbrellaNeeded) append("احرص على أخذ مظلتك اليوم لاحتمال هطول الأمطار. ")
-            if (uv >= 8) append("المؤشر فوق البنفسجي مرتفع (${uv.toInt()})؛ استخدم واقي الشمس. ")
+            if (uv != null && uv >= 8.0) append("المؤشر فوق البنفسجي مرتفع (${uv.toInt()})؛ استخدم واقي الشمس. ")
             if (wind > 35) append("سرعة الرياح تصل إلى ${wind.toInt()} كم/س. ")
             if (isEmpty()) append("استمتع بأجواء ${current.conditionNameAr} طوال اليوم.")
         }
