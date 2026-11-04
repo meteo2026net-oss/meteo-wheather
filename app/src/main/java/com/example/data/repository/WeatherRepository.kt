@@ -157,6 +157,8 @@ class WeatherRepository(private val context: Context) {
                 val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, i == 0)
                 val sunriseFormatted = formatSunTime(dailySunrise.getOrNull(i))
                 val sunsetFormatted = formatSunTime(dailySunset.getOrNull(i))
+                // Reject NaN and infinite provider values just like current UV readings.
+                val dailyUvValue = dailyUv.getOrNull(i)?.takeIf { it.isFinite() }
 
                 dailyList.add(
                     DailyForecast(
@@ -170,11 +172,11 @@ class WeatherRepository(private val context: Context) {
                         maxTempCelsius = dailyMax.getOrNull(i) ?: continue,
                         minTempCelsius = dailyMin.getOrNull(i) ?: continue,
                         precipitationProb = dailyPrecip.getOrNull(i) ?: 0,
-                        uvIndexMax = dailyUv.getOrNull(i) ?: 0.0,
+                        uvIndexMax = dailyUvValue ?: 0.0,
                         sunrise = sunriseFormatted,
                         sunset = sunsetFormatted,
                         precipitationProbabilityAvailable = dailyPrecip.getOrNull(i) != null,
-                        uvIndexAvailable = dailyUv.getOrNull(i) != null,
+                        uvIndexAvailable = dailyUvValue != null,
                         sunriseAvailable = dailySunrise.getOrNull(i) != null,
                         sunsetAvailable = dailySunset.getOrNull(i) != null
                     )
