@@ -282,8 +282,7 @@ fun LeafletWeatherMapScreen(
                         settings.allowFileAccess = false
                         settings.allowContentAccess = false
                             settings.domStorageEnabled = true
-                            settings.databaseEnabled = true
-                            settings.loadWithOverviewMode = true
+                                settings.loadWithOverviewMode = true
                             settings.useWideViewPort = true
                             settings.builtInZoomControls = false
                             settings.setSupportZoom(true)
