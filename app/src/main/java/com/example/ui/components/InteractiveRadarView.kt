@@ -290,7 +290,7 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
                         var validFrames = frames.filter(function(candidate) {
                             return candidate &&
                                 typeof candidate.path === 'string' &&
-                                /^\\/v2\\/radar\\/[0-9]+$/.test(candidate.path) &&
+                                /^\/v2\/radar\/[0-9]+$/.test(candidate.path) &&
                                 Number.isFinite(candidate.time) &&
                                 candidate.time > 0 &&
                                 candidate.time * 1000 <= Date.now() + 5 * 60 * 1000;
