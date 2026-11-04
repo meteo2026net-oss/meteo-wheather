@@ -502,9 +502,9 @@ class WeatherRepository(private val context: Context) {
             list.add(
                 SevereWeatherAlert(
                     id = "wind_${location.name}",
-                    titleAr = "تنبيه رياح نشطة وعواصف ترابية",
+                    titleAr = "تنبيه رياح نشطة في ${location.name}",
                     severity = AlertSeverity.ADVISORY,
-                    descriptionAr = "رياح شديدة السرعة تتجاوز ${current.windSpeedKmh.toInt()} كم/س مع هبات قوية قد تثير الأتربة والغبار وتعيق حركة السير.",
+                    descriptionAr = "رياح نشطة بسرعة ${current.windSpeedKmh.toInt()} كم/س؛ قد تؤثر في الأنشطة الخارجية وحركة السير. لا تكفي سرعة الرياح وحدها لإثبات حدوث عاصفة ترابية.",
                     safetyInstructionsAr = "تثبيت الأجسام القابلة للتطاير والحذر عند القيادة على الطرق السريعة المفتوحة.",
                     source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
