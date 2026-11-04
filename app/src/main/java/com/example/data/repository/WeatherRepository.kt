@@ -105,7 +105,7 @@ class WeatherRepository(private val context: Context) {
                 weatherCode = currentWeatherCode,
                 conditionType = conditionType,
                 conditionNameAr = conditionNameAr,
-                conditionNameEn = mapWeatherCodeToEn(currentDto.weatherCode),
+                conditionNameEn = mapWeatherCodeToEn(currentWeatherCode),
                 isDay = isDay,
                 precipitationMm = currentPrecipitation,
                 visibilityKm = visibilityKm,
