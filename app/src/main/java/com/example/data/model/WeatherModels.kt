@@ -168,7 +168,9 @@ data class AirQualityInfo(
     val pm25: Double,
     val pm10: Double,
     val ozone: Double = 35.0,
-    val no2: Double = 18.0
+    val no2: Double = 18.0,
+    val isAvailable: Boolean = true,
+    val isAqiAvailable: Boolean = true
 )
 
 data class PollenInfo(
@@ -177,7 +179,8 @@ data class PollenInfo(
     val olivePollen: Double,
     val ragweedPollen: Double,
     val overallLevelAr: String,
-    val adviceAr: String
+    val adviceAr: String,
+    val isAvailable: Boolean = true
 )
 
 enum class AlertSeverity {
