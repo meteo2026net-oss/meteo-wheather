@@ -33,6 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.model.CityLocation
+import com.example.data.model.CityMapForecast
+import org.json.JSONArray
+import org.json.JSONObject
 import com.example.data.model.MapWeatherOverlay
 import com.example.ui.components.LeafletBaseMapConfigs
 import com.example.ui.components.RainViewerFramePolicy
@@ -73,6 +76,10 @@ class LeafletJsBridge(
 @Composable
 fun LeafletWeatherMapScreen(
     currentCity: CityLocation,
+    cityForecasts: List<CityMapForecast>,
+    isLoadingCityForecasts: Boolean,
+    cityForecastError: String?,
+    onRefreshCityForecasts: () -> Unit,
     onCitySelected: (CityLocation) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -101,8 +108,8 @@ fun LeafletWeatherMapScreen(
         )
     }
 
-    val htmlContent = remember(selectedTileType, selectedOverlay) {
-        generateLeafletScreenHtml(selectedTileType, selectedOverlay)
+    val htmlContent = remember(selectedTileType, selectedOverlay, cityForecasts) {
+        generateLeafletScreenHtml(selectedTileType, selectedOverlay, cityForecasts)
     }
 
     Scaffold(
@@ -199,7 +206,7 @@ fun LeafletWeatherMapScreen(
                 // Overlay Chips
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     MapWeatherOverlay.values().forEach { overlay ->
-                        val isAvailable = overlay == MapWeatherOverlay.PRECIPITATION
+                        val isAvailable = overlay == MapWeatherOverlay.PRECIPITATION || cityForecasts.isNotEmpty()
                         val isSelected = selectedOverlay == overlay && isAvailable
                         Box(
                             modifier = Modifier
@@ -264,11 +271,22 @@ fun LeafletWeatherMapScreen(
             }
 
             Text(
-                text = "طبقة الرادار من RainViewer؛ درجات الحرارة وحالات المدن غير متصلة ببيانات محطات حية. طبقات الحرارة والرياح والسحب قيد الربط.",
+                text = when {
+                    cityForecasts.isNotEmpty() -> "توقعات Open-Meteo للمدن وليست رصداً من محطات. وقت التحديث: ${cityForecasts.firstOrNull()?.time ?: "غير متاح"}"
+                    isLoadingCityForecasts -> "جارٍ تحميل توقعات المدن من Open-Meteo..."
+                    cityForecastError != null -> "تعذر تحميل توقعات المدن: $cityForecastError"
+                    else -> "لم تُحمّل توقعات المدن بعد. الرادار التاريخي من RainViewer."
+                },
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 fontSize = 10.sp,
                 color = Color(0xFFFACC15)
             )
+
+            if (cityForecasts.isEmpty()) {
+                TextButton(onClick = onRefreshCityForecasts, enabled = !isLoadingCityForecasts) {
+                    Text(if (isLoadingCityForecasts) "جارٍ التحديث..." else "تحديث توقعات المدن")
+                }
+            }
 
             // Interactive Leaflet WebView Frame
             Box(
@@ -382,9 +400,26 @@ fun LeafletWeatherMapScreen(
     }
 }
 
-private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverlay): String {
+private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverlay, cityForecasts: List<CityMapForecast>): String {
     val baseMap = LeafletBaseMapConfigs.forStyle(tileType)
     val subdomainsOption = baseMap.subdomains?.let { "subdomains: '$it'," }.orEmpty()
+    val cityForecastsJson = JSONArray().apply {
+        cityForecasts.forEach { forecast ->
+            put(JSONObject().apply {
+                put("name", forecast.city.name)
+                put("lat", forecast.city.latitude)
+                put("lng", forecast.city.longitude)
+                put("time", forecast.time ?: JSONObject.NULL)
+                put("temp", forecast.temperatureCelsius ?: JSONObject.NULL)
+                put("humidity", forecast.humidityPercent ?: JSONObject.NULL)
+                put("wind", forecast.windSpeedKmh ?: JSONObject.NULL)
+                put("windDirection", forecast.windDirectionDegrees ?: JSONObject.NULL)
+                put("clouds", forecast.cloudCoverPercent ?: JSONObject.NULL)
+                put("precip", forecast.precipitationMm ?: JSONObject.NULL)
+                put("code", forecast.weatherCode ?: JSONObject.NULL)
+            })
+        }
+    }.toString()
 
     return """
         <!DOCTYPE html>
@@ -606,21 +641,7 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
 
 
                 // Syrian Cities Data
-                var syrianCities = [
-                    { name: 'دمشق', lat: 33.5138, lng: 36.2765, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'حلب', lat: 36.2021, lng: 37.1343, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'اللاذقية', lat: 35.5317, lng: 35.7915, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'حمص', lat: 34.7324, lng: 36.7137, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'طرطوس', lat: 34.8890, lng: 35.8866, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'حماة', lat: 35.1318, lng: 36.7578, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'دير الزور', lat: 35.3333, lng: 40.1500, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'القامشلي', lat: 37.0494, lng: 41.2268, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'السويداء', lat: 32.7130, lng: 36.5694, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'درعا', lat: 32.6186, lng: 36.1011, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'إدلب', lat: 35.9306, lng: 36.6339, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'الرقة', lat: 35.9556, lng: 39.0078, temp: '—', state: 'بيانات غير متاحة' },
-                    { name: 'تدمر', lat: 34.5577, lng: 38.2753, temp: '—', state: 'بيانات غير متاحة' }
-                ];
+                var syrianCities = ${cityForecastsJson};
 
                 syrianCities.forEach(function(c) {
                     var marker = L.circleMarker([c.lat, c.lng], {
@@ -636,11 +657,18 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                         }
                     });
 
+                    var tempText = Number.isFinite(c.temp) ? c.temp.toFixed(1) + ' °م' : '—';
+                    var humidityText = Number.isFinite(c.humidity) ? c.humidity + '%' : '—';
+                    var windText = Number.isFinite(c.wind) ? c.wind.toFixed(1) + ' كم/س' : '—';
+                    var cloudText = Number.isFinite(c.clouds) ? c.clouds + '%' : '—';
                     marker.bindPopup(
                         '<div class="city-popup">' +
                         '<div class="city-title">' + c.name + '</div>' +
-                        '<b>درجة الحرارة:</b> ' + c.temp + '<br/>' +
-                        '<b>حالة الطقس:</b> ' + c.state +
+                        '<b>الحرارة المتوقعة:</b> ' + tempText + '<br/>' +
+                        '<b>الرطوبة:</b> ' + humidityText + '<br/>' +
+                        '<b>الرياح:</b> ' + windText + '<br/>' +
+                        '<b>الغطاء السحابي:</b> ' + cloudText + '<br/>' +
+                        '<small>توقعات نموذج Open-Meteo وليست رصداً لمحطة</small>' +
                         '</div>'
                     );
                 });

@@ -363,6 +363,10 @@ fun WeatherScreen(
                 if (uiState.isLeafletMapScreenOpen) {
                     LeafletWeatherMapScreen(
                         currentCity = uiState.selectedCity,
+                        cityForecasts = uiState.cityMapForecasts,
+                        isLoadingCityForecasts = uiState.isLoadingCityMapForecasts,
+                        cityForecastError = uiState.cityMapForecastError,
+                        onRefreshCityForecasts = { viewModel.loadSyrianCityMapForecasts(forceRefresh = true) },
                         onCitySelected = { viewModel.loadWeather(it) },
                         onBackClick = { viewModel.closeLeafletMapScreen() }
                     )

@@ -15,6 +15,15 @@ import retrofit2.http.Url
 import java.util.concurrent.TimeUnit
 
 interface OpenMeteoForecastApi {
+    // One request for all map points; Open-Meteo returns one response per coordinate.
+    @GET("v1/forecast")
+    suspend fun getMultiLocationCurrent(
+        @Query("latitude") latitude: String,
+        @Query("longitude") longitude: String,
+        @Query("current") current: String = "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,cloud_cover,precipitation,weather_code",
+        @Query("timezone") timezone: String = "auto"
+    ): List<WeatherResponseDto>
+
     @GET("v1/forecast")
     suspend fun getForecast(
         @Query("latitude") latitude: Double,

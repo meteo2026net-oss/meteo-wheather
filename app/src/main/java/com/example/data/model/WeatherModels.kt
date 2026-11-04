@@ -27,6 +27,7 @@ data class CurrentWeatherDto(
     @Json(name = "surface_pressure") val surfacePressure: Double? = null,
     @Json(name = "wind_speed_10m") val windSpeed: Double? = null,
     @Json(name = "wind_direction_10m") val windDirection: Double? = null,
+    @Json(name = "cloud_cover") val cloudCover: Int? = null,
     @Json(name = "uv_index") val uvIndex: Double? = null
 )
 
@@ -249,6 +250,19 @@ enum class WeatherMetricType(val id: String, val titleAr: String, val subtitleAr
 data class MetricPreference(
     val type: WeatherMetricType,
     val isEnabled: Boolean = true
+)
+
+/** Forecast values for a map location; these are model outputs, not station observations. */
+data class CityMapForecast(
+    val city: CityLocation,
+    val time: String?,
+    val temperatureCelsius: Double?,
+    val humidityPercent: Int?,
+    val windSpeedKmh: Double?,
+    val windDirectionDegrees: Double?,
+    val cloudCoverPercent: Int?,
+    val precipitationMm: Double?,
+    val weatherCode: Int?
 )
 
 enum class MapWeatherOverlay(val id: String, val titleAr: String) {

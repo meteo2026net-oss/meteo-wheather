@@ -30,6 +30,9 @@ data class WeatherUiState(
     val metricPreferences: List<MetricPreference> = WeatherRepository.DEFAULT_METRIC_PREFERENCES,
     val areAlertsEnabled: Boolean = true,
     val isLeafletMapScreenOpen: Boolean = false,
+    val cityMapForecasts: List<CityMapForecast> = emptyList(),
+    val isLoadingCityMapForecasts: Boolean = false,
+    val cityMapForecastError: String? = null,
     val userGoogleEmail: String? = null,
     val isGoogleSignInModalOpen: Boolean = false,
     val chatMessages: List<ChatMessageItem> = emptyList(),
@@ -131,6 +134,22 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     fun openLeafletMapScreen() {
         _uiState.update { it.copy(isLeafletMapScreenOpen = true) }
+        loadSyrianCityMapForecasts()
+    }
+
+    fun loadSyrianCityMapForecasts(forceRefresh: Boolean = false) {
+        if (_uiState.value.isLoadingCityMapForecasts) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingCityMapForecasts = true, cityMapForecastError = null) }
+            try {
+                val forecasts = repository.getSyrianCityMapForecasts(forceRefresh)
+                _uiState.update { it.copy(cityMapForecasts = forecasts, isLoadingCityMapForecasts = false) }
+            } catch (error: Exception) {
+                _uiState.update {
+                    it.copy(isLoadingCityMapForecasts = false, cityMapForecastError = error.localizedMessage ?: "تعذر تحميل توقعات المدن")
+                }
+            }
+        }
     }
 
     fun closeLeafletMapScreen() {

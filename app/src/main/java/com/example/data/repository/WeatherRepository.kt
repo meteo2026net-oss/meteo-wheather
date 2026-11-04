@@ -310,6 +310,46 @@ class WeatherRepository(private val context: Context) {
         }
     }
 
+    private var cachedCityMapForecasts: List<CityMapForecast> = emptyList()
+    private var cityMapForecastsFetchedAtMs: Long = 0L
+
+    /** Retrieves the 13 Syrian city forecasts in a single request, cached for ten minutes. */
+    suspend fun getSyrianCityMapForecasts(forceRefresh: Boolean = false): List<CityMapForecast> = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh && cachedCityMapForecasts.isNotEmpty() &&
+            now - cityMapForecastsFetchedAtMs < 10 * 60 * 1000L
+        ) return@withContext cachedCityMapForecasts
+
+        val cities = DEFAULT_CITIES
+        val responses = NetworkClient.forecastApi.getMultiLocationCurrent(
+            latitude = cities.joinToString(",") { it.latitude.toString() },
+            longitude = cities.joinToString(",") { it.longitude.toString() }
+        )
+        require(responses.size == cities.size) { "عدد مواقع التوقعات لا يطابق عدد المدن المطلوبة" }
+
+        val forecasts = cities.zip(responses).map { (city, response) ->
+            require(
+                kotlin.math.abs(response.latitude - city.latitude) < 0.05 &&
+                    kotlin.math.abs(response.longitude - city.longitude) < 0.05
+            ) { "إحداثيات الاستجابة لا تطابق المدينة ${city.name}" }
+            val current = response.current
+            CityMapForecast(
+                city = city,
+                time = current?.time,
+                temperatureCelsius = current?.temperature?.takeIf { it.isFinite() && it in -90.0..65.0 },
+                humidityPercent = current?.relativeHumidity?.takeIf { it in 0..100 },
+                windSpeedKmh = current?.windSpeed?.takeIf { it.isFinite() && it >= 0.0 },
+                windDirectionDegrees = current?.windDirection?.takeIf { it.isFinite() && it in 0.0..360.0 },
+                cloudCoverPercent = current?.cloudCover?.takeIf { it in 0..100 },
+                precipitationMm = current?.precipitation?.takeIf { it.isFinite() && it >= 0.0 },
+                weatherCode = current?.weatherCode?.takeIf { it in 0..99 }
+            )
+        }
+        cachedCityMapForecasts = forecasts
+        cityMapForecastsFetchedAtMs = now
+        forecasts
+    }
+
     suspend fun searchCities(query: String): List<CityLocation> = withContext(Dispatchers.IO) {
         if (query.trim().isEmpty()) return@withContext emptyList()
         try {
