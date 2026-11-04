@@ -86,6 +86,6 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Source inspection completed for the main repository, Android Gradle configuration, manifest, Open-Meteo API interfaces, repository, ViewModel and key Compose components.
 - Source files were fetched again from the development branch after each change and the targeted fallback patterns were checked.
 - Unit tests were added for provenance, missing values, demo station defaults and unavailable environmental data.
-- GitHub Actions CI is configured to run `testDebugUnitTest` and `assembleDebug`. The first attempt stopped during Android SDK setup because the action attempted to install the removed `tools` package; the workflow was corrected to request explicit SDK packages. The corrected run is pending at the time of this update.
+- GitHub Actions CI is configured to run `testDebugUnitTest` and `assembleDebug`. The first attempt stopped during Android SDK setup because the action attempted to install the removed `tools` package; the workflow was corrected to request explicit SDK packages. The initial build attempt exposed a missing debug keystore in the runner. CI now creates a temporary debug keystore; the latest verification run is in progress.
 - No external Syrian station feed or operational radar provider was verified.
 - No production data was changed by this audit.

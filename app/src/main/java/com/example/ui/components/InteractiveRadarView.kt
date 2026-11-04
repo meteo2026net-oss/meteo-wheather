@@ -134,13 +134,16 @@ fun InteractiveRadarView(
                 factory = { ctx ->
                     WebView(ctx).apply {
                         settings.javaScriptEnabled = true
+                        settings.javaScriptCanOpenWindowsAutomatically = false
+                        settings.allowFileAccess = false
+                        settings.allowContentAccess = false
                         settings.domStorageEnabled = true
                         settings.databaseEnabled = true
                         settings.loadWithOverviewMode = true
                         settings.useWideViewPort = true
                         settings.builtInZoomControls = false
                         settings.setSupportZoom(true)
-                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                         webViewClient = WebViewClient()
                         webChromeClient = WebChromeClient()
                         setBackgroundColor(0xFF0F172A.toInt())

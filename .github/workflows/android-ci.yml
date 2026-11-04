@@ -1,9 +1,6 @@
 name: Android build and unit tests
 
 on:
-  push:
-    branches:
-      - work/data-quality-foundation
   pull_request:
     branches:
       - main
