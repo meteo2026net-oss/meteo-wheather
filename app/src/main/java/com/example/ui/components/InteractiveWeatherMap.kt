@@ -216,6 +216,7 @@ fun InteractiveWeatherMap(
                         }
                         webChromeClient = WebChromeClient()
                         setBackgroundColor(0xFF090D1A.toInt())
+                        tag = htmlContent
                         loadDataWithBaseURL(
                             "https://openstreetmap.org",
                             htmlContent,
@@ -226,13 +227,23 @@ fun InteractiveWeatherMap(
                     }
                 },
                 update = { webView ->
-                    webView.loadDataWithBaseURL(
-                        "https://openstreetmap.org",
-                        htmlContent,
-                        "text/html",
-                        "UTF-8",
-                        null
-                    )
+                    if (shouldReloadEmbeddedMapHtml(webView.tag as? String, htmlContent)) {
+                        webView.tag = htmlContent
+                        webView.loadDataWithBaseURL(
+                            "https://openstreetmap.org",
+                            htmlContent,
+                            "text/html",
+                            "UTF-8",
+                            null
+                        )
+                    }
+                },
+                onRelease = { webView ->
+                    webView.stopLoading()
+                    webView.webChromeClient = null
+                    webView.webViewClient = null
+                    webView.removeAllViews()
+                    webView.destroy()
                 }
             )
         }
