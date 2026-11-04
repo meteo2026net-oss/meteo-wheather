@@ -1,8 +1,6 @@
 package com.example.ui.screens
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LeafletJsBridgeTest {
@@ -70,7 +68,6 @@ class LeafletJsBridgeTest {
 
         bridge.onCitySelectedFromJs("دمشق", "20", "مشمس", 33.5150, 36.2765)
 
-        assertFalse(callbackCount > 0)
-        assertTrue(callbackCount == 0)
+        assertEquals(0, callbackCount)
     }
 }
