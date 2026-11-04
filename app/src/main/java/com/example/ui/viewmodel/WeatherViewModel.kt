@@ -141,8 +141,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             severity = capAlert.severity,
             descriptionAr = capAlert.descriptionAr,
             safetyInstructionsAr = capAlert.instructionAr,
-            source = "المركز الوطني للأرصاد والمناخ (MCNC Admin)",
-            validUntil = capAlert.expires
+            source = "تنبيه تجريبي محلي — غير رسمي",
+            validUntil = capAlert.expires,
+            isOfficial = false,
+            isLocalDemo = true
         )
 
         // Post notification
