@@ -62,13 +62,14 @@ class WeatherRepository(private val context: Context) {
                 null
             }
 
-            val currentDto = forecastDto.current ?: CurrentWeatherDto()
+            val currentDto = forecastDto.current ?: throw IllegalStateException("بيانات الطقس الحالية غير متاحة من مزود الخدمة")
             val conditionType = mapWeatherCodeToType(currentDto.weatherCode)
             val conditionNameAr = mapWeatherCodeToAr(currentDto.weatherCode)
             val isDay = currentDto.isDay == 1
 
-            val visMeters = forecastDto.hourly?.visibility?.firstOrNull() ?: 10000.0
-            val visibilityKm = (visMeters / 1000.0).coerceIn(0.5, 30.0)
+            val visMeters = forecastDto.hourly?.visibility?.firstOrNull()
+            val visibilityAvailable = visMeters != null
+            val visibilityKm = visMeters?.let { (it / 1000.0).coerceIn(0.0, 30.0) } ?: 0.0
 
             val currentWeather = CurrentWeather(
                 temperatureCelsius = currentDto.temperature,
@@ -84,7 +85,8 @@ class WeatherRepository(private val context: Context) {
                 conditionNameEn = mapWeatherCodeToEn(currentDto.weatherCode),
                 isDay = isDay,
                 precipitationMm = currentDto.precipitation,
-                visibilityKm = visibilityKm
+                visibilityKm = visibilityKm,
+                visibilityAvailable = visibilityAvailable
             )
 
             // Parse hourly forecasts (next 24 hours from current time)
@@ -155,8 +157,8 @@ class WeatherRepository(private val context: Context) {
                         conditionType = mapWeatherCodeToType(code),
                         weatherCode = code,
                         conditionNameAr = mapWeatherCodeToAr(code),
-                        maxTempCelsius = dailyMax.getOrElse(i) { 25.0 },
-                        minTempCelsius = dailyMin.getOrElse(i) { 18.0 },
+                        maxTempCelsius = dailyMax.getOrNull(i) ?: continue,
+                        minTempCelsius = dailyMin.getOrNull(i) ?: continue,
                         precipitationProb = dailyPrecip.getOrElse(i) { 0 },
                         uvIndexMax = dailyUv.getOrElse(i) { 5.0 },
                         sunrise = sunriseFormatted,
