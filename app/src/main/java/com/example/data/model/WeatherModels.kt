@@ -93,10 +93,22 @@ object ForecastValueValidation {
         fallbackHourPrefix: String
     ): Int {
         if (hourlyTimes.isEmpty()) return 0
-        val hourPrefix = currentTime
-            ?.takeIf { it.length >= 13 }
-            ?.take(13)
-            ?: fallbackHourPrefix.takeIf { it.length >= 13 }?.take(13)
+        fun validHourPrefix(value: String?): String? {
+            val prefix = value?.takeIf { it.length >= 13 }?.take(13) ?: return null
+            val match = Regex("""^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3])$""")
+                .matchEntire(prefix) ?: return null
+            val year = match.groupValues[1].toInt()
+            val month = match.groupValues[2].toInt()
+            val day = match.groupValues[3].toInt()
+            val maxDay = when (month) {
+                2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
+                4, 6, 9, 11 -> 30
+                else -> 31
+            }
+            return prefix.takeIf { day in 1..maxDay }
+        }
+
+        val hourPrefix = validHourPrefix(currentTime) ?: validHourPrefix(fallbackHourPrefix)
         return hourPrefix
             ?.let { prefix -> hourlyTimes.indexOfFirst { it.startsWith(prefix) } }
             ?.takeIf { it >= 0 }

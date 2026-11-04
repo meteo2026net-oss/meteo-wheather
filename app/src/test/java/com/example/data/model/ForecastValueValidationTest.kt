@@ -60,6 +60,17 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun currentHourIndexUsesFallbackWhenProviderTimestampIsLongButMalformed() {
+        val times = listOf("2026-11-05T01:00", "2026-11-05T02:00")
+        assertEquals(1, ForecastValueValidation.currentHourIndex(
+            times, "not-a-valid-provider-timestamp", "2026-11-05T02"
+        ))
+        assertEquals(0, ForecastValueValidation.currentHourIndex(
+            times, "2026-02-30T02:00", "invalid-fallback-timestamp"
+        ))
+    }
+
+    @Test
     fun currentHourIndexFallsBackToFirstSlotWhenNoHourMatches() {
         val times = listOf("2026-11-05T00:00", "2026-11-05T01:00")
         assertEquals(0, ForecastValueValidation.currentHourIndex(
