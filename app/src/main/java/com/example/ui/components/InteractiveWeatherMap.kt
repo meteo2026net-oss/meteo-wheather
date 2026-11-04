@@ -237,59 +237,13 @@ fun InteractiveWeatherMap(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Timeline Slider Bar (+0h, +1h, +2h, +3h, +6h)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(
-                onClick = { isTimelinePlaying = !isTimelinePlaying },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = if (isTimelinePlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = "تشغيل الحركة",
-                    tint = Color(0xFF38BDF8),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            val timelineLabels = listOf("الآن", "+1 س", "+2 س", "+3 س", "+6 س")
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                timelineLabels.forEachIndexed { idx, label ->
-                    val isSelected = timelineStep == idx
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (isSelected) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.08f)
-                            )
-                            .clickable { timelineStep = idx }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = label,
-                            fontSize = 10.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) Color(0xFF0F172A) else Color.White
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // The provider currently exposes historical frames only.
         Text(
-            text = "الشريط الزمني توضيحي ولا يبدّل إطارات رادار تاريخية أو مستقبلية حالياً.",
-            fontSize = 10.sp,
+            text = "الزمن: أحدث إطار تاريخي متاح من RainViewer؛ لا توجد حركة تنبؤية مستقبلية في هذه النسخة.",
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            fontSize = 11.sp,
             color = Color(0xFFFACC15)
         )
-        Spacer(modifier = Modifier.height(6.dp))
 
         // Overlay Legend Bar
         Row(
