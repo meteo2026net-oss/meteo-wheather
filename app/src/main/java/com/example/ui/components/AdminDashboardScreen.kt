@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -253,7 +254,7 @@ fun AdminDashboardScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA580C))
                             ) {
-                                Icon(imageVector = Icons.Default.Send, contentDescription = null)
+                                Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(text = "إضافة التنبيه التجريبي لهذا الجهاز فقط", fontWeight = FontWeight.Bold)
                             }
