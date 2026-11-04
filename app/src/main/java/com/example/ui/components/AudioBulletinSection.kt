@@ -41,7 +41,7 @@ fun AudioBulletinSection(
     DisposableEffect(context) {
         val tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val result = ttsInstance?.setLanguage(Locale("ar"))
+                val result = ttsInstance?.setLanguage(Locale.forLanguageTag("ar"))
                 ttsInitialized = (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
             }
         }
