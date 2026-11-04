@@ -461,7 +461,7 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WARNING,
                     descriptionAr = "نشاط لخلايا رعدية مصحوبة برياح هابطة قوية وهطول غزير للأمطار، مع احتمالية تساقط حبات البَرَد.",
                     safetyInstructionsAr = "ابتعد عن الأماكن المكشوفة وأعمدة الإنارة، وتجنب النزول للأودية وتجمعات المياه.",
-                    source = "المركز الوطني للأرصاد والإنذار المبكر",
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "خلال الـ 6 ساعات القادمة"
                 )
             )
@@ -476,7 +476,7 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WARNING,
                     descriptionAr = "توقعات بهطول أمطار غزيرة تؤدي إلى ارتفاع منسوب المياه وضعف مدى الرؤية الأفقية على الطرق.",
                     safetyInstructionsAr = "توخَّ الحيطة أثناء القيادة، واترك مسافة أمان كافية، وابتعد تماماً عن مجاري السيول.",
-                    source = "الرصد الهيدرولوجي والأرصاد الجوية",
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "حتى منتصف الليل"
                 )
             )
@@ -491,7 +491,7 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WATCH,
                     descriptionAr = "ارتفاع ملموس على درجات الحرارة يتجاوز المعدلات الموسمية، مع طقس شديد الحرارة وضربات شمس محتملة.",
                     safetyInstructionsAr = "تجنب التعرض المباشر لأشعة الشمس بين 11 صباحاً و 4 عصراً، واحرص على شرب السوائل بوفرة.",
-                    source = "إدارة الطوارئ والأرصاد",
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "مستمرة حتى مساء اليوم"
                 )
             )
@@ -506,7 +506,7 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.ADVISORY,
                     descriptionAr = "رياح شديدة السرعة تتجاوز ${current.windSpeedKmh.toInt()} كم/س مع هبات قوية قد تثير الأتربة والغبار وتعيق حركة السير.",
                     safetyInstructionsAr = "تثبيت الأجسام القابلة للتطاير والحذر عند القيادة على الطرق السريعة المفتوحة.",
-                    source = "هيئة الأرصاد وحماية البيئة",
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "خلال الساعات المقبلة"
                 )
             )
@@ -521,7 +521,7 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WARNING,
                     descriptionAr = "تساقط متواصل للثلوج مع تشكل طبقات جليدية وانزلاقات خطيرة على المرتفعات والطرق.",
                     safetyInstructionsAr = "استخدم سلاسل الإطارات وتجنب السفر غير الضروري حتى انقشاع الحالة الجوية.",
-                    source = "مكتب الأرصاد الشتوية",
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "حتى صباح الغد"
                 )
             )
@@ -536,7 +536,7 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.ADVISORY,
                     descriptionAr = "جودة الهواء منخفضة بسبب العوالق والجسيمات الدقيقة في الجو (AQI: $aqi).",
                     safetyInstructionsAr = "ارتداء كمامة لمرضى الجهاز التنفسي والحد من الأنشطة البدنية في الخارج.",
-                    source = "مؤشر الرصد البيئي وجودة الهواء",
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "طوال فترة بقاء العوالق"
                 )
             )
@@ -551,7 +551,7 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.ADVISORY,
                     descriptionAr = "تسجيل تركيزات استثنائية لحبوب اللقاح والأعشاب المسببة للحساسية الموسمية.",
                     safetyInstructionsAr = "إحكام إغلاق النوافذ، وغسل الوجه والعينين بعد العودة للمنزل، واستشارة الصيدلي.",
-                    source = "شبكة مراقبة حبوب اللقاح والحساسية",
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
                     validUntil = "مستمر خلال موسم التزهير"
                 )
             )
@@ -766,15 +766,16 @@ class WeatherRepository(private val context: Context) {
     }
 
     fun getAudioBulletin(): AudioBulletinItem {
-        val title = prefs.getString("admin_bulletin_title", "النشرة الجوية الصباحية الشاملة - المركز الوطني للأرصاد والمناخ") ?: "النشرة الجوية الصباحية الشاملة"
-        val script = prefs.getString("admin_bulletin_script", "تستمر درجات الحرارة حول معدلاتها لمثل هذه الفترة من السنة، والجو صيفياً مائلاً للاعتدال في المناطق الجبلية وحاراً نسبياً في البادية والشرقية، مع ظهور بعض السحب المتفرقة على الساحل السوري وتكون الرياح غربية إلى شمالية غربية معتدلة السرعة تنشط أحياناً بعد الظهر. تحذير من التعرض المباشر لأشعة الشمس في أوقات الذروة.") ?: ""
+        val title = prefs.getString("admin_bulletin_title", "نشرة تجريبية غير معتمدة") ?: "نشرة تجريبية غير معتمدة"
+        val script = prefs.getString("admin_bulletin_script", "هذه نشرة تجريبية للتوضيح فقط، ولا تمثل توقعات جوية أو نشرة رسمية صادرة عن المركز الوطني للأرصاد والمناخ.") ?: ""
         return AudioBulletinItem(
             id = "bulletin_mcnc_01",
             title = title,
-            dateFormatted = "اليوم، 07:30 صباحاً",
-            durationSec = 54,
-            announcerName = "رئيس قسم التنبؤات (MCNC)",
-            bulletinScriptAr = script
+            dateFormatted = "وقت النشر غير محدد",
+            durationSec = 0,
+            announcerName = "صوت آلي تجريبي",
+            bulletinScriptAr = script,
+            isDemoData = true
         )
     }
 
