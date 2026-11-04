@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.model.CityLocation
 import com.example.data.model.MapWeatherOverlay
+import com.example.ui.components.LeafletBaseMapConfigs
 
 class LeafletJsBridge(
     private val onCityClicked: (cityName: String, temp: String, state: String, lat: Double, lng: Double) -> Unit
