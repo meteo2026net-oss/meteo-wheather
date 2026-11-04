@@ -187,7 +187,7 @@ private fun RenderMetricCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "PM2.5: ${airQuality.pm25.toInt()} | O₃: ${airQuality.ozone.toInt()}",
+                    text = "PM2.5: ${if (airQuality.pm25Available) airQuality.pm25.toInt().toString() else "—"} | PM10: ${if (airQuality.pm10Available) airQuality.pm10.toInt().toString() else "—"} | O₃: ${if (airQuality.ozoneAvailable) airQuality.ozone.toInt().toString() else "—"}",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
@@ -200,6 +200,7 @@ private fun RenderMetricCard(
                 "منخفض جداً" -> Color(0xFF4ADE80) to "منخفض"
                 "معتدل" -> Color(0xFFFACC15) to "معتدل"
                 "مرتفع" -> Color(0xFFFB923C) to "مرتفع"
+                "بيانات جزئية" -> Color(0xFFCBD5E1) to "بيانات جزئية"
                 else -> Color(0xFFEF4444) to "تحذير"
             }
             MetricCard(
@@ -220,7 +221,7 @@ private fun RenderMetricCard(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "أعشاب: ${pollen.grassPollen.toInt()} | زيتون: ${pollen.olivePollen.toInt()}",
+                    text = "أعشاب: ${if (pollen.grassAvailable) pollen.grassPollen.toInt().toString() else "—"} | زيتون: ${if (pollen.oliveAvailable) pollen.olivePollen.toInt().toString() else "—"}",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.85f)
                 )
