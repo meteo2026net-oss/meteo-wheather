@@ -164,9 +164,12 @@ private fun RenderMetricCard(
                 icon = Icons.Default.Eco,
                 iconTint = Color(0xFF4ADE80)
             ) {
+                if (!airQuality.isAvailable) {
+                    Text("بيانات جودة الهواء غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "${airQuality.aqiValue}",
+                        text = if (airQuality.isAqiAvailable) "${airQuality.aqiValue}" else "—",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -188,6 +191,7 @@ private fun RenderMetricCard(
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
+                }
             }
         }
 
@@ -203,6 +207,9 @@ private fun RenderMetricCard(
                 icon = Icons.Default.Grass,
                 iconTint = Color(0xFFA3E635)
             ) {
+                if (!pollen.isAvailable) {
+                    Text("بيانات حبوب اللقاح غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = pollenTag,
@@ -224,6 +231,7 @@ private fun RenderMetricCard(
                     color = Color.White.copy(alpha = 0.7f),
                     maxLines = 2
                 )
+                }
             }
         }
 
