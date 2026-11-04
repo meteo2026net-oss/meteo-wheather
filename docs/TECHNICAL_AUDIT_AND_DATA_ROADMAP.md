@@ -90,7 +90,7 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Source inspection completed for the main repository, Android Gradle configuration, manifest, Open-Meteo API interfaces, repository, ViewModel and key Compose components.
 - Source files were fetched again from the development branch after each change and the targeted fallback patterns were checked.
 - Unit tests were added for provenance, missing values, demo station defaults and unavailable environmental data.
-- GitHub Actions CI is configured to run `testDebugUnitTest` and `assembleDebug`. The first attempt stopped during Android SDK setup because the action attempted to install the removed `tools` package; the workflow was corrected to request explicit SDK packages. The initial build attempt exposed a missing debug keystore in the runner. CI now creates a temporary debug keystore; the latest verification run is in progress.
+- GitHub Actions CI successfully completed `testDebugUnitTest` and `assembleDebug` on 4 November 2026 (run `41753593868`, commit `e7d0d4dfa9f2fbc1fae5fdc8b7ae70dbc86915d9`). The debug APK was uploaded as artifact `mcnc-weather-debug-apk` (22,670,955 bytes; artifact ID `13287204164`; expires 2 February 2027). The runner used a temporary debug keystore only; it is not a production-signed release APK.
 - No external Syrian station feed or operational radar provider was verified.
 - No production data was changed by this audit.
 
@@ -100,4 +100,4 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - CI builds the debug APK and runs JVM unit tests on GitHub Actions. A temporary debug signing key is created in the runner only; it is not the production signing key.
 - The existing Robolectric context test uses Android API 35. A machine-specific offline SDK cache is optional and is only enabled through `ROBOLECTRIC_DEPENDENCY_DIR` when that directory exists.
 - The map WebViews disallow mixed content, file/content access and automatic window opening. Remote map resources use HTTPS.
-- Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. CI results must still be reviewed for the newest commit before merge.
+- Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. The current development-branch head passed the CI build and unit-test workflow; review any later branch commits independently before merge.
