@@ -1,5 +1,6 @@
 package com.example.data.model
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -150,4 +151,59 @@ class WeatherDataProvenanceTest {
         assertTrue(value.isDisplayable)
         assertTrue(value.provenance.status == WeatherDataStatus.SIMULATED)
     }
+
+    @Test
+    fun legacyDemoStationMapsToSimulatedQualifiedMeasurements() {
+        val station = SyrianWeatherStation(
+            id = "st-demo",
+            nameAr = "محطة تجريبية",
+            governorate = "دمشق",
+            latitude = 33.5,
+            longitude = 36.2,
+            temperatureCelsius = 0.0,
+            humidity = 0,
+            pressureHpa = 1013.0,
+            windSpeedKmh = 0.0,
+            conditionAr = "تجريبي",
+            conditionType = WeatherConditionType.CLEAR
+        )
+
+        val observation = station.toQualifiedObservation()
+
+        assertEquals("st-demo", observation.stationId)
+        assertEquals(WeatherDataKind.SIMULATION, observation.provenance.kind)
+        assertEquals(WeatherDataStatus.SIMULATED, observation.provenance.status)
+        assertTrue(observation.temperatureCelsius?.isDisplayable == true)
+        assertEquals(0.0, observation.temperatureCelsius?.value ?: -1.0, 0.0)
+        assertEquals(WeatherDataStatus.SIMULATED, observation.temperatureCelsius?.provenance?.status)
+    }
+
+    @Test
+    fun nonDemoStationWithoutVerifiedFeedDoesNotExposeLegacyNumbers() {
+        val station = SyrianWeatherStation(
+            id = "st-unverified",
+            nameAr = "محطة غير موثقة",
+            governorate = "سوريا",
+            latitude = 33.5,
+            longitude = 36.2,
+            temperatureCelsius = 24.0,
+            humidity = 45,
+            pressureHpa = 1014.0,
+            windSpeedKmh = 12.0,
+            conditionAr = "صافٍ",
+            conditionType = WeatherConditionType.CLEAR,
+            isOnline = true,
+            isDemoData = false
+        )
+
+        val observation = station.toQualifiedObservation()
+
+        assertEquals(WeatherDataKind.UNKNOWN, observation.provenance.kind)
+        assertEquals(WeatherDataStatus.UNAVAILABLE, observation.provenance.status)
+        assertTrue(observation.temperatureCelsius == null)
+        assertTrue(observation.relativeHumidityPercent == null)
+        assertTrue(observation.pressureHpa == null)
+        assertTrue(observation.windSpeedKmh == null)
+    }
+
 }
