@@ -317,7 +317,7 @@ class WeatherRepository(private val context: Context) {
                         country = obj.getString("country"),
                         latitude = obj.getDouble("latitude"),
                         longitude = obj.getDouble("longitude"),
-                        admin1 = obj.optString("admin1", null),
+                        admin1 = obj.optString("admin1").takeIf { it.isNotBlank() },
                         isFavorite = true
                     )
                 )
