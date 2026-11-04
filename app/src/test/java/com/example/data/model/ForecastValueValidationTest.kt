@@ -59,6 +59,8 @@ class ForecastValueValidationTest {
         assertNull(ForecastValueValidation.formatSunTime("2026-11-04T24:00"))
         assertNull(ForecastValueValidation.formatSunTime("2026-11-04T12:60"))
         assertNull(ForecastValueValidation.formatSunTime("2026-13-04T12:00"))
+        assertNull(ForecastValueValidation.formatSunTime("2026-02-30T12:00"))
+        assertEquals("2:00 ص", ForecastValueValidation.formatSunTime("2024-02-29T02:00"))
     }
 
     @Test
