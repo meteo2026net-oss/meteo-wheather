@@ -923,7 +923,7 @@ private fun fetchGpsLocation(context: Context, viewModel: WeatherViewModel) {
             if (loc != null) {
                 var detectedName = "موقعي الحالي"
                 try {
-                    val geocoder = Geocoder(context, Locale("ar"))
+                    val geocoder = Geocoder(context, Locale.forLanguageTag("ar"))
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         geocoder.getFromLocation(loc.latitude, loc.longitude, 1) { list ->
                             list.firstOrNull()?.let { addr ->
