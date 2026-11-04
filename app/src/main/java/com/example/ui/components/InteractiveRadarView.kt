@@ -77,7 +77,7 @@ fun InteractiveRadarView(
                         color = Color.White
                     )
                     Text(
-                        text = "محاكاة حية لمنطقة $cityName",
+                        text = "عرض تجريبي توضيحي لمنطقة $cityName",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
