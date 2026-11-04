@@ -173,12 +173,16 @@ fun LeafletWeatherMapScreen(
                 // Overlay Chips
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     MapWeatherOverlay.values().forEach { overlay ->
-                        val isSelected = selectedOverlay == overlay
+                        val isAvailable = overlay == MapWeatherOverlay.PRECIPITATION
+                        val isSelected = selectedOverlay == overlay && isAvailable
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) Color(0xFF0284C7) else Color.White.copy(alpha = 0.1f))
-                                .clickable(enabled = overlay == MapWeatherOverlay.PRECIPITATION) {
+                                .background(
+                                    if (isSelected) Color(0xFF0284C7)
+                                    else Color.White.copy(alpha = if (isAvailable) 0.1f else 0.045f)
+                                )
+                                .clickable(enabled = isAvailable) {
                                     selectedOverlay = overlay
                                     val overlayName = overlay.name.lowercase()
                                     webViewRef?.evaluateJavascript("switchWeatherOverlay('$overlayName')", null)
@@ -186,10 +190,10 @@ fun LeafletWeatherMapScreen(
                                 .padding(horizontal = 8.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = overlay.titleAr,
+                                text = if (isAvailable) overlay.titleAr else "${overlay.titleAr} (قريباً)",
                                 fontSize = 10.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = Color.White
+                                color = Color.White.copy(alpha = if (isAvailable) 1f else 0.45f)
                             )
                         }
                     }
