@@ -44,3 +44,13 @@ This establishes the registered source identity and endpoint listing. It does **
 - Unit-test report artifact: `android-unit-test-reports`, ID `13330433957`, 17,922 bytes; expires 18 November 2026.
 - The APK is signed with an ephemeral runner-only Debug key, not the production Release signing identity.
 - This verifies Android Debug compilation, JVM unit tests and packaging for this exact branch head. It does not verify live CAP feed reachability, RSS item structure, sender authenticity, official alert distribution, station ingestion, or physical-device behavior.
+
+
+## Latest Android CI verification — 4 November 2026 (current branch head)
+
+- Commit `2972f302bf60d8df120b86a22454ad62b64405e0` completed GitHub Actions run [41849490776](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41849490776) successfully.
+- The `testDebugUnitTest` and `assembleDebug` steps both succeeded; both the Debug APK and unit-test report uploads succeeded.
+- Debug APK artifact: `mcnc-weather-debug-apk`, ID `13334906287`, 22,709,102 bytes; expires 2 February 2027. ZIP SHA-256: `08ac1baf4fedfb6a83ceef3313e137a920d56c38a399c6e9055a193cde34f00b`.
+- Unit-test report artifact: `android-unit-test-reports`, ID `13334321811`, 17,946 bytes; expires 18 November 2026.
+- The APK is signed with an ephemeral runner-only Debug key. This is not a production Release build or release-signing validation.
+- This run verifies JVM unit tests, Android Debug compilation and APK packaging for this exact head. It does not verify live CAP feed reachability, RSS item structure, sender authenticity, official alert distribution, station ingestion or physical-device behavior.
