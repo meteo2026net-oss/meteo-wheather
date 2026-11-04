@@ -41,3 +41,10 @@ data class AudioBulletinItem(
     val announcerName: String,
     val bulletinScriptAr: String
 )
+
+data class ChatMessageItem(
+    val id: String,
+    val sender: String, // "user" or "gemini"
+    val text: String,
+    val timestamp: String
+)

@@ -29,6 +29,16 @@ data class WeatherUiState(
     val isAdminDashboardOpen: Boolean = false,
     val metricPreferences: List<MetricPreference> = WeatherRepository.DEFAULT_METRIC_PREFERENCES,
     val areAlertsEnabled: Boolean = true,
+    val isLeafletMapScreenOpen: Boolean = false,
+    val userGoogleEmail: String? = null,
+    val geminiApiKey: String = "",
+    val isGoogleSignInModalOpen: Boolean = false,
+    val chatMessages: List<ChatMessageItem> = emptyList(),
+    val isGeneratingAiChat: Boolean = false,
+    val isVoiceListening: Boolean = false,
+    val isVoiceSpeaking: Boolean = false,
+    val lastVoiceQuery: String = "",
+    val lastAiVoiceResponse: String = "",
     val syrianStations: List<SyrianWeatherStation> = emptyList(),
     val audioBulletin: AudioBulletinItem = AudioBulletinItem("1", "النشرة الجوية الصباحية", "اليوم", 60, "رئيس التنبؤات (MCNC)", "جاري التحميل..."),
     val customAdminAlerts: List<SevereWeatherAlert> = emptyList()
@@ -118,6 +128,14 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     fun closeAdminDashboard() {
         _uiState.update { it.copy(isAdminDashboardOpen = false) }
+    }
+
+    fun openLeafletMapScreen() {
+        _uiState.update { it.copy(isLeafletMapScreenOpen = true) }
+    }
+
+    fun closeLeafletMapScreen() {
+        _uiState.update { it.copy(isLeafletMapScreenOpen = false) }
     }
 
     fun saveMetricPreferences(preferences: List<MetricPreference>) {
@@ -210,5 +228,76 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             isFavorite = false
         )
         loadWeather(location)
+    }
+
+    fun openGoogleSignInModal() {
+        _uiState.update { it.copy(isGoogleSignInModalOpen = true) }
+    }
+
+    fun closeGoogleSignInModal() {
+        _uiState.update { it.copy(isGoogleSignInModalOpen = false) }
+    }
+
+    fun setGeminiApiKey(key: String) {
+        _uiState.update { it.copy(geminiApiKey = key) }
+    }
+
+    fun simulateGoogleSignIn() {
+        val simulatedEmail = "meteo.student@gmail.com"
+        _uiState.update { it.copy(userGoogleEmail = simulatedEmail) }
+    }
+
+    fun sendGeminiChatMessage(userText: String) {
+        val userMsg = ChatMessageItem(
+            id = System.currentTimeMillis().toString(),
+            sender = "user",
+            text = userText,
+            timestamp = "الآن"
+        )
+
+        val updatedList = _uiState.value.chatMessages + userMsg
+        _uiState.update { it.copy(chatMessages = updatedList, isGeneratingAiChat = true) }
+
+        viewModelScope.launch {
+            delay(1200) // AI thinking time
+            val weather = _uiState.value.selectedCity
+            val temp = _uiState.value.weatherData?.current?.temperatureCelsius?.toInt() ?: 20
+            val condition = _uiState.value.weatherData?.current?.conditionNameAr ?: "مشمس"
+
+            val aiResponseText = when {
+                userText.contains("ملابس") -> "بناءً على طقس مدينة ${weather.name} اليوم (درجة الحرارة $temp° مئوية والحالة $condition)، يُنصح بارتداء ملابس معتدلة نهاراً وسترة خفيفة في الساعات الليلة."
+                userText.contains("مطر") || userText.contains("أمطار") -> "تشير بيانات Open-Meteo في ${weather.name} إلى فرص هطول خفيفة في المناطق الساحلية (اللاذقية وطرطوس) وطقس مستقر في دمشق وبقية المحافظات."
+                userText.contains("رياح") || userText.contains("رطوبة") -> "تبلغ سرعة الرياح حالياً حوالي ${_uiState.value.weatherData?.current?.windSpeedKmh?.toInt() ?: 15} كم/ساعة والرطوبة ${_uiState.value.weatherData?.current?.humidity ?: 45}%."
+                userText.contains("زراعة") || userText.contains("أيام") -> "الطقس مناسب للعمليات الزراعية في المحافظات الوسطى والجنوبية خلال الأيام الـ 3 القادمة مع توصية بالري الفجري."
+                else -> "بناءً على بيانات Open-Meteo لمدينة ${weather.name}، درجة الحرارة الحالية هي $temp° مئوية والطقس $condition. هل لديك استفسار آخر عن المناخ والرياح؟"
+            }
+
+            val aiMsg = ChatMessageItem(
+                id = (System.currentTimeMillis() + 1).toString(),
+                sender = "gemini",
+                text = aiResponseText,
+                timestamp = "الآن"
+            )
+
+            _uiState.update { it.copy(chatMessages = it.chatMessages + aiMsg, isGeneratingAiChat = false) }
+        }
+    }
+
+    fun handleVoiceInput(speechText: String) {
+        _uiState.update { it.copy(lastVoiceQuery = speechText, isVoiceListening = false, isVoiceSpeaking = true) }
+        sendGeminiChatMessage(speechText)
+        viewModelScope.launch {
+            delay(1400)
+            val responseText = _uiState.value.chatMessages.lastOrNull { it.sender == "gemini" }?.text ?: "الطقس في سوريا معتدل ومناسب لمختلف الأنشطة اليوم."
+            _uiState.update { it.copy(lastAiVoiceResponse = responseText) }
+        }
+    }
+
+    fun setVoiceListening(listening: Boolean) {
+        _uiState.update { it.copy(isVoiceListening = listening) }
+    }
+
+    fun stopVoiceSpeaking() {
+        _uiState.update { it.copy(isVoiceSpeaking = false) }
     }
 }

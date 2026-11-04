@@ -1,14 +1,15 @@
 package com.example.ui.components
 
+import android.annotation.SuppressLint
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,77 +20,33 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.model.CityLocation
-import com.example.data.model.MapLocationPin
 import com.example.data.model.MapWeatherOverlay
-import com.example.data.model.WeatherConditionType
-import kotlin.math.cos
-import kotlin.math.sin
 
+enum class LeafletTileStyle(val titleAr: String, val icon: String, val tileType: String) {
+    DARK("خريطة ليفليت الداكنة", "🗺️", "dark"),
+    SATELLITE("الأقمار الصناعية", "🛰️", "satellite"),
+    STREETS("خريطة الشوارع", "🌍", "osm")
+}
+
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun InteractiveWeatherMap(
     currentCity: CityLocation,
     onCitySelected: (CityLocation) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var selectedTileStyle by remember { mutableStateOf(LeafletTileStyle.DARK) }
     var selectedOverlay by remember { mutableStateOf(MapWeatherOverlay.PRECIPITATION) }
-    var zoom by remember { mutableFloatStateOf(1.0f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
     var isTimelinePlaying by remember { mutableStateOf(true) }
-    var timelineStep by remember { mutableIntStateOf(0) } // 0: Now, 1: +1h, 2: +2h, 3: +3h, 4: +6h
-    var inspectedPin by remember { mutableStateOf<MapLocationPin?>(null) }
-
-    // Map Locations Pins (Syrian cities and meteorological stations)
-    val mapPins = remember {
-        listOf(
-            MapLocationPin("دمشق", "سوريا", 0.42, 0.65, 18.0, WeatherConditionType.CLEAR, 0.0, 14.0),
-            MapLocationPin("حلب", "سوريا", 0.52, 0.28, 22.0, WeatherConditionType.PARTLY_CLOUDY, 0.0, 16.0),
-            MapLocationPin("اللاذقية", "سوريا", 0.32, 0.38, 20.0, WeatherConditionType.RAIN, 3.5, 22.0),
-            MapLocationPin("حمص", "سوريا", 0.45, 0.48, 19.0, WeatherConditionType.CLEAR, 0.0, 18.0),
-            MapLocationPin("طرطوس", "سوريا", 0.28, 0.45, 21.0, WeatherConditionType.RAIN, 4.2, 24.0),
-            MapLocationPin("حماة", "سوريا", 0.46, 0.38, 21.0, WeatherConditionType.CLEAR, 0.0, 15.0),
-            MapLocationPin("دير الزور", "سوريا", 0.72, 0.44, 26.0, WeatherConditionType.CLEAR, 0.0, 20.0),
-            MapLocationPin("القامشلي", "سوريا", 0.78, 0.22, 24.0, WeatherConditionType.CLEAR, 0.0, 22.0),
-            MapLocationPin("السويداء", "سوريا", 0.48, 0.75, 17.0, WeatherConditionType.CLEAR, 0.0, 12.0),
-            MapLocationPin("درعا", "سوريا", 0.40, 0.78, 19.0, WeatherConditionType.CLEAR, 0.0, 16.0),
-            MapLocationPin("إدلب", "سوريا", 0.45, 0.30, 20.0, WeatherConditionType.CLOUDY, 0.1, 19.0),
-            MapLocationPin("الرقة", "سوريا", 0.64, 0.34, 25.0, WeatherConditionType.CLEAR, 0.0, 21.0),
-            MapLocationPin("تدمر", "سوريا", 0.58, 0.55, 28.0, WeatherConditionType.CLEAR, 0.0, 25.0)
-        )
-    }
-
-    // Animation Transitions
-    val infiniteTransition = rememberInfiniteTransition(label = "mapFlow")
-    val flowPhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "flowPhase"
-    )
-
-    val radarSweepAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "radarSweep"
-    )
+    var timelineStep by remember { mutableIntStateOf(0) }
 
     // Timeline automatic step increment
     LaunchedEffect(isTimelinePlaying) {
@@ -123,7 +80,7 @@ fun InteractiveWeatherMap(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Map,
+                        imageVector = Icons.Default.Public,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
@@ -132,39 +89,61 @@ fun InteractiveWeatherMap(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "خرائط الطقس التفاعلية",
+                        text = "خريطة سوريا التفاعلية (Leaflet)",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "استكشف الأمطار، درجات الحرارة، وحركة الرياح",
+                        text = "المركز الوطني للأرصاد الجوية والمناخ (MCNC)",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
                 }
             }
+        }
 
-            // Reset Map View Button
-            IconButton(
-                onClick = {
-                    zoom = 1.0f
-                    offset = Offset.Zero
-                    inspectedPin = null
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Tile Style Selector Tabs (Leaflet Dark / Satellite / Street)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFF0F172A))
+                .padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            LeafletTileStyle.values().forEach { style ->
+                val isSelected = selectedTileStyle == style
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            if (isSelected) Color(0xFF0284C7) else Color.Transparent
+                        )
+                        .clickable { selectedTileStyle = style }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = style.icon, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = style.titleAr,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = Color.White
+                        )
+                    }
                 }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CenterFocusStrong,
-                    contentDescription = "إعادة ضبط المنظر",
-                    tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.size(20.dp)
-                )
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Overlay Mode Selector Chips
+        // Overlay Filter Chips (Precipitation, Temp, Wind, Clouds)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -176,7 +155,7 @@ fun InteractiveWeatherMap(
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
-                            if (isSelected) Color(0xFF0284C7) else Color.White.copy(alpha = 0.12f)
+                            if (isSelected) Color(0xFF0284C7).copy(alpha = 0.85f) else Color.White.copy(alpha = 0.12f)
                         )
                         .border(
                             1.dp,
@@ -184,12 +163,12 @@ fun InteractiveWeatherMap(
                             RoundedCornerShape(12.dp)
                         )
                         .clickable { selectedOverlay = overlay }
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = overlay.titleAr,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         color = Color.White
                     )
@@ -197,195 +176,55 @@ fun InteractiveWeatherMap(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Interactive Map Canvas
+        // Real Leaflet Map Container via WebView
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp)
+                .height(300.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color(0xFF090D1A))
                 .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(20.dp))
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, gestureZoom, _ ->
-                        zoom = (zoom * gestureZoom).coerceIn(0.85f, 2.5f)
-                        offset = Offset(
-                            x = (offset.x + pan.x).coerceIn(-150f * zoom, 150f * zoom),
-                            y = (offset.y + pan.y).coerceIn(-120f * zoom, 120f * zoom)
-                        )
-                    }
-                }
         ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                val center = Offset(w / 2f + offset.x, h / 2f + offset.y)
-
-                // Background Geographical Grid & Continents base
-                drawGeographicBase(w, h, center, zoom)
-
-                // Draw chosen Weather Layer Overlay
-                when (selectedOverlay) {
-                    MapWeatherOverlay.PRECIPITATION -> {
-                        drawPrecipitationRadarOverlay(w, h, center, zoom, radarSweepAngle, timelineStep)
-                    }
-                    MapWeatherOverlay.TEMPERATURE -> {
-                        drawTemperatureHeatmapOverlay(w, h, center, zoom, timelineStep)
-                    }
-                    MapWeatherOverlay.WIND -> {
-                        drawWindStreamlinesOverlay(w, h, center, zoom, flowPhase)
-                    }
-                    MapWeatherOverlay.CLOUDS -> {
-                        drawCloudCoverOverlay(w, h, center, zoom, flowPhase)
-                    }
-                }
+            val htmlContent = remember(selectedTileStyle, selectedOverlay) {
+                buildLeafletMapHtml(selectedTileStyle.tileType, selectedOverlay)
             }
 
-            // City Pins rendered as interactive clickable overlays
-            mapPins.forEach { pin ->
-                val pinX = (pin.latitude.toFloat() * 260f * zoom) + offset.x
-                val pinY = (pin.longitude.toFloat() * 220f * zoom) + offset.y
-                Box(
-                    modifier = Modifier
-                        .offset(
-                            x = pinX.dp.coerceIn(10.dp, 300.dp),
-                            y = pinY.dp.coerceIn(10.dp, 210.dp)
-                        )
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (inspectedPin?.name == pin.name) Color(0xFFFFD54F) else Color(0xDD0F172A)
-                        )
-                        .border(
-                            1.dp,
-                            if (inspectedPin?.name == pin.name) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.35f),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .clickable { inspectedPin = pin }
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    when (pin.conditionType) {
-                                        WeatherConditionType.CLEAR -> Color(0xFFFFCA28)
-                                        WeatherConditionType.RAIN -> Color(0xFF38BDF8)
-                                        else -> Color(0xFF94A3B8)
-                                    }
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${pin.name} ${pin.tempCelsius.toInt()}°",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (inspectedPin?.name == pin.name) Color(0xFF0F172A) else Color.White
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        settings.databaseEnabled = true
+                        settings.loadWithOverviewMode = true
+                        settings.useWideViewPort = true
+                        settings.builtInZoomControls = false
+                        settings.setSupportZoom(true)
+                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        webViewClient = WebViewClient()
+                        webChromeClient = WebChromeClient()
+                        setBackgroundColor(0xFF090D1A.toInt())
+                        loadDataWithBaseURL(
+                            "https://openstreetmap.org",
+                            htmlContent,
+                            "text/html",
+                            "UTF-8",
+                            null
                         )
                     }
+                },
+                update = { webView ->
+                    webView.loadDataWithBaseURL(
+                        "https://openstreetmap.org",
+                        htmlContent,
+                        "text/html",
+                        "UTF-8",
+                        null
+                    )
                 }
-            }
-
-            // Floating Inspector Card when a city is tapped
-            inspectedPin?.let { pin ->
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(10.dp)
-                        .fillMaxWidth(0.92f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xF00F172A))
-                        .border(1.dp, Color(0xFF0284C7), RoundedCornerShape(16.dp))
-                        .padding(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = pin.name,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = pin.country,
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.7f)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "الحرارة: ${pin.tempCelsius.toInt()}° | الرياح: ${pin.windKmh.toInt()} كم/س",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFFFFD54F)
-                                )
-                                if (pin.rainMm > 0) {
-                                    Text(
-                                        text = " | أمطار: ${pin.rainMm} ملم",
-                                        fontSize = 11.sp,
-                                        color = Color(0xFF67E8F9)
-                                    )
-                                }
-                            }
-                        }
-
-                        Button(
-                            onClick = {
-                                onCitySelected(
-                                    CityLocation(
-                                        name = pin.name,
-                                        country = pin.country,
-                                        latitude = 24.7136, // approx
-                                        longitude = 46.6753
-                                    )
-                                )
-                            },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
-                        ) {
-                            Text(text = "عرض الطقس", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-
-            // Map Controls (Zoom in / out)
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .clickable { zoom = (zoom + 0.25f).coerceAtMost(2.5f) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "تكبير", tint = Color.White, modifier = Modifier.size(16.dp))
-                }
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .clickable { zoom = (zoom - 0.25f).coerceAtLeast(0.85f) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(imageVector = Icons.Default.Remove, contentDescription = "تصغير", tint = Color.White, modifier = Modifier.size(16.dp))
-                }
-            }
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -481,192 +320,97 @@ fun InteractiveWeatherMap(
     }
 }
 
-// Canvas Drawing Subroutines for Map Overlays
-
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGeographicBase(
-    w: Float,
-    h: Float,
-    center: Offset,
-    zoom: Float
-) {
-    // Subtle Latitude/Longitude lines
-    for (i in 1..4) {
-        drawLine(
-            color = Color(0xFF1E293B),
-            start = Offset(0f, (h / 5f) * i),
-            end = Offset(w, (h / 5f) * i),
-            strokeWidth = 1.dp.toPx()
-        )
-    }
-    for (i in 1..5) {
-        drawLine(
-            color = Color(0xFF1E293B),
-            start = Offset((w / 6f) * i, 0f),
-            end = Offset((w / 6f) * i, h),
-            strokeWidth = 1.dp.toPx()
-        )
+// Helper to build Leaflet HTML map string centered on Syria
+private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): String {
+    val baseTileUrl = when (tileStyle) {
+        "satellite" -> "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        "osm" -> "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        else -> "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
     }
 
-    // Stylized Coastlines / Landmass contours (Arabian Peninsula & Mediterranean contours)
-    val landPath = Path().apply {
-        moveTo(w * 0.10f * zoom, h * 0.35f * zoom)
-        quadraticTo(w * 0.35f * zoom, h * 0.28f * zoom, w * 0.50f * zoom, h * 0.38f * zoom)
-        quadraticTo(w * 0.65f * zoom, h * 0.42f * zoom, w * 0.75f * zoom, h * 0.58f * zoom)
-        quadraticTo(w * 0.60f * zoom, h * 0.72f * zoom, w * 0.48f * zoom, h * 0.65f * zoom)
-        quadraticTo(w * 0.35f * zoom, h * 0.55f * zoom, w * 0.10f * zoom, h * 0.35f * zoom)
-    }
-    drawPath(
-        path = landPath,
-        color = Color(0xFF131D31),
-        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
-    )
-}
-
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPrecipitationRadarOverlay(
-    w: Float,
-    h: Float,
-    center: Offset,
-    zoom: Float,
-    sweepAngle: Float,
-    step: Int
-) {
-    val stepOffset = step * 12.dp.toPx()
-
-    // Rain Cells (scattered across regions)
-    val cells = listOf(
-        Triple(Offset(w * 0.30f + stepOffset, h * 0.35f), 55.dp.toPx() * zoom, Color(0xFF22C55E)),
-        Triple(Offset(w * 0.42f + stepOffset, h * 0.32f), 38.dp.toPx() * zoom, Color(0xFFEAB308)),
-        Triple(Offset(w * 0.45f + stepOffset, h * 0.30f), 18.dp.toPx() * zoom, Color(0xFFEF4444)),
-        Triple(Offset(w * 0.65f + stepOffset, h * 0.50f), 45.dp.toPx() * zoom, Color(0xFF22C55E)),
-        Triple(Offset(w * 0.18f + stepOffset, h * 0.22f), 50.dp.toPx() * zoom, Color(0xFF0284C7))
-    )
-
-    for ((pos, radius, color) in cells) {
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(color.copy(alpha = 0.65f), color.copy(alpha = 0.20f), Color.Transparent),
-                center = pos,
-                radius = radius
-            ),
-            radius = radius,
-            center = pos
-        )
+    val overlayColor = when (overlay) {
+        MapWeatherOverlay.PRECIPITATION -> "#0284C7"
+        MapWeatherOverlay.TEMPERATURE -> "#EF4444"
+        MapWeatherOverlay.WIND -> "#38BDF8"
+        MapWeatherOverlay.CLOUDS -> "#94A3B8"
     }
 
-    // Radar Beam Sweep
-    val rad = Math.toRadians(sweepAngle.toDouble())
-    val sweepLength = w * 0.45f * zoom
-    val endPt = Offset(
-        (center.x + sweepLength * cos(rad)).toFloat(),
-        (center.y + sweepLength * sin(rad)).toFloat()
-    )
-    drawLine(
-        brush = Brush.linearGradient(listOf(Color(0xFF06B6D4), Color(0xFF38BDF8))),
-        start = center,
-        end = endPt,
-        strokeWidth = 2.dp.toPx()
-    )
-}
+    return """
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #090D1A; }
+                .leaflet-container { background: #090D1A; font-family: system-ui, sans-serif; }
+                .city-popup { text-align: right; direction: rtl; font-size: 12px; line-height: 1.6; padding: 2px; }
+                .city-title { font-size: 14px; font-weight: bold; color: #38BDF8; margin-bottom: 2px; }
+                .leaflet-popup-content-wrapper { background: #0F172A; color: #FFF; border-radius: 12px; border: 1.5px solid #0284C7; box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
+                .leaflet-popup-tip { background: #0F172A; }
+            </style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script>
+                var map = L.map('map', {
+                    center: [34.8021, 38.9968],
+                    zoom: 7,
+                    minZoom: 5,
+                    maxZoom: 12,
+                    zoomControl: false
+                });
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawTemperatureHeatmapOverlay(
-    w: Float,
-    h: Float,
-    center: Offset,
-    zoom: Float,
-    step: Int
-) {
-    // Thermal zones: Hot desert in south, temperate in middle, cold in north
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(Color(0xFFEF4444).copy(alpha = 0.45f), Color(0xFFF97316).copy(alpha = 0.25f), Color.Transparent),
-            center = Offset(w * 0.58f, h * 0.55f),
-            radius = w * 0.40f * zoom
-        ),
-        radius = w * 0.40f * zoom,
-        center = Offset(w * 0.58f, h * 0.55f)
-    )
+                L.tileLayer('$baseTileUrl', {
+                    attribution: '&copy; OpenStreetMap & MCNC Syria',
+                    subdomains: 'abcd',
+                    maxZoom: 18
+                }).addTo(map);
 
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(Color(0xFFFBBF24).copy(alpha = 0.40f), Color(0xFF4ADE80).copy(alpha = 0.20f), Color.Transparent),
-            center = Offset(w * 0.38f, h * 0.40f),
-            radius = w * 0.35f * zoom
-        ),
-        radius = w * 0.35f * zoom,
-        center = Offset(w * 0.38f, h * 0.40f)
-    )
+                // RainViewer Real-Time Radar Layer Overlay
+                L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_latest/256/{z}/{x}/{y}/2/1_1.png', {
+                    opacity: 0.65,
+                    maxZoom: 18
+                }).addTo(map);
 
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(Color(0xFF38BDF8).copy(alpha = 0.50f), Color(0xFF0284C7).copy(alpha = 0.25f), Color.Transparent),
-            center = Offset(w * 0.25f, h * 0.15f),
-            radius = w * 0.32f * zoom
-        ),
-        radius = w * 0.32f * zoom,
-        center = Offset(w * 0.25f, h * 0.15f)
-    )
-}
+                // Syrian Cities Meteorological Pins
+                var syrianCities = [
+                    { name: 'دمشق (العاصمة)', lat: 33.5138, lng: 36.2765, temp: '18°C', state: 'مشمس وسماء صافية', wind: '14 كم/س' },
+                    { name: 'حلب', lat: 36.2021, lng: 37.1343, temp: '22°C', state: 'غائم جزئياً', wind: '16 كم/س' },
+                    { name: 'اللاذقية (الساحل)', lat: 35.5317, lng: 35.7915, temp: '20°C', state: 'ماطر وخفيف الرطوبة', wind: '22 كم/س' },
+                    { name: 'حمص', lat: 34.7324, lng: 36.7137, temp: '19°C', state: 'معتدل ولطيف', wind: '18 كم/س' },
+                    { name: 'طرطوس', lat: 34.8890, lng: 35.8866, temp: '21°C', state: 'زخات مطرية', wind: '24 كم/س' },
+                    { name: 'حماة', lat: 35.1318, lng: 36.7578, temp: '21°C', state: 'مشمس', wind: '15 كم/س' },
+                    { name: 'دير الزور (المنطقة الشرقية)', lat: 35.3333, lng: 40.1500, temp: '26°C', state: 'دافئ وجاف', wind: '20 كم/س' },
+                    { name: 'القامشلي', lat: 37.0494, lng: 41.2268, temp: '24°C', state: 'صحو مع رياح خفيفة', wind: '22 كم/س' },
+                    { name: 'السويداء (المنطقة الجنوبية)', lat: 32.7130, lng: 36.5694, temp: '17°C', state: 'بارد نسبياً', wind: '12 كم/س' },
+                    { name: 'درعا', lat: 32.6186, lng: 36.1011, temp: '19°C', state: 'مشمس وصحو', wind: '16 كم/س' },
+                    { name: 'إدلب', lat: 35.9306, lng: 36.6339, temp: '20°C', state: 'غيوم متفرقة', wind: '19 كم/س' },
+                    { name: 'الرقة', lat: 35.9556, lng: 39.0078, temp: '25°C', state: 'صحو', wind: '21 كم/س' },
+                    { name: 'تدمر (البادية السورية)', lat: 34.5577, lng: 38.2753, temp: '28°C', state: 'شديد الحرارة صحو', wind: '25 كم/س' }
+                ];
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWindStreamlinesOverlay(
-    w: Float,
-    h: Float,
-    center: Offset,
-    zoom: Float,
-    phase: Float
-) {
-    // Vector flow curves representing jet streams and wind flow
-    val yBands = listOf(0.25f, 0.40f, 0.55f, 0.70f)
-    for ((idx, yFrac) in yBands.withIndex()) {
-        val y = h * yFrac
-        val path = Path().apply {
-            moveTo(0f, y)
-            cubicTo(
-                w * 0.30f, y - 25.dp.toPx() * (if (idx % 2 == 0) 1 else -1),
-                w * 0.70f, y + 25.dp.toPx() * (if (idx % 2 == 0) 1 else -1),
-                w, y
-            )
-        }
-        drawPath(
-            path = path,
-            color = Color(0xFF38BDF8).copy(alpha = 0.35f),
-            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-        )
+                syrianCities.forEach(function(c) {
+                    var circle = L.circleMarker([c.lat, c.lng], {
+                        color: '#38BDF8',
+                        fillColor: '$overlayColor',
+                        fillOpacity: 0.9,
+                        radius: 8
+                    }).addTo(map);
 
-        // Animated Particle on Streamline
-        val particleX = ((phase + idx * 0.25f) % 1f) * w
-        val particleY = y + sin((phase + idx) * Math.PI * 2).toFloat() * 12.dp.toPx()
-        drawCircle(
-            color = Color(0xFF67E8F9),
-            radius = 3.5.dp.toPx(),
-            center = Offset(particleX, particleY)
-        )
-    }
-}
-
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCloudCoverOverlay(
-    w: Float,
-    h: Float,
-    center: Offset,
-    zoom: Float,
-    phase: Float
-) {
-    val drift = (phase * 30f) - 15f
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(Color.White.copy(alpha = 0.30f), Color.White.copy(alpha = 0.10f), Color.Transparent),
-            center = Offset(w * 0.35f + drift, h * 0.30f),
-            radius = 80.dp.toPx() * zoom
-        ),
-        radius = 80.dp.toPx() * zoom,
-        center = Offset(w * 0.35f + drift, h * 0.30f)
-    )
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(Color.White.copy(alpha = 0.25f), Color.White.copy(alpha = 0.08f), Color.Transparent),
-            center = Offset(w * 0.65f - drift, h * 0.45f),
-            radius = 70.dp.toPx() * zoom
-        ),
-        radius = 70.dp.toPx() * zoom,
-        center = Offset(w * 0.65f - drift, h * 0.45f)
-    )
+                    circle.bindPopup(
+                        '<div class="city-popup">' +
+                        '<div class="city-title">' + c.name + '</div>' +
+                        '<b>الحرارة:</b> ' + c.temp + '<br/>' +
+                        '<b>حالة الطقس:</b> ' + c.state + '<br/>' +
+                        '<b>سرعة الرياح:</b> ' + c.wind +
+                        '</div>'
+                    );
+                });
+            </script>
+        </body>
+        </html>
+    """.trimIndent()
 }
