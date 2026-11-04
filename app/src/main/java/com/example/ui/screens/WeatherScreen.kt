@@ -708,15 +708,13 @@ fun MainWeatherHero(
     } else {
         current.feelsLikeCelsius.toInt()
     }
-    val maxTemp = if (isFahrenheit) {
-        ((today?.maxTempCelsius ?: current.temperatureCelsius) * 9 / 5 + 32).toInt()
-    } else {
-        (today?.maxTempCelsius ?: current.temperatureCelsius).toInt()
+    // Do not present the current temperature as a forecast high/low when
+    // the provider did not return a valid daily forecast for today.
+    val maxTemp = today?.maxTempCelsius?.let { value ->
+        if (isFahrenheit) (value * 9 / 5 + 32).toInt() else value.toInt()
     }
-    val minTemp = if (isFahrenheit) {
-        ((today?.minTempCelsius ?: current.temperatureCelsius) * 9 / 5 + 32).toInt()
-    } else {
-        (today?.minTempCelsius ?: current.temperatureCelsius).toInt()
+    val minTemp = today?.minTempCelsius?.let { value ->
+        if (isFahrenheit) (value * 9 / 5 + 32).toInt() else value.toInt()
     }
 
     Column(
@@ -793,7 +791,7 @@ fun MainWeatherHero(
                     modifier = Modifier.size(15.dp)
                 )
                 Text(
-                    text = "$maxTemp°",
+                    text = maxTemp?.let { "$it°" } ?: "—",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -806,7 +804,7 @@ fun MainWeatherHero(
                     modifier = Modifier.size(15.dp)
                 )
                 Text(
-                    text = "$minTemp°",
+                    text = minTemp?.let { "$it°" } ?: "—",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
