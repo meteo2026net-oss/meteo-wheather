@@ -117,10 +117,15 @@ object ForecastValueValidation {
             return prefix.takeIf { it.startsWith(validDate + "T") && validHour && validRemainder }
         }
 
-        val hourPrefix = validHourPrefix(currentTime) ?: validHourPrefix(fallbackHourPrefix)
-        return hourPrefix
-            ?.let { prefix -> hourlyTimes.indexOfFirst { validHourPrefix(it) == prefix } }
-            ?.takeIf { it >= 0 }
+        fun findMatchingHour(prefix: String?): Int? =
+            prefix?.let { expected ->
+                hourlyTimes.indexOfFirst { validHourPrefix(it) == expected }
+            }?.takeIf { it >= 0 }
+
+        // A valid provider timestamp may be absent from a partial or malformed
+        // hourly response, so try the device-hour fallback before using slot zero.
+        return findMatchingHour(validHourPrefix(currentTime))
+            ?: findMatchingHour(validHourPrefix(fallbackHourPrefix))
             ?: 0
     }
 
