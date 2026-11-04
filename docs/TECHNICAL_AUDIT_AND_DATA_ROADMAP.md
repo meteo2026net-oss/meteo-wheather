@@ -138,3 +138,13 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - `QualifiedWeatherValue.isDisplayable` now rejects non-finite numeric values (`NaN`, positive infinity and negative infinity), in addition to null and explicitly unavailable values.
 - A measured zero remains displayable; missing and invalid numeric values are not converted into plausible readings.
 - Added a regression test covering all three non-finite cases. The latest CI run for the previous branch head is still being monitored; this new change requires its own successful CI run.
+
+
+## Current UV availability and forecast UI refresh fixes (4 November 2026)
+
+- The current-weather UV DTO field is nullable instead of defaulting to zero when the provider omits it.
+- The repository now records current UV availability separately; the custom UV metric displays an unavailable state rather than classifying a missing value as a low UV reading.
+- Added a regression test that confirms an omitted current UV field remains null in the DTO.
+- Hourly forecast selection resets after list refresh, and a daily expanded row is cleared if its index no longer exists.
+- Daily temperature-range bars now position themselves relative to their actual available width rather than a fixed 100 dp offset.
+- CI verification is required for the latest source head; these changes are not yet marked as build-verified.
