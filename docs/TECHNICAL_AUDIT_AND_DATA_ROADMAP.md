@@ -16,7 +16,7 @@
 
 ### 1. Syrian station readings are hard-coded
 
-`WeatherRepository.getSyrianWeatherStations()` constructs the station list with fixed temperature, humidity, pressure, wind and condition values. The records are currently marked available/online in the constructor. These values must not be presented as live observations.
+`WeatherRepository.getSyrianWeatherStations()` constructs the station list with fixed temperature, humidity, pressure, wind and condition values. The records have been changed to offline/demo by default. Their numeric values remain in the legacy model for compatibility but are hidden in the station cards and admin view. These values must not be presented as live observations.
 
 **Required correction:** introduce an explicit station observation source and metadata:
 - station identifier and coordinates;
@@ -34,7 +34,7 @@ Do not fabricate live values when no station feed is configured. An unavailable 
 - `InteractiveRadarView.kt` draws synthetic precipitation echoes and an animated sweep.
 - `InteractiveWeatherMap.kt` draws a stylized geographic background and synthetic overlay fields.
 
-These are presentation prototypes, not verified radar or numerical weather-analysis layers. Keep a visible simulation label until a real data provider, timestamp, geographic bounds, projection and legend are implemented.
+These are presentation prototypes, not verified radar or numerical weather-analysis layers. The UI now labels both views as demonstrations, not live radar or observations. Keep these labels until a real data provider, timestamp, geographic bounds, projection and legend are implemented.
 
 ### 3. Default audio bulletin is static
 
@@ -44,11 +44,11 @@ The UI should identify synthesized speech and should display the actual publicat
 
 ### 4. Alerts need provenance and lifecycle
 
-The current ViewModel can prepend locally broadcast admin alerts to forecast alerts. The next stage should model alert origin, identifier, issue time, effective time, expiry, severity, affected area, update/cancel relationship and acknowledgement state. Local test notifications must be labelled as tests and must not be confused with official CAP alerts.
+The current ViewModel can prepend locally broadcast admin alerts to forecast alerts. The next stage should model alert origin, identifier, issue time, effective time, expiry, severity, affected area, update/cancel relationship and acknowledgement state. The admin sheet now warns that its actions are local-only and not authenticated or centrally distributed. Button labels were changed to describe local demonstration actions. Local test notifications must not be confused with official CAP alerts.
 
 ### 5. Missing data must remain missing
 
-Review the repository mapping for fallback values such as zero or dash for air quality and pollen. Missing, unsupported and unavailable values must be represented distinctly; zero is a real measurement and must not be used as a generic fallback.
+Air-quality and pollen fields now have per-field availability flags; partial pollen input is not converted into an overall severity category. Hourly and daily forecast fields also carry availability flags, and missing precipitation/UV/sunrise/sunset values are shown as unavailable. Hourly selection now uses the provider's local current-time field rather than the device timezone. Missing, unsupported and unavailable values must remain distinct; zero is a real measurement.
 
 ## Implementation sequence
 
@@ -74,12 +74,18 @@ Review the repository mapping for fallback values such as zero or dash for air q
 - AQI-based alert detection is skipped when no AQI reading exists.
 - Visibility is no longer replaced with a fabricated 10 km reading when the hourly provider field is absent; the UI displays an unavailable state.
 - Daily forecast entries without both maximum and minimum temperatures are skipped rather than filled with fixed 25°C/18°C values.
+- Hourly and daily missing fields are represented by explicit availability flags; missing forecast weather codes no longer inherit a current/clear code.
+- The map and radar UI explicitly identify synthetic layers as demonstrations; the radar warning states that it is not displaying actual radar measurements.
+- The admin sheet warns that it is local-only, unauthenticated and not a central CAP broadcast service; its buttons no longer claim to notify all users.
+- Unverified Syrian station models now default to offline/demo, and synthetic numeric readings are hidden in both the main station cards and admin panel.
+- Added an Android GitHub Actions workflow for unit tests and debug APK assembly. The repository has no Gradle wrapper scripts/JAR, so CI provisions Gradle 9.3.1 directly.
 - A missing current-weather object now produces a clear load failure rather than constructing a default all-zero weather record.
 
 ## Verification status
 
 - Source inspection completed for the main repository, Android Gradle configuration, manifest, Open-Meteo API interfaces, repository, ViewModel and key Compose components.
 - Source files were fetched again from the development branch after each change and the targeted fallback patterns were checked.
-- Tests were added but have not yet been executed; no Android build or automated test suite was run in this inspection session.
+- Unit tests were added for provenance, missing values, demo station defaults and unavailable environmental data.
+- GitHub Actions CI is configured to run `testDebugUnitTest` and `assembleDebug`. The first attempt stopped during Android SDK setup because the action attempted to install the removed `tools` package; the workflow was corrected to request explicit SDK packages. The corrected run is pending at the time of this update.
 - No external Syrian station feed or operational radar provider was verified.
 - No production data was changed by this audit.
