@@ -82,6 +82,27 @@ object ForecastValueValidation {
     fun probabilityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
     fun humidityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
     fun nonNegativeInt(value: Int?): Int? = value?.takeIf { it >= 0 }
+
+    /**
+     * Finds the hourly forecast slot corresponding to the provider's current local time.
+     * Falls back to the device's local hour prefix, then to the first available slot.
+     */
+    fun currentHourIndex(
+        hourlyTimes: List<String>,
+        currentTime: String?,
+        fallbackHourPrefix: String
+    ): Int {
+        if (hourlyTimes.isEmpty()) return 0
+        val hourPrefix = currentTime
+            ?.takeIf { it.length >= 13 }
+            ?.take(13)
+            ?: fallbackHourPrefix.takeIf { it.length >= 13 }?.take(13)
+        return hourPrefix
+            ?.let { prefix -> hourlyTimes.indexOfFirst { it.startsWith(prefix) } }
+            ?.takeIf { it >= 0 }
+            ?: 0
+    }
+
     fun temperatureRange(max: Double?, min: Double?): Pair<Double, Double>? {
         val validMax = finite(max) ?: return null
         val validMin = finite(min) ?: return null
