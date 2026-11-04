@@ -37,9 +37,31 @@ import com.example.data.model.MapWeatherOverlay
 class LeafletJsBridge(
     private val onCityClicked: (cityName: String, temp: String, state: String, lat: Double, lng: Double) -> Unit
 ) {
+    private val knownCities = mapOf(
+        "دمشق" to (33.5138 to 36.2765),
+        "حلب" to (36.2021 to 37.1343),
+        "اللاذقية" to (35.5317 to 35.7915),
+        "حمص" to (34.7324 to 36.7137),
+        "طرطوس" to (34.8890 to 35.8866),
+        "حماة" to (35.1318 to 36.7578),
+        "دير الزور" to (35.3333 to 40.1500),
+        "القامشلي" to (37.0494 to 41.2268),
+        "السويداء" to (32.7130 to 36.5694),
+        "درعا" to (32.6186 to 36.1011),
+        "إدلب" to (35.9306 to 36.6339),
+        "الرقة" to (35.9556 to 39.0078),
+        "تدمر" to (34.5577 to 38.2753)
+    )
+
     @JavascriptInterface
     fun onCitySelectedFromJs(cityName: String, temp: String, state: String, lat: Double, lng: Double) {
-        onCityClicked(cityName, temp, state, lat, lng)
+        val coordinates = knownCities[cityName] ?: return
+        if (!lat.isFinite() || !lng.isFinite()) return
+        if (lat !in (coordinates.first - 0.001)..(coordinates.first + 0.001)) return
+        if (lng !in (coordinates.second - 0.001)..(coordinates.second + 0.001)) return
+
+        // The map currently contains no verified city observations. Ignore values supplied by JS.
+        onCityClicked(cityName, "—", "بيانات غير متاحة", coordinates.first, coordinates.second)
     }
 }
 

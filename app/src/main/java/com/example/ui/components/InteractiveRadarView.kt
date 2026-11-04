@@ -5,6 +5,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -144,7 +145,16 @@ fun InteractiveRadarView(
                         settings.builtInZoomControls = false
                         settings.setSupportZoom(true)
                         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                        webViewClient = WebViewClient()
+                        // Keep the generated map document in the WebView; block external main-frame navigation.
+                        // HTTPS subresources (Leaflet, map tiles and RainViewer) remain available.
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView?,
+                                request: WebResourceRequest?
+                            ): Boolean {
+                                return request?.isForMainFrame == true
+                            }
+                        }
                         webChromeClient = WebChromeClient()
                         setBackgroundColor(0xFF0F172A.toInt())
                         loadDataWithBaseURL(

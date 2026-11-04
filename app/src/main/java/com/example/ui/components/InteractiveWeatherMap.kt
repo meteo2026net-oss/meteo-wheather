@@ -5,6 +5,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -204,7 +205,16 @@ fun InteractiveWeatherMap(
                         settings.builtInZoomControls = false
                         settings.setSupportZoom(true)
                         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                        webViewClient = WebViewClient()
+                        // Keep the generated map document in the WebView; block external main-frame navigation.
+                        // HTTPS subresources (Leaflet, map tiles and RainViewer) remain available.
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView?,
+                                request: WebResourceRequest?
+                            ): Boolean {
+                                return request?.isForMainFrame == true
+                            }
+                        }
                         webChromeClient = WebChromeClient()
                         setBackgroundColor(0xFF090D1A.toInt())
                         loadDataWithBaseURL(
