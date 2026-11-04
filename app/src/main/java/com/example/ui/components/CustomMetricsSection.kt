@@ -221,7 +221,7 @@ private fun RenderMetricCard(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "أعشاب: ${if (pollen.grassAvailable) pollen.grassPollen.toInt().toString() else "—"} | زيتون: ${if (pollen.oliveAvailable) pollen.olivePollen.toInt().toString() else "—"}",
+                    text = "أعشاب: ${if (pollen.grassAvailable) pollen.grassPollen.toInt().toString() else "—"} | بتولا: ${if (pollen.birchAvailable) pollen.birchPollen.toInt().toString() else "—"} | زيتون: ${if (pollen.oliveAvailable) pollen.olivePollen.toInt().toString() else "—"} | عشبة الرجيد: ${if (pollen.ragweedAvailable) pollen.ragweedPollen.toInt().toString() else "—"}",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.85f)
                 )
