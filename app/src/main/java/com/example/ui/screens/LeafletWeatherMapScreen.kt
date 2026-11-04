@@ -81,6 +81,9 @@ internal fun isMapOverlayAvailable(
     MapWeatherOverlay.CLOUDS -> forecasts.any { it.cloudCoverPercent != null }
 }
 
+internal fun shouldReloadLeafletHtml(previousHtml: String?, currentHtml: String): Boolean =
+    previousHtml != currentHtml
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -99,6 +102,7 @@ fun LeafletWeatherMapScreen(
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var inspectedCityInfo by remember { mutableStateOf<String?>(null) }
     var inspectedCityLocation by remember { mutableStateOf<CityLocation?>(null) }
+    val latestCityForecasts by rememberUpdatedState(cityForecasts)
 
     val syrianCitiesList = remember {
         listOf(
@@ -322,7 +326,7 @@ fun LeafletWeatherMapScreen(
                             addJavascriptInterface(
                                 LeafletJsBridge { cityName, _, _, lat, lng ->
                                     // Weather values are resolved from the Kotlin model, never from JavaScript.
-                                    val forecast = cityForecasts.firstOrNull { it.city.name == cityName }
+                                    val forecast = latestCityForecasts.firstOrNull { it.city.name == cityName }
                                     val details = forecast?.let {
                                         listOfNotNull(
                                             it.temperatureCelsius?.let { value -> "الحرارة ${"%.1f".format(value)}°م" },
@@ -367,11 +371,24 @@ fun LeafletWeatherMapScreen(
                                 "UTF-8",
                                 null
                             )
+                            tag = htmlContent
                             webViewRef = this
                         }
                     },
                     update = { webView ->
                         webViewRef = webView
+                        // AndroidView.update runs after recomposition. Reload only when the
+                        // generated document changes (forecast, base map, or selected overlay).
+                        if (shouldReloadLeafletHtml(webView.tag as? String, htmlContent)) {
+                            webView.loadDataWithBaseURL(
+                                "https://openstreetmap.org",
+                                htmlContent,
+                                "text/html",
+                                "UTF-8",
+                                null
+                            )
+                            webView.tag = htmlContent
+                        }
                     }
                 )
 

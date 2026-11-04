@@ -90,4 +90,15 @@ class LeafletJsBridgeTest {
         assertEquals(false, isMapOverlayAvailable(com.example.data.model.MapWeatherOverlay.CLOUDS, listOf(temperatureOnly)))
     }
 
+    @Test
+    fun leafletHtmlReloadsOnlyWhenDocumentContentChanges() {
+        val first = "<html>forecast-a</html>"
+        val same = "<html>forecast-a</html>"
+        val changedForecast = "<html>forecast-b</html>"
+
+        assertEquals(true, shouldReloadLeafletHtml(null, first))
+        assertEquals(false, shouldReloadLeafletHtml(first, same))
+        assertEquals(true, shouldReloadLeafletHtml(first, changedForecast))
+    }
+
 }
