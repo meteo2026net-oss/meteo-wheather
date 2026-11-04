@@ -107,10 +107,14 @@ class WeatherRepository(private val context: Context) {
                 val rawTime = hourlyTimes[i]
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)
                 val code = hourlyCodes.getOrElse(i) { currentDto.weatherCode }
-                val temp = hourlyTemps.getOrElse(i) { currentDto.temperature }
-                val precip = hourlyPrecip.getOrElse(i) { 0 }
-                val hum = hourlyHum.getOrElse(i) { currentDto.relativeHumidity }
-                val wind = hourlyWind.getOrElse(i) { currentDto.windSpeed }
+                val tempValue = hourlyTemps.getOrNull(i)
+                val precipValue = hourlyPrecip.getOrNull(i)
+                val humidityValue = hourlyHum.getOrNull(i)
+                val windValue = hourlyWind.getOrNull(i)
+                val temp = tempValue ?: currentDto.temperature
+                val precip = precipValue ?: 0
+                val hum = humidityValue ?: currentDto.relativeHumidity
+                val wind = windValue ?: currentDto.windSpeed
                 val hourOfDay = try { rawTime.substring(11, 13).toInt() } catch (e: Exception) { 12 }
                 val hourIsDay = hourOfDay in 6..18
 
@@ -124,7 +128,11 @@ class WeatherRepository(private val context: Context) {
                         precipitationProb = precip,
                         humidity = hum,
                         windSpeedKmh = wind,
-                        isDay = hourIsDay
+                        isDay = hourIsDay,
+                        temperatureAvailable = tempValue != null,
+                        precipitationProbabilityAvailable = precipValue != null,
+                        humidityAvailable = humidityValue != null,
+                        windSpeedAvailable = windValue != null
                     )
                 )
             }
@@ -143,7 +151,7 @@ class WeatherRepository(private val context: Context) {
             for (i in dailyTimes.indices) {
                 if (i >= 7) break
                 val dateRaw = dailyTimes[i]
-                val code = dailyCodes.getOrElse(i) { 0 }
+                val code = dailyCodes.getOrNull(i) ?: continue
                 val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, i == 0)
                 val sunriseFormatted = formatSunTime(dailySunrise.getOrNull(i))
                 val sunsetFormatted = formatSunTime(dailySunset.getOrNull(i))
@@ -159,10 +167,14 @@ class WeatherRepository(private val context: Context) {
                         conditionNameAr = mapWeatherCodeToAr(code),
                         maxTempCelsius = dailyMax.getOrNull(i) ?: continue,
                         minTempCelsius = dailyMin.getOrNull(i) ?: continue,
-                        precipitationProb = dailyPrecip.getOrElse(i) { 0 },
-                        uvIndexMax = dailyUv.getOrElse(i) { 5.0 },
+                        precipitationProb = dailyPrecip.getOrNull(i) ?: 0,
+                        uvIndexMax = dailyUv.getOrNull(i) ?: 0.0,
                         sunrise = sunriseFormatted,
-                        sunset = sunsetFormatted
+                        sunset = sunsetFormatted,
+                        precipitationProbabilityAvailable = dailyPrecip.getOrNull(i) != null,
+                        uvIndexAvailable = dailyUv.getOrNull(i) != null,
+                        sunriseAvailable = dailySunrise.getOrNull(i) != null,
+                        sunsetAvailable = dailySunset.getOrNull(i) != null
                     )
                 )
             }
