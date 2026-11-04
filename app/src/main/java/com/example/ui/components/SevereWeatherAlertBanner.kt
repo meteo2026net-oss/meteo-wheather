@@ -101,11 +101,15 @@ fun SevereWeatherAlertBanner(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = when (currentAlert.severity) {
-                                    AlertSeverity.EMERGENCY -> "إنذار طوارئ قصوى"
-                                    AlertSeverity.WARNING -> "تحذير جوي رسمي"
-                                    AlertSeverity.WATCH -> "متابعة وتقلبات جوية"
-                                    AlertSeverity.ADVISORY -> "إرشاد وتنبيه"
+                                text = when {
+                                    currentAlert.isOfficial -> when (currentAlert.severity) {
+                                        AlertSeverity.EMERGENCY -> "إنذار رسمي للطوارئ"
+                                        AlertSeverity.WARNING -> "تحذير جوي رسمي"
+                                        AlertSeverity.WATCH -> "متابعة رسمية"
+                                        AlertSeverity.ADVISORY -> "إرشاد رسمي"
+                                    }
+                                    currentAlert.isLocalDemo -> "تنبيه تجريبي محلي"
+                                    else -> "تقدير آلي — غير رسمي"
                                 },
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
