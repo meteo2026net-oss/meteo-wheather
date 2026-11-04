@@ -21,6 +21,7 @@ data class CapFeedMessage(
     val identifier: String,
     val sender: String?,
     val sent: String?,
+    val sentAt: Instant?,
     val status: String,
     val messageType: String,
     val scope: String,
@@ -40,7 +41,8 @@ data class CapFeedMessage(
             scope.equals("Public", ignoreCase = true) &&
             (messageType.equals("Alert", ignoreCase = true) ||
                 messageType.equals("Update", ignoreCase = true)) &&
-            expiresAt?.isAfter(now) == true &&
+            sentAt?.let { !it.isAfter(now) } == true &&
+            expiresAt?.let { expiry -> sentAt?.let(expiry::isAfter) } == true &&
             identifier.isNotBlank()
     }
 }
@@ -93,6 +95,12 @@ object CapXmlParser {
 
         val area = info?.directChildren("area")?.firstOrNull()
         val sent = root.directText("sent")
+            ?: throw IllegalArgumentException("CAP sent timestamp is missing")
+        val sentAt = try {
+            OffsetDateTime.parse(sent).toInstant()
+        } catch (error: Exception) {
+            throw IllegalArgumentException("CAP sent timestamp must include a valid timezone offset", error)
+        }
         val expires = info?.directText("expires")
         val expiresAt = expires?.let {
             try {
@@ -106,6 +114,7 @@ object CapXmlParser {
             identifier = identifier,
             sender = root.directText("sender"),
             sent = sent,
+            sentAt = sentAt,
             status = root.directText("status").orEmpty(),
             messageType = root.directText("msgType").orEmpty(),
             scope = root.directText("scope").orEmpty(),
