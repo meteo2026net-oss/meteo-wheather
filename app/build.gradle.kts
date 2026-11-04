@@ -67,8 +67,13 @@ android {
     unitTests {
       isIncludeAndroidResources = true
       all {
-        it.systemProperty("robolectric.offline", "true")
-        it.systemProperty("robolectric.dependency.dir", "/home/appuser/.m2/repository/org/robolectric/android-all-instrumented/16-robolectric-13921718-i7")
+        // Use an offline Robolectric SDK cache only when explicitly configured.
+        // CI and other machines otherwise resolve the matching SDK from Maven.
+        val robolectricCache = System.getenv("ROBOLECTRIC_DEPENDENCY_DIR")
+        if (!robolectricCache.isNullOrBlank() && file(robolectricCache).isDirectory) {
+          it.systemProperty("robolectric.offline", "true")
+          it.systemProperty("robolectric.dependency.dir", robolectricCache)
+        }
       }
     }
   }
