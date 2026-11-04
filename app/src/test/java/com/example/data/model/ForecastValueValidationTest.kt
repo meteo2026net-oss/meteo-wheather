@@ -51,4 +51,23 @@ class ForecastValueValidationTest {
         assertNull(ForecastValueValidation.nonNegativeInt(-1))
         assertNull(ForecastValueValidation.nonNegativeInt(null))
     }
+    @Test
+    fun sunTimeFormatterRejectsMissingMalformedAndOutOfRangeValues() {
+        assertNull(ForecastValueValidation.formatSunTime(null))
+        assertNull(ForecastValueValidation.formatSunTime(""))
+        assertNull(ForecastValueValidation.formatSunTime("not-a-time"))
+        assertNull(ForecastValueValidation.formatSunTime("2026-11-04T24:00"))
+        assertNull(ForecastValueValidation.formatSunTime("2026-11-04T12:60"))
+        assertNull(ForecastValueValidation.formatSunTime("2026-13-04T12:00"))
+    }
+
+    @Test
+    fun sunTimeFormatterUsesTwelveHourArabicLabels() {
+        assertEquals("12:05 ص", ForecastValueValidation.formatSunTime("2026-11-04T00:05"))
+        assertEquals("11:59 ص", ForecastValueValidation.formatSunTime("2026-11-04T11:59"))
+        assertEquals("12:30 م", ForecastValueValidation.formatSunTime("2026-11-04T12:30"))
+        assertEquals("1:09 م", ForecastValueValidation.formatSunTime("2026-11-04T13:09"))
+        assertEquals("11:59 م", ForecastValueValidation.formatSunTime("2026-11-04T23:59:00"))
+    }
+
 }
