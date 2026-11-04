@@ -41,7 +41,7 @@ data class CapFeedMessage(
             (messageType.equals("Alert", ignoreCase = true) ||
                 messageType.equals("Update", ignoreCase = true)) &&
             expiresAt?.isAfter(now) == true &&
-            !identifier.isBlank()
+            identifier.isNotBlank()
     }
 }
 
@@ -64,7 +64,7 @@ object CapXmlParser {
                 setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "")
                 setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "")
             } catch (_: IllegalArgumentException) {
-                // Unsupported attributes are not relied on; external entities are disabled above.
+                // External entity processing is disabled through the required features above.
             }
         }
 
@@ -86,7 +86,8 @@ object CapXmlParser {
 
         val infos = root.directChildren("info")
         val info = infos.firstOrNull {
-            val language = it.getAttribute("xml:lang")
+            val language = it.directText("language")
+                ?: it.getAttribute("xml:lang")
             language.equals("ar", true) || language.startsWith("ar-", true)
         } ?: infos.firstOrNull()
 

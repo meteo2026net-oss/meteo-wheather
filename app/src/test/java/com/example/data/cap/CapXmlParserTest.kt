@@ -24,6 +24,12 @@ class CapXmlParserTest {
           <msgType>$messageType</msgType>
           <scope>$scope</scope>
           <info>
+            <language>en-US</language>
+            <event>Heavy rain</event>
+            <severity>Minor</severity>
+            <expires>2026-11-04T12:00:00+03:00</expires>
+          </info>
+          <info>
             <language>ar-SY</language>
             <category>Met</category>
             <event>أمطار غزيرة</event>
@@ -39,7 +45,7 @@ class CapXmlParserTest {
     """.trimIndent()
 
     @Test
-    fun parsesPublicActualAlertAndArabicContent() {
+    fun parsesPublicActualAlertAndPrefersArabicInfoBlock() {
         val parsed = CapXmlParser.parse(cap())
         assertEquals("sy-test-001", parsed.identifier)
         assertEquals("أمطار غزيرة", parsed.event)
