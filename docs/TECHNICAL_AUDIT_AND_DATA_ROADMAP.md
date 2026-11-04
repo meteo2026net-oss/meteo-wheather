@@ -67,9 +67,19 @@ Review the repository mapping for fallback values such as zero or dash for air q
 - Firebase Firestore/Auth dependencies are commented out; do not assume a secure central admin backend already exists.
 - Confirm release secrets and Firebase configuration in the deployment environment rather than storing credentials in source control.
 
+## Changes implemented on the development branch
+
+- Syrian station cards and their domain model now explicitly identify the existing fixed station values as demonstration data.
+- Air-quality and pollen models now carry availability flags. The repository no longer substitutes plausible-looking AQI, pollutant or pollen readings when the provider omits them; the UI displays an unavailable state instead.
+- AQI-based alert detection is skipped when no AQI reading exists.
+- Visibility is no longer replaced with a fabricated 10 km reading when the hourly provider field is absent; the UI displays an unavailable state.
+- Daily forecast entries without both maximum and minimum temperatures are skipped rather than filled with fixed 25°C/18°C values.
+- A missing current-weather object now produces a clear load failure rather than constructing a default all-zero weather record.
+
 ## Verification status
 
 - Source inspection completed for the main repository, Android Gradle configuration, manifest, Open-Meteo API interfaces, repository, ViewModel and key Compose components.
-- No Android build was run in this inspection session.
+- Source files were fetched again from the development branch after each change and the targeted fallback patterns were checked.
+- No Android build or automated test suite was run in this inspection session.
 - No external Syrian station feed or operational radar provider was verified.
 - No production data was changed by this audit.
