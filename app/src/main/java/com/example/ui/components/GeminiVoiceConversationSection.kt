@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -119,7 +120,7 @@ fun GeminiVoiceConversationSection(
                     onStopVoiceClick()
                 }) {
                     Icon(
-                        imageVector = Icons.Default.VolumeOff,
+                        imageVector = Icons.AutoMirrored.Filled.VolumeOff,
                         contentDescription = "إيقاف الصوت",
                         tint = Color(0xFFFF6B6B)
                     )
@@ -157,7 +158,7 @@ fun GeminiVoiceConversationSection(
                     Icon(
                         imageVector = when {
                             isListening -> Icons.Default.GraphicEq
-                            isSpeaking -> Icons.Default.VolumeUp
+                            isSpeaking -> Icons.AutoMirrored.Filled.VolumeUp
                             else -> Icons.Default.Mic
                         },
                         contentDescription = "تحدث الآن",
@@ -230,7 +231,7 @@ fun GeminiVoiceConversationSection(
                                 modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.VolumeUp,
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                     contentDescription = "إعادة التشغيل الصوتي",
                                     tint = Color.White,
                                     modifier = Modifier.size(16.dp)
