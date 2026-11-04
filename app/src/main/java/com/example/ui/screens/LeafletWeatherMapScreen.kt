@@ -71,6 +71,16 @@ class LeafletJsBridge(
     }
 }
 
+internal fun isMapOverlayAvailable(
+    overlay: MapWeatherOverlay,
+    forecasts: List<CityMapForecast>
+): Boolean = when (overlay) {
+    MapWeatherOverlay.PRECIPITATION -> true // Radar availability is checked independently.
+    MapWeatherOverlay.TEMPERATURE -> forecasts.any { it.temperatureCelsius != null }
+    MapWeatherOverlay.WIND -> forecasts.any { it.windSpeedKmh != null }
+    MapWeatherOverlay.CLOUDS -> forecasts.any { it.cloudCoverPercent != null }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -206,7 +216,7 @@ fun LeafletWeatherMapScreen(
                 // Overlay Chips
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     MapWeatherOverlay.values().forEach { overlay ->
-                        val isAvailable = overlay == MapWeatherOverlay.PRECIPITATION || cityForecasts.isNotEmpty()
+                        val isAvailable = isMapOverlayAvailable(overlay, cityForecasts)
                         val isSelected = selectedOverlay == overlay && isAvailable
                         Box(
                             modifier = Modifier
@@ -310,9 +320,24 @@ fun LeafletWeatherMapScreen(
                             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
                             addJavascriptInterface(
-                                LeafletJsBridge { cityName, temp, state, lat, lng ->
-                                    inspectedCityInfo = "$cityName: $temp | $state"
-                                    inspectedCityLocation = CityLocation(
+                                LeafletJsBridge { cityName, _, _, lat, lng ->
+                                    // Weather values are resolved from the Kotlin model, never from JavaScript.
+                                    val forecast = cityForecasts.firstOrNull { it.city.name == cityName }
+                                    val details = forecast?.let {
+                                        listOfNotNull(
+                                            it.temperatureCelsius?.let { value -> "الحرارة ${"%.1f".format(value)}°م" },
+                                            it.humidityPercent?.let { value -> "الرطوبة $value%" },
+                                            it.windSpeedKmh?.let { value -> "الرياح ${"%.1f".format(value)} كم/س" },
+                                            it.cloudCoverPercent?.let { value -> "السحب $value%" },
+                                            it.precipitationMm?.let { value -> "الهطول ${"%.1f".format(value)} مم" }
+                                        ).joinToString(" | ")
+                                    }.orEmpty()
+                                    inspectedCityInfo = if (details.isBlank()) {
+                                        "$cityName: توقعات المدينة غير متاحة"
+                                    } else {
+                                        "$cityName: $details"
+                                    }
+                                    inspectedCityLocation = forecast?.city ?: CityLocation(
                                         name = cityName,
                                         country = "سوريا",
                                         latitude = lat,
@@ -640,20 +665,89 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
 
 
 
-                // Syrian Cities Data
+                // Forecasts are model output, not station observations.
                 var syrianCities = ${cityForecastsJson};
+                var cityMarkers = [];
+
+                function forecastValueColor(value, overlayType) {
+                    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '#64748B';
+                    value = Number(value);
+                    if (overlayType === 'temperature') {
+                        if (value < 0) return '#2563EB';
+                        if (value < 10) return '#06B6D4';
+                        if (value < 25) return '#22C55E';
+                        if (value < 35) return '#F59E0B';
+                        return '#EF4444';
+                    }
+                    if (overlayType === 'wind') {
+                        if (value < 10) return '#22C55E';
+                        if (value < 20) return '#84CC16';
+                        if (value < 35) return '#F59E0B';
+                        return '#EF4444';
+                    }
+                    if (overlayType === 'clouds') {
+                        if (value < 25) return '#FACC15';
+                        if (value < 50) return '#94A3B8';
+                        if (value < 75) return '#64748B';
+                        return '#334155';
+                    }
+                    if (overlayType === 'precipitation') {
+                        if (value < 0.1) return '#94A3B8';
+                        if (value < 1) return '#38BDF8';
+                        if (value < 5) return '#2563EB';
+                        return '#7C3AED';
+                    }
+                    return '#0284C7';
+                }
+
+                function cityOverlayValue(city, overlayType) {
+                    if (overlayType === 'temperature') return city.temp;
+                    if (overlayType === 'wind') return city.wind;
+                    if (overlayType === 'clouds') return city.clouds;
+                    if (overlayType === 'precipitation') return city.precip;
+                    return null;
+                }
+
+                function styleCityMarkers(overlayType) {
+                    cityMarkers.forEach(function(entry) {
+                        var color = forecastValueColor(cityOverlayValue(entry.city, overlayType), overlayType);
+                        entry.marker.setStyle({ color: color, fillColor: color, fillOpacity: 0.92 });
+                    });
+                    var legend = document.getElementById('forecast-overlay-legend');
+                    if (legend) {
+                        var titles = {
+                            temperature: 'ألوان الحرارة المتوقعة (°م)',
+                            wind: 'ألوان سرعة الرياح المتوقعة (كم/س)',
+                            clouds: 'ألوان الغطاء السحابي المتوقع (%)',
+                            precipitation: 'ألوان الهطول المتوقع (مم)'
+                        };
+                        legend.textContent = titles[overlayType] || 'ألوان توقعات المدن';
+                    }
+                }
+
+                var forecastLegendControl = L.control({ position: 'bottomright' });
+                forecastLegendControl.onAdd = function() {
+                    var div = L.DomUtil.create('div', 'radar-status');
+                    div.id = 'forecast-overlay-legend';
+                    div.textContent = 'ألوان الهطول المتوقع (مم)';
+                    return div;
+                };
+                forecastLegendControl.addTo(map);
 
                 syrianCities.forEach(function(c) {
+                    var markerColor = forecastValueColor(c.precip, 'precipitation');
                     var marker = L.circleMarker([c.lat, c.lng], {
-                        color: '#38BDF8',
-                        fillColor: '#0284C7',
-                        fillOpacity: 0.9,
+                        color: markerColor,
+                        fillColor: markerColor,
+                        fillOpacity: 0.92,
                         radius: 8
                     }).addTo(map);
+                    cityMarkers.push({ city: c, marker: marker });
 
                     marker.on('click', function() {
                         if (window.AndroidMapInterface && window.AndroidMapInterface.onCitySelectedFromJs) {
-                            window.AndroidMapInterface.onCitySelectedFromJs(c.name, c.temp, c.state, c.lat, c.lng);
+                            // Only city identity and fixed coordinates cross the bridge.
+                            window.AndroidMapInterface.onCitySelectedFromJs(c.name, '', '', c.lat, c.lng);
                         }
                     });
 
@@ -672,6 +766,8 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                         '</div>'
                     );
                 });
+
+                styleCityMarkers(selectedWeatherOverlay);
 
                 // Bidirectional Javascript Functions called from Android Kotlin
                 function flyToCoordinate(lat, lng, zoomLevel) {
@@ -717,6 +813,8 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                     } else if (radarLayer && map.hasLayer(radarLayer)) {
                         map.removeLayer(radarLayer);
                     }
+                    // Marker colors are forecast-based, not raster weather layers.
+                    styleCityMarkers(overlayType);
                 }
             </script>
         </body>

@@ -70,4 +70,24 @@ class LeafletJsBridgeTest {
 
         assertEquals(0, callbackCount)
     }
+    @Test
+    fun overlayAvailabilityRequiresActualVariableValues() {
+        val city = com.example.data.model.CityLocation(
+            name = "دمشق", nameEn = "Damascus", country = "سوريا",
+            latitude = 33.5138, longitude = 36.2765
+        )
+        val empty = com.example.data.model.CityMapForecast(
+            city = city, time = null, temperatureCelsius = null,
+            humidityPercent = null, windSpeedKmh = null, windDirectionDegrees = null,
+            cloudCoverPercent = null, precipitationMm = null, weatherCode = null
+        )
+        val temperatureOnly = empty.copy(temperatureCelsius = 18.5)
+
+        assertEquals(true, isMapOverlayAvailable(com.example.data.model.MapWeatherOverlay.PRECIPITATION, emptyList()))
+        assertEquals(false, isMapOverlayAvailable(com.example.data.model.MapWeatherOverlay.TEMPERATURE, listOf(empty)))
+        assertEquals(true, isMapOverlayAvailable(com.example.data.model.MapWeatherOverlay.TEMPERATURE, listOf(temperatureOnly)))
+        assertEquals(false, isMapOverlayAvailable(com.example.data.model.MapWeatherOverlay.WIND, listOf(temperatureOnly)))
+        assertEquals(false, isMapOverlayAvailable(com.example.data.model.MapWeatherOverlay.CLOUDS, listOf(temperatureOnly)))
+    }
+
 }
