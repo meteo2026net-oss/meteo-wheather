@@ -205,3 +205,14 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Artifact: `mcnc-weather-debug-apk`, ID `13295752530`, size 22,693,940 bytes, SHA-256 ZIP digest `30136f3e224bb2feccf7750fbcac4daec50e07e7bc32b0c0251df1182203d66b`, expires 2 February 2027.
 - The preceding CI failure on commit `47bb89c085dbc098f8b12d51a66d364f893ef72c` was a Kotlin compilation error caused by references to XMLConstants property-name constants unavailable in the Android compile environment. The parser now uses the equivalent standard property URI strings; its existing fail-closed XML features and entity resolver remain in place.
 - This artifact is a CI debug build signed with an ephemeral runner-only debug key. It is not a production-signed release and does not establish real-device, live-feed, official-station or operational-alert readiness.
+
+
+## Latest CI verification — 4 November 2026
+
+- Current verified development-branch head: `7910f0df453a1226cedb106e3f145cbd87831de5`.
+- GitHub Actions run [41777064307](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41777064307) completed successfully on that exact commit.
+- The job completed both `testDebugUnitTest` and `assembleDebug`, then uploaded the `mcnc-weather-debug-apk` artifact (artifact ID `13296873929`, 22,706,308 bytes).
+- Artifact ZIP SHA-256: `f348ca81491eb79c822f84e3ac798e89d3920534a20168abafa85eed85a784bf`. The artifact expires on 2 February 2027.
+- Commit `7910f0d` adds an `AndroidView.onRelease` cleanup path for the Leaflet WebView: stop loading, remove the JavaScript bridge, clear the WebChromeClient, remove child views and destroy the WebView.
+- This is a CI debug build signed with a temporary runner-only key. It is not a production release or a release-signing validation.
+- PR #1 remains open and unmerged; the `main` branch was not modified by this verification.
