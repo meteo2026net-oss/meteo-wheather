@@ -143,28 +143,32 @@ fun InteractiveWeatherMap(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             MapWeatherOverlay.values().forEach { overlay ->
-                val isSelected = selectedOverlay == overlay
+                val isAvailable = overlay == MapWeatherOverlay.PRECIPITATION
+                val isSelected = selectedOverlay == overlay && isAvailable
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
-                            if (isSelected) Color(0xFF0284C7).copy(alpha = 0.85f) else Color.White.copy(alpha = 0.12f)
+                            if (isSelected) Color(0xFF0284C7).copy(alpha = 0.85f)
+                            else Color.White.copy(alpha = if (isAvailable) 0.12f else 0.05f)
                         )
                         .border(
                             1.dp,
-                            if (isSelected) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.15f),
+                            if (isSelected) Color(0xFF38BDF8) else Color.White.copy(alpha = if (isAvailable) 0.15f else 0.07f),
                             RoundedCornerShape(12.dp)
                         )
-                        .clickable(enabled = overlay == MapWeatherOverlay.PRECIPITATION) { selectedOverlay = overlay }
+                        .clickable(enabled = isAvailable) {
+                            selectedOverlay = overlay
+                        }
                         .padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = overlay.titleAr,
+                        text = if (isAvailable) overlay.titleAr else "${overlay.titleAr} (قريباً)",
                         fontSize = 10.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = Color.White
+                        color = Color.White.copy(alpha = if (isAvailable) 1f else 0.45f)
                     )
                 }
             }
