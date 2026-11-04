@@ -57,7 +57,7 @@ fun GeminiVoiceConversationSection(
         var tts: TextToSpeech? = null
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale("ar")
+                tts?.language = Locale.forLanguageTag("ar")
             }
         }
         ttsInstance = tts
