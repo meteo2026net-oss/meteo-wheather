@@ -330,11 +330,11 @@ private fun RenderMetricCard(
                 ) {
                     Column {
                         Text(text = "الشروق", fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
-                        Text(text = todayForecast?.sunrise?.takeIf { todayForecast.sunriseAvailable } ?: "—:—", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(text = todayForecast?.takeIf { it.sunriseAvailable }?.sunrise ?: "—:—", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(text = "الغروب", fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
-                        Text(text = todayForecast?.sunset?.takeIf { todayForecast.sunsetAvailable } ?: "—:—", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(text = todayForecast?.takeIf { it.sunsetAvailable }?.sunset ?: "—:—", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
