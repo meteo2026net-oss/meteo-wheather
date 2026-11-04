@@ -45,17 +45,6 @@ fun InteractiveWeatherMap(
 ) {
     var selectedTileStyle by remember { mutableStateOf(LeafletTileStyle.DARK) }
     var selectedOverlay by remember { mutableStateOf(MapWeatherOverlay.PRECIPITATION) }
-    var isTimelinePlaying by remember { mutableStateOf(true) }
-    var timelineStep by remember { mutableIntStateOf(0) }
-
-    // Timeline automatic step increment
-    LaunchedEffect(isTimelinePlaying) {
-        while (isTimelinePlaying) {
-            kotlinx.coroutines.delay(2400)
-            timelineStep = (timelineStep + 1) % 5
-        }
-    }
-
     Column(
         modifier = modifier
             .fillMaxWidth()
