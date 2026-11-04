@@ -93,7 +93,18 @@ class WeatherRepository(private val context: Context) {
             val conditionNameAr = mapWeatherCodeToAr(currentWeatherCode)
             val isDay = currentIsDay == 1
 
-            val visMeters = ForecastValueValidation.nonNegativeFinite(forecastDto.hourly?.visibility?.firstOrNull())
+            val hourlyTimes = forecastDto.hourly?.time ?: emptyList()
+            val fallbackHourPrefix = SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
+            val startIndex = ForecastValueValidation.currentHourIndex(
+                hourlyTimes = hourlyTimes,
+                currentTime = currentTime,
+                fallbackHourPrefix = fallbackHourPrefix
+            )
+            // Visibility is an hourly value too: use the same current-hour slot as the
+            // hourly forecast instead of accidentally displaying the day's first slot.
+            val visMeters = ForecastValueValidation.nonNegativeFinite(
+                forecastDto.hourly?.visibility?.getOrNull(startIndex)
+            )
             val visibilityAvailable = visMeters != null
             val visibilityKm = visMeters?.let { (it / 1000.0).coerceIn(0.0, 30.0) } ?: 0.0
 
@@ -118,17 +129,11 @@ class WeatherRepository(private val context: Context) {
 
             // Parse hourly forecasts (next 24 hours from current time)
             val hourlyList = mutableListOf<HourlyForecast>()
-            val hourlyTimes = forecastDto.hourly?.time ?: emptyList()
             val hourlyTemps = forecastDto.hourly?.temperature ?: emptyList()
             val hourlyCodes = forecastDto.hourly?.weatherCode ?: emptyList()
             val hourlyPrecip = forecastDto.hourly?.precipitationProbability ?: emptyList()
             val hourlyHum = forecastDto.hourly?.relativeHumidity ?: emptyList()
             val hourlyWind = forecastDto.hourly?.windSpeed ?: emptyList()
-
-            val nowIsoPrefix = currentTime.takeIf { it.length >= 13 }?.take(13)
-                ?: SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
-            var startIndex = hourlyTimes.indexOfFirst { it.startsWith(nowIsoPrefix) }
-            if (startIndex < 0) startIndex = 0
 
             val endIndex = (startIndex + 24).coerceAtMost(hourlyTimes.size)
             for (i in startIndex until endIndex) {
