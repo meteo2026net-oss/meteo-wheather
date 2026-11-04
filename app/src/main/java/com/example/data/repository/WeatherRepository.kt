@@ -78,7 +78,7 @@ class WeatherRepository(private val context: Context) {
                 windSpeedKmh = currentDto.windSpeed,
                 windDirectionDegrees = currentDto.windDirection,
                 pressureHpa = currentDto.surfacePressure,
-                uvIndex = currentDto.uvIndex,
+                uvIndex = currentDto.uvIndex ?: 0.0,
                 weatherCode = currentDto.weatherCode,
                 conditionType = conditionType,
                 conditionNameAr = conditionNameAr,
@@ -86,7 +86,8 @@ class WeatherRepository(private val context: Context) {
                 isDay = isDay,
                 precipitationMm = currentDto.precipitation,
                 visibilityKm = visibilityKm,
-                visibilityAvailable = visibilityAvailable
+                visibilityAvailable = visibilityAvailable,
+                uvIndexAvailable = currentDto.uvIndex?.isFinite() == true
             )
 
             // Parse hourly forecasts (next 24 hours from current time)
