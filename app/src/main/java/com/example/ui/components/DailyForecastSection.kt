@@ -39,8 +39,8 @@ fun DailyForecastSection(
     var expandedDayIndex by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(dailyList.size) {
         // Clear an expanded row if a refreshed forecast no longer contains that index.
-        if (expandedDayIndex != null && expandedDayIndex!! >= dailyList.size) {
-            expandedDayIndex = null
+        expandedDayIndex?.let { index ->
+            if (index >= dailyList.size) expandedDayIndex = null
         }
     }
 
@@ -184,7 +184,7 @@ fun DailyForecastSection(
                     )
 
                     // Visual Temperature Range Slider Bar
-                    Box(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .weight(1f)
                             .height(6.dp)
@@ -200,7 +200,7 @@ fun DailyForecastSection(
                                 .fillMaxHeight()
                                 .fillMaxWidth(widthFrac)
                                 .align(Alignment.CenterStart)
-                                .offset(x = (startFrac * 100).dp) // approximate visual offset
+                                .offset(x = maxWidth * startFrac)
                                 .clip(CircleShape)
                                 .background(
                                     Brush.horizontalGradient(
