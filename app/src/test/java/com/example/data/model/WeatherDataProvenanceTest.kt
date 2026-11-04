@@ -92,6 +92,24 @@ class WeatherDataProvenanceTest {
     }
 
     @Test
+    fun localCapAlertsDefaultToTestAndPrivate() {
+        val alert = CapAlertItem(
+            identifier = "LOCAL_TEST",
+            sentTimestamp = "now",
+            eventAr = "اختبار",
+            severity = AlertSeverity.ADVISORY,
+            areaDescAr = "اختبار",
+            descriptionAr = "اختبار",
+            instructionAr = "اختبار",
+            expires = "غير محدد"
+        )
+
+        assertTrue(alert.status == "Test")
+        assertTrue(alert.scope == "Private")
+        assertTrue(alert.sender == "local-demo@device.invalid")
+    }
+
+    @Test
     fun simulatedValueCanBeDisplayedButMustRemainIdentifiedAsSimulation() {
         val value = QualifiedWeatherValue(
             value = 4.0,
