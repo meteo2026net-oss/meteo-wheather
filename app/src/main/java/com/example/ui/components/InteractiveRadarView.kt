@@ -181,7 +181,7 @@ fun InteractiveRadarView(
                 onRelease = { webView ->
                     webView.stopLoading()
                     webView.webChromeClient = null
-                    webView.webViewClient = null
+                    webView.webViewClient = WebViewClient()
                     webView.removeAllViews()
                     webView.destroy()
                 }
