@@ -36,6 +36,17 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun validIsoDateRejectsImpossibleDatesAndAcceptsLeapDays() {
+        assertEquals("2024-02-29", ForecastValueValidation.validIsoDate("2024-02-29"))
+        assertNull(ForecastValueValidation.validIsoDate("2026-02-29"))
+        assertNull(ForecastValueValidation.validIsoDate("2026-02-30"))
+        assertNull(ForecastValueValidation.validIsoDate("2026-13-01"))
+        assertNull(ForecastValueValidation.validIsoDate("2026-04-31"))
+        assertNull(ForecastValueValidation.validIsoDate("2026-4-01"))
+        assertNull(ForecastValueValidation.validIsoDate(null))
+    }
+
+    @Test
     fun currentHourIndexSelectsTheProviderCurrentLocalHour() {
         val times = listOf(
             "2026-11-05T00:00",

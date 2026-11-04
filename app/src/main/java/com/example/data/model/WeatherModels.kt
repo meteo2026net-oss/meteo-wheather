@@ -93,20 +93,27 @@ object ForecastValueValidation {
         fallbackHourPrefix: String
     ): Int {
         if (hourlyTimes.isEmpty()) return 0
-        fun validHourPrefix(value: String?): String? {
-            val prefix = value?.takeIf { it.length >= 13 }?.take(13) ?: return null
-            val match = Regex("""^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3])$""")
-                .matchEntire(prefix) ?: return null
-            val year = match.groupValues[1].toInt()
-            val month = match.groupValues[2].toInt()
-            val day = match.groupValues[3].toInt()
-            val maxDay = when (month) {
-                2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
-                4, 6, 9, 11 -> 30
-                else -> 31
-            }
-            return prefix.takeIf { day in 1..maxDay }
+    /** Returns an ISO calendar date only when its month/day combination is valid. */
+    fun validIsoDate(value: String?): String? {
+        val date = value?.takeIf { Regex("""^\\d{4}-\\d{2}-\\d{2}$""").matches(it) } ?: return null
+        val year = date.substring(0, 4).toInt()
+        val month = date.substring(5, 7).toInt()
+        val day = date.substring(8, 10).toInt()
+        val maxDay = when (month) {
+            2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
+            4, 6, 9, 11 -> 30
+            in 1..12 -> 31
+            else -> return null
         }
+        return date.takeIf { day in 1..maxDay }
+    }
+
+    private fun validHourPrefix(value: String?): String? {
+        val prefix = value?.takeIf { it.length >= 13 }?.take(13) ?: return null
+        val validDate = validIsoDate(prefix.take(10)) ?: return null
+        return prefix.takeIf { it.startsWith(validDate + "T") &&
+            Regex("""^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3])$""").matches(it) }
+    }
 
         val hourPrefix = validHourPrefix(currentTime) ?: validHourPrefix(fallbackHourPrefix)
         return hourPrefix
@@ -126,15 +133,7 @@ object ForecastValueValidation {
         val value = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
         val match = Regex("""^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$""")
             .matchEntire(value) ?: return null
-        val year = match.groupValues[1].toInt()
-        val month = match.groupValues[2].toInt()
-        val day = match.groupValues[3].toInt()
-        val maxDay = when (month) {
-            2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
-            4, 6, 9, 11 -> 30
-            else -> 31
-        }
-        if (day !in 1..maxDay) return null
+        if (validIsoDate(value.take(10)) == null) return null
         val hour = match.groupValues[4].toInt()
         val minute = match.groupValues[5]
         return if (hour < 12) {

@@ -185,6 +185,7 @@ class WeatherRepository(private val context: Context) {
             for (i in dailyTimes.indices) {
                 if (i >= 7) break
                 val dateRaw = dailyTimes[i]
+                if (ForecastValueValidation.validIsoDate(dateRaw) == null) continue
                 val code = dailyCodes.getOrNull(i) ?: continue
                 val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, i == 0)
                 val sunriseFormatted = ForecastValueValidation.formatSunTime(dailySunrise.getOrNull(i)) ?: "--:--"
@@ -299,7 +300,7 @@ class WeatherRepository(private val context: Context) {
             }
 
             // Weather Insights
-            val currentDateRaw = currentTime.take(10).takeIf { Regex("""^\d{4}-\d{2}-\d{2}$""").matches(it) }
+            val currentDateRaw = ForecastValueValidation.validIsoDate(currentTime.take(10))
             val todayForecast = DailyForecastSelection.forCurrentDate(dailyList, currentDateRaw)
             val insights = generateInsights(currentWeather, todayForecast)
 
