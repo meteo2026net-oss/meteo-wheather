@@ -256,6 +256,8 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             val state = _uiState.value
             val weather = state.weatherData
             val current = weather?.current
+            val airQuality = weather?.airQuality
+            val pollen = weather?.pollen
             val cityName = state.selectedCity.name
             val rainProbability = weather?.hourly
                 ?.filter { it.precipitationProbabilityAvailable }
@@ -276,15 +278,15 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                         "في $cityName، سرعة الرياح الحالية ${current.windSpeedKmh.toInt()} كم/س، والرطوبة النسبية ${current.humidity}%. القيم من بيانات الطقس الحالية المحمّلة."
 
                     cleanText.contains("جودة الهواء") || cleanText.contains("تلوث") || cleanText.contains("هواء") ->
-                        if (weather?.airQuality?.isAqiAvailable == true) {
-                            "مؤشر جودة الهواء الأوروبي في $cityName هو ${weather.airQuality.aqiValue} (${weather.airQuality.categoryAr})."
+                        if (airQuality?.isAqiAvailable == true) {
+                            "مؤشر جودة الهواء الأوروبي في $cityName هو ${airQuality.aqiValue} (${airQuality.categoryAr})."
                         } else {
                             "لا تتوفر قراءة موثوقة لمؤشر جودة الهواء حالياً في $cityName."
                         }
 
                     cleanText.contains("حبوب") || cleanText.contains("حساسية") ->
-                        if (weather?.pollen?.isAvailable == true) {
-                            weather.pollen.adviceAr
+                        if (pollen?.isAvailable == true) {
+                            pollen.adviceAr
                         } else {
                             "بيانات حبوب اللقاح غير متاحة حالياً لهذا الموقع أو الوقت."
                         }
