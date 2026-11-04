@@ -111,14 +111,14 @@ fun SyrianStationsSection(
 
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = "${station.temperatureCelsius.toInt()}°",
+                            text = if (station.isDemoData) "—" else "${station.temperatureCelsius.toInt()}°",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD54F)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = station.conditionAr,
+                            text = if (station.isDemoData) "لا توجد قراءة فعلية" else station.conditionAr,
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.9f),
                             modifier = Modifier.padding(bottom = 6.dp),
@@ -133,12 +133,12 @@ fun SyrianStationsSection(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "رطوبة: ${station.humidity}%",
+                            text = if (station.isDemoData) "رطوبة: —" else "رطوبة: ${station.humidity}%",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "رياح: ${station.windSpeedKmh.toInt()} كم",
+                            text = if (station.isDemoData) "رياح: —" else "رياح: ${station.windSpeedKmh.toInt()} كم",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
