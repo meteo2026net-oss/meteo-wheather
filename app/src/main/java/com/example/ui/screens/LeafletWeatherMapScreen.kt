@@ -381,11 +381,8 @@ fun LeafletWeatherMapScreen(
 }
 
 private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverlay): String {
-    val baseTileUrl = when (tileType) {
-        "satellite" -> "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        "osm" -> "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        else -> "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    }
+    val baseMap = LeafletBaseMapConfigs.forStyle(tileType)
+    val subdomainsOption = baseMap.subdomains?.let { "subdomains: '$it'," }.orEmpty()
 
     return """
         <!DOCTYPE html>
@@ -425,9 +422,10 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                     zoomControl: false
                 });
 
-                var baseTileLayer = L.tileLayer('$baseTileUrl', {
-                    attribution: '&copy; OpenStreetMap contributors; CARTO/Esri tiles',
-                    maxZoom: 18
+                var baseTileLayer = L.tileLayer('${baseMap.urlTemplate}', {
+                    attribution: '${baseMap.attributionHtml}',
+                    $subdomainsOption
+                    maxZoom: ${baseMap.maxZoom}
                 }).addTo(map);
 
                 var radarLayer = null;
@@ -522,14 +520,31 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                 }
 
                 function switchTileLayer(style) {
-                    var newUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                    var source;
                     if (style === 'satellite') {
-                        newUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+                        source = {
+                            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                            attribution: 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+                            maxZoom: 19
+                        };
                     } else if (style === 'osm') {
-                        newUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+                        source = {
+                            url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+                            maxZoom: 19
+                        };
+                    } else {
+                        source = {
+                            url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                            subdomains: 'abcd',
+                            maxZoom: 20
+                        };
                     }
                     map.removeLayer(baseTileLayer);
-                    baseTileLayer = L.tileLayer(newUrl, { maxZoom: 18 }).addTo(map);
+                    var options = { attribution: source.attribution, maxZoom: source.maxZoom };
+                    if (source.subdomains) options.subdomains = source.subdomains;
+                    baseTileLayer = L.tileLayer(source.url, options).addTo(map);
                 }
 
                 function switchWeatherOverlay(overlayType) {
