@@ -140,4 +140,39 @@ class CapXmlParserTest {
         }
     }
 
+    @Test
+    fun rejectsIncorrectCapNamespaceOnRoot() {
+        val wrongNamespace = cap().replace(
+            "urn:oasis:names:tc:emergency:cap:1.2",
+            "urn:attacker:lookalike-cap"
+        )
+        try {
+            CapXmlParser.parse(wrongNamespace)
+            throw AssertionError("A non-CAP namespace root must be rejected")
+        } catch (_: IllegalArgumentException) {
+            // Expected: only the CAP 1.2 namespace is accepted.
+        }
+    }
+
+    @Test
+    fun ignoresForeignNamespaceIdentifierAndSentElements() {
+        val foreignIdentifier = cap().replace(
+            "<identifier>sy-test-001</identifier>",
+            "<fake:identifier xmlns:fake=\"urn:attacker:spoof\">sy-test-001</fake:identifier>"
+        )
+        val foreignSent = cap().replace(
+            "<sent>2026-11-04T06:00:00+03:00</sent>",
+            "<fake:sent xmlns:fake=\"urn:attacker:spoof\">2026-11-04T06:00:00+03:00</fake:sent>"
+        )
+
+        listOf(foreignIdentifier, foreignSent).forEach { xml ->
+            try {
+                CapXmlParser.parse(xml)
+                throw AssertionError("Foreign namespace CAP fields must not be accepted")
+            } catch (_: IllegalArgumentException) {
+                // Expected: standard CAP fields must use the CAP 1.2 namespace.
+            }
+        }
+    }
+
 }
