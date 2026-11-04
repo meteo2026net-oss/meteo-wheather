@@ -80,6 +80,6 @@ Review the repository mapping for fallback values such as zero or dash for air q
 
 - Source inspection completed for the main repository, Android Gradle configuration, manifest, Open-Meteo API interfaces, repository, ViewModel and key Compose components.
 - Source files were fetched again from the development branch after each change and the targeted fallback patterns were checked.
-- No Android build or automated test suite was run in this inspection session.
+- Tests were added but have not yet been executed; no Android build or automated test suite was run in this inspection session.
 - No external Syrian station feed or operational radar provider was verified.
 - No production data was changed by this audit.
