@@ -17,6 +17,12 @@ class WeatherDataProvenanceTest {
     )
 
     @Test
+    fun missingCurrentUvIndexRemainsUnavailableInDto() {
+        val dto = CurrentWeatherDto()
+        assertEquals(null, dto.uvIndex)
+    }
+
+    @Test
     fun measuredZeroIsDisplayable() {
         val value = QualifiedWeatherValue(
             value = 0.0,
