@@ -13,7 +13,8 @@ data class SyrianWeatherStation(
     val conditionAr: String,
     val conditionType: WeatherConditionType,
     val isOnline: Boolean = true,
-    val lastReadingTime: String = "منذ 10 دقائق"
+    val lastReadingTime: String = "غير محدد",
+    val isDemoData: Boolean = true
 )
 
 data class CapAlertItem(
