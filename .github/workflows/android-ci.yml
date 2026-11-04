@@ -20,10 +20,10 @@ jobs:
     timeout-minutes: 35
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -34,7 +34,7 @@ jobs:
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
 
       - name: Set up Gradle (repository currently has no Gradle wrapper)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '9.3.1'
 
@@ -53,7 +53,7 @@ jobs:
 
       - name: Upload debug APK
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mcnc-weather-debug-apk
           path: app/build/outputs/apk/debug/*.apk

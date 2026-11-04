@@ -253,3 +253,19 @@ This section supersedes earlier "pending CI" statements in the chronological not
 - The APK is signed with an ephemeral runner-only Debug key and is not a production Release build.
 - This exact-head result verifies the Android JVM unit-test task, Debug compilation/packaging and artifact upload. It does not verify live Syrian station ingestion, CAP RSS reachability or authenticity, official alert distribution, radar coverage, production signing or physical-device behavior.
 - PR #1 remains open and unmerged. The branch is 167 commits ahead of `main` and 0 behind; no changes were made to `main`.
+
+
+## Latest exact-head Android CI verification — 4 November 2026
+
+- Commit `6a7d19dc288ef6658c39a11cf47b24d76d8d1fc4` completed [GitHub Actions run 41855614170](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41855614170) successfully.
+- Java 17 and Android SDK setup, Gradle provisioning, ephemeral Debug signing-key creation, `testDebugUnitTest`, `assembleDebug`, both artifact uploads and job cleanup all completed successfully.
+- Debug APK artifact: `mcnc-weather-debug-apk`, ID `13336833451`, 22,709,099 bytes; expires 2 February 2027. GitHub artifact SHA-256 digest: `34d2865f3eddcb69ccbff50f73af13567945f62eff1f85785ebf1e397a61fafe`.
+- Unit-test report artifact: `android-unit-test-reports`, ID `13336868900`, 17,939 bytes; expires 18 November 2026. GitHub artifact SHA-256 digest: `5416203d6318a50f52a962c6e424c21cc4bc46e5ffc37029d6023a073c16aa74`.
+- The APK is a temporary-runner-key Debug build, not a production Release or release-signing verification.
+- This exact-head CI result does not establish live Syrian station ingestion, CAP feed reachability/authenticity, official alert distribution, radar coverage or physical-device behavior.
+
+## GitHub Actions runtime maintenance — 4 November 2026
+
+- Updated the Android workflow actions to current major releases: `actions/checkout@v7`, `actions/setup-java@v6`, `gradle/actions/setup-gradle@v6` and `actions/upload-artifact@v7`.
+- The Java distribution and version remain Eclipse Temurin 17; Gradle remains pinned to 9.3.1. Build tasks, artifact names, retention settings, permissions and ephemeral signing behavior are unchanged.
+- This is a workflow-toolchain maintenance change only. Its compatibility and resulting build must be confirmed by CI on the new commit before it is considered verified.
