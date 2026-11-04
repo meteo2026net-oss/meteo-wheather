@@ -66,3 +66,39 @@ data class StationObservation(
     val conditionCode: Int?,
     val provenance: WeatherDataProvenance
 )
+
+/**
+ * Converts the legacy station record into the provenance-aware domain model.
+ *
+ * Existing hard-coded station fixtures are explicitly tagged as simulated.
+ * A record marked non-demo is not assumed to be live: until a verified feed
+ * supplies timestamps and source metadata, its measurements remain unavailable.
+ */
+fun SyrianWeatherStation.toQualifiedObservation(): StationObservation {
+    val isSimulation = isDemoData
+    val source = WeatherDataProvenance(
+        provider = if (isSimulation) "MCNC local demonstration fixtures" else "Unverified station source",
+        kind = if (isSimulation) WeatherDataKind.SIMULATION else WeatherDataKind.UNKNOWN,
+        status = if (isSimulation) WeatherDataStatus.SIMULATED else WeatherDataStatus.UNAVAILABLE,
+        attribution = if (isSimulation) "قيم ثابتة للتوضيح فقط؛ ليست قياسات رصد فعلية." else null
+    )
+
+    fun measurement(value: Double, unit: String): QualifiedWeatherValue? =
+        if (isSimulation) QualifiedWeatherValue(value, unit, source) else null
+
+    return StationObservation(
+        stationId = id,
+        stationNameAr = nameAr,
+        governorateAr = governorate,
+        latitude = latitude,
+        longitude = longitude,
+        temperatureCelsius = measurement(temperatureCelsius, "°C"),
+        relativeHumidityPercent = measurement(humidity.toDouble(), "%"),
+        pressureHpa = measurement(pressureHpa, "hPa"),
+        windSpeedKmh = measurement(windSpeedKmh, "km/h"),
+        windDirectionDegrees = null,
+        conditionCode = null,
+        provenance = source
+    )
+}
+
