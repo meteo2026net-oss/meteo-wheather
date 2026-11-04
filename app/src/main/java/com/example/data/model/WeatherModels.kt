@@ -27,7 +27,7 @@ data class CurrentWeatherDto(
     @Json(name = "surface_pressure") val surfacePressure: Double = 1013.25,
     @Json(name = "wind_speed_10m") val windSpeed: Double = 0.0,
     @Json(name = "wind_direction_10m") val windDirection: Double = 0.0,
-    @Json(name = "uv_index") val uvIndex: Double = 0.0
+    @Json(name = "uv_index") val uvIndex: Double? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -131,7 +131,8 @@ data class CurrentWeather(
     val isDay: Boolean,
     val precipitationMm: Double,
     val visibilityKm: Double = 0.0,
-    val visibilityAvailable: Boolean = false
+    val visibilityAvailable: Boolean = false,
+    val uvIndexAvailable: Boolean = false
 )
 
 data class HourlyForecast(
