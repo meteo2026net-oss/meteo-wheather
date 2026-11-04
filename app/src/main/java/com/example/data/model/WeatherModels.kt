@@ -131,7 +131,7 @@ data class CurrentWeather(
     val isDay: Boolean,
     val precipitationMm: Double,
     val visibilityKm: Double = 0.0,
-    val visibilityAvailable: Boolean = true
+    val visibilityAvailable: Boolean = false
 )
 
 data class HourlyForecast(
@@ -143,7 +143,11 @@ data class HourlyForecast(
     val precipitationProb: Int,
     val humidity: Int,
     val windSpeedKmh: Double,
-    val isDay: Boolean = true
+    val isDay: Boolean = true,
+    val temperatureAvailable: Boolean = true,
+    val precipitationProbabilityAvailable: Boolean = true,
+    val humidityAvailable: Boolean = true,
+    val windSpeedAvailable: Boolean = true
 )
 
 data class DailyForecast(
@@ -159,7 +163,11 @@ data class DailyForecast(
     val precipitationProb: Int,
     val uvIndexMax: Double,
     val sunrise: String,
-    val sunset: String
+    val sunset: String,
+    val precipitationProbabilityAvailable: Boolean = true,
+    val uvIndexAvailable: Boolean = true,
+    val sunriseAvailable: Boolean = true,
+    val sunsetAvailable: Boolean = true
 )
 
 data class AirQualityInfo(
@@ -170,8 +178,8 @@ data class AirQualityInfo(
     val pm10: Double,
     val ozone: Double = 0.0,
     val no2: Double = 0.0,
-    val isAvailable: Boolean = true,
-    val isAqiAvailable: Boolean = true,
+    val isAvailable: Boolean = false,
+    val isAqiAvailable: Boolean = false,
     val pm25Available: Boolean = false,
     val pm10Available: Boolean = false,
     val ozoneAvailable: Boolean = false,
@@ -185,7 +193,7 @@ data class PollenInfo(
     val ragweedPollen: Double,
     val overallLevelAr: String,
     val adviceAr: String,
-    val isAvailable: Boolean = true,
+    val isAvailable: Boolean = false,
     val grassAvailable: Boolean = false,
     val birchAvailable: Boolean = false,
     val oliveAvailable: Boolean = false,
