@@ -133,13 +133,13 @@ fun HourlyForecastSection(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "$temp°",
+                        text = if (hour.temperatureAvailable) "$temp°" else "—",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
 
-                    if (hour.precipitationProb > 0) {
+                    if (hour.precipitationProbabilityAvailable) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -200,7 +200,7 @@ fun HourlyForecastSection(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${hour.humidity}% رطوبة",
+                        text = if (hour.humidityAvailable) "${hour.humidity}% رطوبة" else "— رطوبة",
                         fontSize = 12.sp,
                         color = Color.White
                     )
@@ -216,7 +216,7 @@ fun HourlyForecastSection(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${hour.windSpeedKmh.toInt()} كم/س",
+                        text = if (hour.windSpeedAvailable) "${hour.windSpeedKmh.toInt()} كم/س" else "— كم/س",
                         fontSize = 12.sp,
                         color = Color.White
                     )
