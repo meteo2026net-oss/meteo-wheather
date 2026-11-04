@@ -216,3 +216,19 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Commit `7910f0d` adds an `AndroidView.onRelease` cleanup path for the Leaflet WebView: stop loading, remove the JavaScript bridge, clear the WebChromeClient, remove child views and destroy the WebView.
 - This is a CI debug build signed with a temporary runner-only key. It is not a production release or a release-signing validation.
 - PR #1 remains open and unmerged; the `main` branch was not modified by this verification.
+
+## Final verification update — 4 November 2026
+
+This section supersedes earlier "pending CI" statements in the chronological notes above for the exact branch head listed here.
+
+- Verified PR head: `500de0dde407e5582ee06cf8c07816e1f73cc8ad`.
+- GitHub Actions run [41841431321](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41841431321) completed successfully.
+- Unit-test report: **53 tests, 0 failures, 0 skipped**.
+- CAP XML parser suite: **10 tests, 0 failures**, including exact CAP namespace enforcement, foreign-namespace spoofing rejection, expiry/current-time chronology and XML external-entity protections.
+- Robolectric context test: **1 test, 0 failures**. The transient HTTP artifact-fetch failure seen in the preceding run did not recur.
+- Debug APK assembly and both artifact uploads completed successfully.
+- Debug APK artifact: `mcnc-weather-debug-apk`, ID `13328967533`, 22,709,098 bytes; expires 2 February 2027.
+- Unit-test report artifact: `android-unit-test-reports`, ID `13329007588`, 17,948 bytes; expires 18 November 2026.
+- These artifacts are CI outputs. The APK is signed with an ephemeral runner-only Debug key, not the production Release signing identity.
+- This verification establishes JVM unit-test success, Android Debug compilation and APK packaging for this exact head. It does not establish official Syrian station ingestion, authenticated CAP feed connectivity, real radar coverage, production credentials, release signing or physical-device behavior.
+- PR #1 remains open and unmerged. The development branch is 163 commits ahead of `main` and 0 commits behind it. No changes were made to `main`.
