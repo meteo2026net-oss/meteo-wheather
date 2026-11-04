@@ -140,7 +140,7 @@ fun DailyForecastSection(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     // Rain Chance (if > 0)
-                    if (day.precipitationProb > 0) {
+                    if (day.precipitationProbabilityAvailable) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.width(42.dp)
@@ -250,7 +250,7 @@ fun DailyForecastSection(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "شروق: ${day.sunrise}",
+                                    text = "شروق: ${if (day.sunriseAvailable) day.sunrise else "—"}",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.9f)
                                 )
@@ -265,14 +265,14 @@ fun DailyForecastSection(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "غروب: ${day.sunset}",
+                                    text = "غروب: ${if (day.sunsetAvailable) day.sunset else "—"}",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.9f)
                                 )
                             }
 
                             Text(
-                                text = "مؤشر UV: ${day.uvIndexMax.toInt()}",
+                                text = "مؤشر UV: ${if (day.uvIndexAvailable) day.uvIndexMax.toInt().toString() else "—"}",
                                 fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.9f)
                             )
