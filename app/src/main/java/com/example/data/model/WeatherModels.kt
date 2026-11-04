@@ -66,6 +66,20 @@ object ForecastValueValidation {
         val validMin = finite(min) ?: return null
         return if (validMax >= validMin) validMax to validMin else null
     }
+
+    /** Formats an Open-Meteo local sunrise/sunset timestamp; malformed values stay unavailable. */
+    fun formatSunTime(raw: String?): String? {
+        val value = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val match = Regex("""^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):([0-5]\\d)(?::[0-5]\\d)?$""")
+            .matchEntire(value) ?: return null
+        val hour = match.groupValues[1].toInt()
+        val minute = match.groupValues[2]
+        return if (hour < 12) {
+            "${if (hour == 0) 12 else hour}:$minute ص"
+        } else {
+            "${if (hour == 12) 12 else hour - 12}:$minute م"
+        }
+    }
 }
 
 // DTOs for Open-Meteo Geocoding API
