@@ -215,7 +215,9 @@ data class SevereWeatherAlert(
     val safetyInstructionsAr: String,
     val source: String,
     val validUntil: String,
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+    val isOfficial: Boolean = false,
+    val isLocalDemo: Boolean = false
 )
 
 enum class WeatherMetricType(val id: String, val titleAr: String, val subtitleAr: String) {
