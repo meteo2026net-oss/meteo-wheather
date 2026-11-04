@@ -177,3 +177,13 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - Availability flags now reflect validated values rather than merely checking whether the JSON field was present.
 - Added JVM regression tests for negative, non-finite and zero environmental measurements.
 - CI verification is pending for this commit. Values and thresholds remain subject to provider documentation and units; this validation does not certify medical or official warning categories.
+
+## Map provider attribution and radar frame validation (4 November 2026)
+
+- Base-map tile configuration is shared across the interactive map, full-screen map and city radar views. Each selected provider now displays its own attribution and supported zoom limit: CARTO, OpenStreetMap or Esri.
+- Switching base-map styles in the full-screen map updates attribution and subdomain configuration together with the tile URL.
+- The RainViewer metadata response is treated as untrusted input: only HTTPS hosts under `rainviewer.com` are accepted, radar paths must match the expected versioned radar path format, and frame timestamps must be finite, positive and not materially in the future.
+- The newest valid frame is selected by timestamp rather than assuming the provider array is ordered.
+- Frames older than two hours remain visibly marked as stale; unavailable metadata or invalid frames produce an explicit unavailable status and must not be interpreted as evidence of dry weather.
+- The app continues to expose only the historical precipitation radar frame. Temperature, wind and cloud overlays remain unavailable until connected to verified data sources.
+- CI verification for these latest map and radar changes is pending. This does not establish radar coverage quality, provider uptime or production readiness.
