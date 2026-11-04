@@ -37,6 +37,12 @@ fun DailyForecastSection(
     modifier: Modifier = Modifier
 ) {
     var expandedDayIndex by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(dailyList.size) {
+        // Clear an expanded row if a refreshed forecast no longer contains that index.
+        if (expandedDayIndex != null && expandedDayIndex!! >= dailyList.size) {
+            expandedDayIndex = null
+        }
+    }
 
     // Find week min and max to draw normalized temperature range bars
     val globalMin = dailyList.minOfOrNull { it.minTempCelsius } ?: 10.0
