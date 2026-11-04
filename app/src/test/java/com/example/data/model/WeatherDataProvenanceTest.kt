@@ -28,6 +28,19 @@ class WeatherDataProvenanceTest {
     }
 
     @Test
+    fun nonFiniteMeasurementsAreNotDisplayable() {
+        listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY).forEach { invalid ->
+            val value = QualifiedWeatherValue(
+                value = invalid,
+                unit = "°C",
+                provenance = provenance()
+            )
+
+            assertFalse(value.isDisplayable)
+        }
+    }
+
+    @Test
     fun missingValueIsNotDisplayable() {
         val value = QualifiedWeatherValue(
             value = null,
