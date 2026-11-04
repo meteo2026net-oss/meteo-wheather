@@ -12,7 +12,7 @@ data class SyrianWeatherStation(
     val windSpeedKmh: Double,
     val conditionAr: String,
     val conditionType: WeatherConditionType,
-    val isOnline: Boolean = true,
+    val isOnline: Boolean = false,
     val lastReadingTime: String = "غير محدد",
     val isDemoData: Boolean = true
 )
