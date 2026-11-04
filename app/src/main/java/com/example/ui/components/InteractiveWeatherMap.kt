@@ -376,7 +376,7 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                 });
 
                 L.tileLayer('$baseTileUrl', {
-                    attribution: '&copy; OpenStreetMap & MCNC Syria',
+                    attribution: '&copy; OpenStreetMap contributors / CARTO / Esri',
                     subdomains: 'abcd',
                     maxZoom: 18
                 }).addTo(map);
@@ -384,6 +384,7 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
                 // RainViewer Real-Time Radar Layer Overlay
                 L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_latest/256/{z}/{x}/{y}/2/1_1.png', {
                     opacity: 0.65,
+                    attribution: '&copy; RainViewer',
                     maxZoom: 18
                 }).addTo(map);
 
