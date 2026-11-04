@@ -389,6 +389,15 @@ fun LeafletWeatherMapScreen(
                             )
                             webView.tag = htmlContent
                         }
+                    },
+                    onRelease = { webView ->
+                        // Detach the JavaScript bridge and release WebView resources when the
+                        // map leaves composition, avoiding a retained Activity/context.
+                        webView.stopLoading()
+                        webView.removeJavascriptInterface("AndroidMapInterface")
+                        webView.webChromeClient = null
+                        webView.removeAllViews()
+                        webView.destroy()
                     }
                 )
 
