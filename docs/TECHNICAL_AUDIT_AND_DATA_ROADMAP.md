@@ -90,15 +90,17 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 
 - Source inspection completed for the main repository, Android Gradle configuration, manifest, Open-Meteo API interfaces, repository, ViewModel and key Compose components.
 - Source files were fetched again from the development branch after each change and the targeted fallback patterns were checked.
-- Unit tests were added for provenance, missing values, demo station defaults and unavailable environmental data.
-- GitHub Actions CI successfully completed `testDebugUnitTest` and `assembleDebug` on 4 November 2026 (run `41753593868`, commit `e7d0d4dfa9f2fbc1fae5fdc8b7ae70dbc86915d9`). The debug APK was uploaded as artifact `mcnc-weather-debug-apk` (22,670,955 bytes; artifact ID `13287204164`; expires 2 February 2027). The runner used a temporary debug keystore only; it is not a production-signed release APK.
-- No external Syrian station feed or operational radar provider was verified.
+- Unit tests cover provenance, missing values, demo station defaults, unavailable environmental data, local CAP defaults, non-official alerts and demo bulletins.
+- Latest verified branch head: `234b812e00962eab994748bc1f9f19dc8c13144a` (4 November 2026).
+- GitHub Actions run `41755760607` completed successfully on that exact commit. Both `testDebugUnitTest` and `assembleDebug` passed, and the debug APK upload step succeeded.
+- Artifact: `mcnc-weather-debug-apk`, artifact ID `13288087751`, size 22,672,314 bytes, SHA-256 `fd7b9cc2185da515bd5c21ef275e2e0424a829bdcecc424514572ef73faf6b34`, expires 2 February 2027. This is a CI debug build signed with a temporary runner-only debug key, not a production-signed release.
+- The CI result verifies compilation, JVM unit tests and debug APK packaging; it does not verify live station ingestion, official alert distribution, provider coverage or production credentials.
+- No external Syrian station feed or operational official radar provider was verified.
 - No production data was changed by this audit.
-
 
 ## Verification notes
 
 - CI builds the debug APK and runs JVM unit tests on GitHub Actions. A temporary debug signing key is created in the runner only; it is not the production signing key.
 - The existing Robolectric context test uses Android API 35. A machine-specific offline SDK cache is optional and is only enabled through `ROBOLECTRIC_DEPENDENCY_DIR` when that directory exists.
 - The map WebViews disallow mixed content, file/content access and automatic window opening. Remote map resources use HTTPS.
-- Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. The current development-branch head passed the CI build and unit-test workflow; review any later branch commits independently before merge.
+- Latest source review: the legacy RainViewer nowcast URL has been replaced by the provider metadata manifest and the latest available historical frame. The branch head identified above passed CI; any later branch commit requires its own successful verification.
