@@ -80,17 +80,17 @@ data class AirQualityResponseDto(
 @JsonClass(generateAdapter = true)
 data class AirQualityCurrentDto(
     val pm10: Double? = null,
-    @Json(name = "pm2_5") val pm25: Double? = null,
-    @Json(name = "carbon_monoxide") val carbonMonoxide: Double? = null,
-    @Json(name = "nitrogen_dioxide") val nitrogenDioxide: Double? = null,
-    @Json(name = "ozone") val ozone: Double? = null,
-    @Json(name = "european_aqi") val europeanAqi: Int? = null,
-    @Json(name = "alder_pollen") val alderPollen: Double? = null,
-    @Json(name = "birch_pollen") val birchPollen: Double? = null,
-    @Json(name = "grass_pollen") val grassPollen: Double? = null,
-    @Json(name = "mugwort_pollen") val mugwortPollen: Double? = null,
-    @Json(name = "olive_pollen") val olivePollen: Double? = null,
-    @Json(name = "ragweed_pollen") val ragweedPollen: Double? = null
+    @field:Json(name = "pm2_5") val pm25: Double? = null,
+    @field:Json(name = "carbon_monoxide") val carbonMonoxide: Double? = null,
+    @field:Json(name = "nitrogen_dioxide") val nitrogenDioxide: Double? = null,
+    @field:Json(name = "ozone") val ozone: Double? = null,
+    @field:Json(name = "european_aqi") val europeanAqi: Int? = null,
+    @field:Json(name = "alder_pollen") val alderPollen: Double? = null,
+    @field:Json(name = "birch_pollen") val birchPollen: Double? = null,
+    @field:Json(name = "grass_pollen") val grassPollen: Double? = null,
+    @field:Json(name = "mugwort_pollen") val mugwortPollen: Double? = null,
+    @field:Json(name = "olive_pollen") val olivePollen: Double? = null,
+    @field:Json(name = "ragweed_pollen") val ragweedPollen: Double? = null
 )
 
 // Domain Models used in the UI
