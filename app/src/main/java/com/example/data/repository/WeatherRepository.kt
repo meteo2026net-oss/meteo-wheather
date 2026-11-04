@@ -98,7 +98,8 @@ class WeatherRepository(private val context: Context) {
             val hourlyHum = forecastDto.hourly?.relativeHumidity ?: emptyList()
             val hourlyWind = forecastDto.hourly?.windSpeed ?: emptyList()
 
-            val nowIsoPrefix = SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
+            val nowIsoPrefix = currentDto.time.takeIf { it.length >= 13 }?.take(13)
+                ?: SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
             var startIndex = hourlyTimes.indexOfFirst { it.startsWith(nowIsoPrefix) }
             if (startIndex < 0) startIndex = 0
 
@@ -106,7 +107,7 @@ class WeatherRepository(private val context: Context) {
             for (i in startIndex until endIndex) {
                 val rawTime = hourlyTimes[i]
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)
-                val code = hourlyCodes.getOrElse(i) { currentDto.weatherCode }
+                val code = hourlyCodes.getOrNull(i) ?: continue
                 val tempValue = hourlyTemps.getOrNull(i)
                 val precipValue = hourlyPrecip.getOrNull(i)
                 val humidityValue = hourlyHum.getOrNull(i)
