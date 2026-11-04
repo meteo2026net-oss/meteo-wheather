@@ -65,6 +65,7 @@ fun SyrianStationsSection(
             contentPadding = PaddingValues(horizontal = 2.dp)
         ) {
             items(stations) { station ->
+                val canShowLiveMeasurements = station.hasVerifiedLiveData && station.isOnline && !station.isDemoData
                 Column(
                     modifier = Modifier
                         .width(160.dp)
@@ -89,7 +90,7 @@ fun SyrianStationsSection(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(if (station.isDemoData) Color(0xFFFACC15) else if (station.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                .background(if (station.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFEF4444))
                         )
                     }
 
@@ -102,23 +103,23 @@ fun SyrianStationsSection(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (station.isDemoData) "بيانات تجريبية غير حية" else if (station.isOnline) "متصلة" else "غير متصلة",
+                        text = when { station.isDemoData -> "بيانات تجريبية غير حية"; canShowLiveMeasurements -> "متصلة — بيانات موثقة"; else -> "مصدر القياسات غير موثق" },
                         fontSize = 9.sp,
-                        color = if (station.isDemoData) Color(0xFFFACC15) else Color.White.copy(alpha = 0.7f)
+                        color = if (station.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFFCA5A5)
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = if (station.isDemoData) "—" else "${station.temperatureCelsius.toInt()}°",
+                            text = if (canShowLiveMeasurements) "${station.temperatureCelsius.toInt()}°" else "—",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD54F)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (station.isDemoData) "لا توجد قراءة فعلية" else station.conditionAr,
+                            text = if (canShowLiveMeasurements) station.conditionAr else "لا توجد قراءة موثقة",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.9f),
                             modifier = Modifier.padding(bottom = 6.dp),
@@ -133,12 +134,12 @@ fun SyrianStationsSection(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = if (station.isDemoData) "رطوبة: —" else "رطوبة: ${station.humidity}%",
+                            text = if (canShowLiveMeasurements) "رطوبة: ${station.humidity}%" else "رطوبة: —",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = if (station.isDemoData) "رياح: —" else "رياح: ${station.windSpeedKmh.toInt()} كم",
+                            text = if (canShowLiveMeasurements) "رياح: ${station.windSpeedKmh.toInt()} كم" else "رياح: —",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )

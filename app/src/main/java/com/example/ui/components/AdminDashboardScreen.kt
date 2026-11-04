@@ -283,6 +283,7 @@ fun AdminDashboardScreen(
                             )
                         }
                         items(stations) { st ->
+                            val canShowLiveMeasurements = st.hasVerifiedLiveData && st.isOnline && !st.isDemoData
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -297,7 +298,7 @@ fun AdminDashboardScreen(
                                         modifier = Modifier
                                             .size(10.dp)
                                             .clip(CircleShape)
-                                            .background(if (st.isDemoData) Color(0xFFFACC15) else if (st.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                            .background(if (st.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFEF4444))
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
@@ -306,7 +307,7 @@ fun AdminDashboardScreen(
                                     }
                                 }
                                 Text(
-                                    text = if (st.isDemoData) "—" else "${st.temperatureCelsius.toInt()}°C",
+                                    text = if (canShowLiveMeasurements) "${st.temperatureCelsius.toInt()}°C" else "—",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFFD54F)

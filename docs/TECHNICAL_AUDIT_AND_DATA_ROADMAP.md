@@ -74,6 +74,7 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 ## Changes implemented on the development branch
 
 - Syrian station cards and their domain model now explicitly identify the existing fixed station values as demonstration data.
+- Station measurements remain hidden unless a station is explicitly marked as verified, online and non-demo; the verification flag defaults to false and has a regression test.
 - Air-quality and pollen models now carry availability flags. The repository no longer substitutes plausible-looking AQI, pollutant or pollen readings when the provider omits them; the UI displays an unavailable state instead.
 - AQI-based alert detection is skipped when no AQI reading exists.
 - Visibility is no longer replaced with a fabricated 10 km reading when the hourly provider field is absent; the UI displays an unavailable state.

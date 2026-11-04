@@ -196,6 +196,8 @@ class WeatherDataProvenanceTest {
             isDemoData = false
         )
 
+        assertFalse(station.hasVerifiedLiveData)
+
         val observation = station.toQualifiedObservation()
 
         assertEquals(WeatherDataKind.UNKNOWN, observation.provenance.kind)

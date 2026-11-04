@@ -14,7 +14,9 @@ data class SyrianWeatherStation(
     val conditionType: WeatherConditionType,
     val isOnline: Boolean = false,
     val lastReadingTime: String = "غير محدد",
-    val isDemoData: Boolean = true
+    val isDemoData: Boolean = true,
+    /** True only after a station feed and its measurement provenance have been verified. */
+    val hasVerifiedLiveData: Boolean = false
 )
 
 data class CapAlertItem(
