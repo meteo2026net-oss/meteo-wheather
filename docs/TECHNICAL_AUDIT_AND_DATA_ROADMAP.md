@@ -131,3 +131,10 @@ Air-quality and pollen fields now have per-field availability flags; partial pol
 - The alert now reports the measured/modelled wind speed and explicitly distinguishes the possibility of airborne dust from a confirmed dust event.
 - This remains an automated, non-official forecast-rule advisory, not an observation or official warning.
 - GitHub Actions run [41763192852](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41763192852) completed successfully on the previous head `b72d875f785279c8c2e5dd2214952320eaf5af08`, including `testDebugUnitTest`, `assembleDebug` and artifact upload. The wording follow-up in this section requires its own CI run.
+
+
+## Non-finite measurement guard (4 November 2026)
+
+- `QualifiedWeatherValue.isDisplayable` now rejects non-finite numeric values (`NaN`, positive infinity and negative infinity), in addition to null and explicitly unavailable values.
+- A measured zero remains displayable; missing and invalid numeric values are not converted into plausible readings.
+- Added a regression test covering all three non-finite cases. The latest CI run for the previous branch head is still being monitored; this new change requires its own successful CI run.
