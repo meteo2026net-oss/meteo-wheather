@@ -1,9 +1,21 @@
 package com.example.ui.screens
 
+import com.example.ui.components.shouldReloadEmbeddedMapHtml
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LeafletJsBridgeTest {
+
+    @Test
+    fun embeddedMapHtmlReloadsOnlyWhenDocumentChanges() {
+        val initialHtml = "<html>radar-a</html>"
+        val sameHtml = "<html>radar-a</html>"
+        val updatedHtml = "<html>radar-b</html>"
+
+        assertEquals(true, shouldReloadEmbeddedMapHtml(null, initialHtml))
+        assertEquals(false, shouldReloadEmbeddedMapHtml(initialHtml, sameHtml))
+        assertEquals(true, shouldReloadEmbeddedMapHtml(initialHtml, updatedHtml))
+    }
 
     @Test
     fun knownCityWithMatchingCoordinatesIsAcceptedAndJsWeatherIsIgnored() {
