@@ -299,7 +299,9 @@ class WeatherRepository(private val context: Context) {
             }
 
             // Weather Insights
-            val insights = generateInsights(currentWeather, dailyList.firstOrNull())
+            val currentDateRaw = currentTime.take(10).takeIf { Regex("""^\\d{4}-\\d{2}-\\d{2}$""").matches(it) }
+            val todayForecast = DailyForecastSelection.forCurrentDate(dailyList, currentDateRaw)
+            val insights = generateInsights(currentWeather, todayForecast)
 
             Result.success(
                 FullWeatherData(
@@ -310,7 +312,8 @@ class WeatherRepository(private val context: Context) {
                     airQuality = airQuality,
                     pollen = pollenInfo,
                     alerts = alerts,
-                    insights = insights
+                    insights = insights,
+                    currentDateRaw = currentDateRaw
                 )
             )
         } catch (e: CancellationException) {

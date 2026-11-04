@@ -377,5 +377,11 @@ data class FullWeatherData(
     val pollen: PollenInfo,
     val alerts: List<SevereWeatherAlert>,
     val insights: WeatherInsights,
-    val lastUpdated: Long = System.currentTimeMillis()
+    val lastUpdated: Long = System.currentTimeMillis(),
+    val currentDateRaw: String? = null
 )
+
+object DailyForecastSelection {
+    fun forCurrentDate(daily: List<DailyForecast>, currentDateRaw: String?): DailyForecast? =
+        currentDateRaw?.let { date -> daily.firstOrNull { it.dateRaw == date } }
+}

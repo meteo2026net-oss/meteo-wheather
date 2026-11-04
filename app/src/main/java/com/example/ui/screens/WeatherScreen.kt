@@ -696,7 +696,7 @@ fun MainWeatherHero(
     isFahrenheit: Boolean
 ) {
     val current = weather.current
-    val today = weather.daily.firstOrNull()
+    val today = DailyForecastSelection.forCurrentDate(weather.daily, weather.currentDateRaw)
 
     val currentTemp = if (isFahrenheit) {
         (current.temperatureCelsius * 9 / 5 + 32).toInt()

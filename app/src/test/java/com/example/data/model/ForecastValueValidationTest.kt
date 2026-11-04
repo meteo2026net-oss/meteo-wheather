@@ -123,3 +123,48 @@ class ForecastValueValidationTest {
     }
 
 }
+
+
+class DailyForecastSelectionTest {
+    @org.junit.Test
+    fun selectsForecastMatchingProviderCurrentDateRatherThanFirstAvailableDay() {
+        val tomorrow = DailyForecast(
+            dateRaw = "2026-11-06",
+            dayNameAr = "غداً",
+            dayNameEn = "Tomorrow",
+            formattedDate = "06/11",
+            conditionType = WeatherConditionType.CLEAR,
+            weatherCode = 0,
+            conditionNameAr = "صافٍ",
+            maxTempCelsius = 20.0,
+            minTempCelsius = 10.0,
+            precipitationProb = 0,
+            uvIndexMax = 1.0,
+            sunrise = "--:--",
+            sunset = "--:--"
+        )
+        val dayAfter = tomorrow.copy(dateRaw = "2026-11-07")
+        assertNull(DailyForecastSelection.forCurrentDate(listOf(tomorrow, dayAfter), "2026-11-05"))
+        assertEquals(tomorrow, DailyForecastSelection.forCurrentDate(listOf(tomorrow, dayAfter), "2026-11-06"))
+    }
+
+    @org.junit.Test
+    fun returnsNullWhenProviderCurrentDateIsUnavailable() {
+        val forecast = DailyForecast(
+            dateRaw = "2026-11-06",
+            dayNameAr = "غداً",
+            dayNameEn = "Tomorrow",
+            formattedDate = "06/11",
+            conditionType = WeatherConditionType.CLEAR,
+            weatherCode = 0,
+            conditionNameAr = "صافٍ",
+            maxTempCelsius = 20.0,
+            minTempCelsius = 10.0,
+            precipitationProb = 0,
+            uvIndexMax = 1.0,
+            sunrise = "--:--",
+            sunset = "--:--"
+        )
+        assertNull(DailyForecastSelection.forCurrentDate(listOf(forecast), null))
+    }
+}
