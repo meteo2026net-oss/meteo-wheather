@@ -131,9 +131,9 @@ object ForecastValueValidation {
         val hour = match.groupValues[4].toInt()
         val minute = match.groupValues[5]
         return if (hour < 12) {
-            "\${if (hour == 0) 12 else hour}:$minute ص"
+            "${if (hour == 0) 12 else hour}:$minute ص"
         } else {
-            "\${if (hour == 12) 12 else hour - 12}:$minute م"
+            "${if (hour == 12) 12 else hour - 12}:$minute م"
         }
     }
 
