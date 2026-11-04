@@ -54,6 +54,27 @@ data class DailyWeatherDto(
     @Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int>? = emptyList()
 )
 
+/**
+ * Country-aware city matching for saved favorites.
+ *
+ * Older saved entries may not contain a country; in that legacy case, retain
+ * name-only matching rather than making existing favorites disappear.
+ */
+object CityFavoriteMatching {
+    fun matches(
+        savedName: String,
+        savedCountry: String,
+        queryName: String,
+        queryCountry: String
+    ): Boolean {
+        if (!savedName.trim().equals(queryName.trim(), ignoreCase = true)) return false
+        val storedCountry = savedCountry.trim()
+        val requestedCountry = queryCountry.trim()
+        return storedCountry.isEmpty() || requestedCountry.isEmpty() ||
+            storedCountry.equals(requestedCountry, ignoreCase = true)
+    }
+}
+
 /** Range checks for forecast measurements before they enter UI/domain models. */
 object ForecastValueValidation {
     fun finite(value: Double?): Double? = value?.takeIf { it.isFinite() }

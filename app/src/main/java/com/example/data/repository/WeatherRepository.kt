@@ -424,7 +424,12 @@ class WeatherRepository(private val context: Context) {
 
     fun isCityFavorite(name: String, country: String): Boolean {
         return getSavedFavoriteCities().any {
-            it.name.equals(name, ignoreCase = true)
+            CityFavoriteMatching.matches(
+                savedName = it.name,
+                savedCountry = it.country,
+                queryName = name,
+                queryCountry = country
+            )
         }
     }
 
