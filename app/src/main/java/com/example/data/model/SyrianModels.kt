@@ -43,3 +43,11 @@ data class AudioBulletinItem(
     val bulletinScriptAr: String,
     val isDemoData: Boolean = true
 )
+
+
+data class ChatMessageItem(
+    val id: String,
+    val sender: String,
+    val text: String,
+    val timestamp: String
+)

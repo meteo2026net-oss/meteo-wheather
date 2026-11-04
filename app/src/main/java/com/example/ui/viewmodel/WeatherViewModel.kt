@@ -29,8 +29,17 @@ data class WeatherUiState(
     val isAdminDashboardOpen: Boolean = false,
     val metricPreferences: List<MetricPreference> = WeatherRepository.DEFAULT_METRIC_PREFERENCES,
     val areAlertsEnabled: Boolean = true,
+    val isLeafletMapScreenOpen: Boolean = false,
+    val userGoogleEmail: String? = null,
+    val isGoogleSignInModalOpen: Boolean = false,
+    val chatMessages: List<ChatMessageItem> = emptyList(),
+    val isGeneratingAiChat: Boolean = false,
+    val isVoiceListening: Boolean = false,
+    val isVoiceSpeaking: Boolean = false,
+    val lastVoiceQuery: String = "",
+    val lastAiVoiceResponse: String = "",
     val syrianStations: List<SyrianWeatherStation> = emptyList(),
-    val audioBulletin: AudioBulletinItem = AudioBulletinItem("1", "النشرة الجوية الصباحية", "اليوم", 60, "رئيس التنبؤات (MCNC)", "جاري التحميل..."),
+    val audioBulletin: AudioBulletinItem = AudioBulletinItem("1", "نشرة تجريبية", "وقت النشر غير محدد", 0, "صوت آلي تجريبي", "لا يوجد نص نشرة محمل."),
     val customAdminAlerts: List<SevereWeatherAlert> = emptyList()
 )
 
@@ -118,6 +127,14 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     fun closeAdminDashboard() {
         _uiState.update { it.copy(isAdminDashboardOpen = false) }
+    }
+
+    fun openLeafletMapScreen() {
+        _uiState.update { it.copy(isLeafletMapScreenOpen = true) }
+    }
+
+    fun closeLeafletMapScreen() {
+        _uiState.update { it.copy(isLeafletMapScreenOpen = false) }
     }
 
     fun saveMetricPreferences(preferences: List<MetricPreference>) {
@@ -212,5 +229,109 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             isFavorite = false
         )
         loadWeather(location)
+    }
+
+    fun openGoogleSignInModal() {
+        _uiState.update { it.copy(isGoogleSignInModalOpen = true) }
+    }
+
+    fun closeGoogleSignInModal() {
+        _uiState.update { it.copy(isGoogleSignInModalOpen = false) }
+    }
+
+    fun sendGeminiChatMessage(userText: String) {
+        val cleanText = userText.trim()
+        if (cleanText.isEmpty()) return
+
+        val userMsg = ChatMessageItem(
+            id = System.currentTimeMillis().toString(),
+            sender = "user",
+            text = cleanText,
+            timestamp = "الآن"
+        )
+        _uiState.update { it.copy(chatMessages = it.chatMessages + userMsg, isGeneratingAiChat = true) }
+
+        viewModelScope.launch {
+            delay(250)
+            val state = _uiState.value
+            val weather = state.weatherData
+            val current = weather?.current
+            val cityName = state.selectedCity.name
+            val rainProbability = weather?.hourly
+                ?.filter { it.precipitationProbabilityAvailable }
+                ?.maxOfOrNull { it.precipitationProb }
+
+            val response = if (current == null) {
+                "لا تتوفر بيانات طقس محمّلة حالياً لمدينة $cityName. حدّث بيانات الطقس أولاً ثم أعد السؤال."
+            } else {
+                when {
+                    cleanText.contains("مطر") || cleanText.contains("أمطار") || cleanText.contains("هطول") ->
+                        if (rainProbability != null) {
+                            "في $cityName، أعلى احتمال هطول ضمن الساعات المتاحة في التوقعات هو $rainProbability%. هذه قراءة توقعية وليست رصداً مطرياً."
+                        } else {
+                            "بيانات احتمال الهطول للساعات القادمة غير متاحة حالياً لمدينة $cityName."
+                        }
+
+                    cleanText.contains("رياح") || cleanText.contains("رطوبة") ->
+                        "في $cityName، سرعة الرياح الحالية ${current.windSpeedKmh.toInt()} كم/س، والرطوبة النسبية ${current.humidity}%. القيم من بيانات الطقس الحالية المحمّلة."
+
+                    cleanText.contains("جودة الهواء") || cleanText.contains("تلوث") || cleanText.contains("هواء") ->
+                        if (weather?.airQuality?.isAqiAvailable == true) {
+                            "مؤشر جودة الهواء الأوروبي في $cityName هو ${weather.airQuality.aqiValue} (${weather.airQuality.categoryAr})."
+                        } else {
+                            "لا تتوفر قراءة موثوقة لمؤشر جودة الهواء حالياً في $cityName."
+                        }
+
+                    cleanText.contains("حبوب") || cleanText.contains("حساسية") ->
+                        if (weather?.pollen?.isAvailable == true) {
+                            weather.pollen.adviceAr
+                        } else {
+                            "بيانات حبوب اللقاح غير متاحة حالياً لهذا الموقع أو الوقت."
+                        }
+
+                    cleanText.contains("زراعة") || cleanText.contains("ري") ->
+                        "البيانات الحالية لا تتضمن رطوبة التربة أو التبخر-نتح أو احتياجات المحاصيل؛ لذلك لا يمكن إصدار توصية ري موثوقة اعتماداً على الطقس وحده."
+
+                    cleanText.contains("ملابس") || cleanText.contains("ماذا ألبس") ->
+                        when {
+                            current.temperatureCelsius <= 10.0 -> "الحرارة الحالية في $cityName نحو ${current.temperatureCelsius.toInt()}°م؛ قد تكون طبقات الملابس الدافئة مناسبة."
+                            current.temperatureCelsius >= 30.0 -> "الحرارة الحالية في $cityName نحو ${current.temperatureCelsius.toInt()}°م؛ اختر ملابس مريحة وخفيفة، وقلّل التعرض للشمس وقت الذروة."
+                            else -> "الحرارة الحالية في $cityName نحو ${current.temperatureCelsius.toInt()}°م والجو ${current.conditionNameAr}؛ اختر ملابس مناسبة للطقس المتغير خلال اليوم."
+                        }
+
+                    else ->
+                        "في $cityName، درجة الحرارة الحالية ${current.temperatureCelsius.toInt()}°م، والحالة ${current.conditionNameAr}، والرياح ${current.windSpeedKmh.toInt()} كم/س. هذا رد محلي تجريبي مبني على البيانات المتاحة، وليس إجابة من Gemini."
+                }
+            }
+
+            val assistantMsg = ChatMessageItem(
+                id = (System.currentTimeMillis() + 1).toString(),
+                sender = "demo",
+                text = response,
+                timestamp = "الآن"
+            )
+            _uiState.update {
+                it.copy(
+                    chatMessages = it.chatMessages + assistantMsg,
+                    isGeneratingAiChat = false,
+                    lastAiVoiceResponse = response
+                )
+            }
+        }
+    }
+
+    fun handleVoiceInput(speechText: String) {
+        _uiState.update {
+            it.copy(lastVoiceQuery = speechText, isVoiceListening = false, isVoiceSpeaking = false)
+        }
+        sendGeminiChatMessage(speechText)
+    }
+
+    fun setVoiceListening(listening: Boolean) {
+        _uiState.update { it.copy(isVoiceListening = listening) }
+    }
+
+    fun stopVoiceSpeaking() {
+        _uiState.update { it.copy(isVoiceSpeaking = false) }
     }
 }

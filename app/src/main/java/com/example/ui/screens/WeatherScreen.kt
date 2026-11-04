@@ -116,7 +116,10 @@ fun WeatherScreen(
                     onGpsClick = { requestGpsAction() },
                     onUnitToggle = { viewModel.toggleUnit() },
                     onRefresh = { viewModel.refreshWeather() },
-                    onToggleFavorite = { viewModel.toggleFavorite(uiState.selectedCity) }
+                    onToggleFavorite = { viewModel.toggleFavorite(uiState.selectedCity) },
+                    onMapClick = { viewModel.openLeafletMapScreen() },
+                    onGoogleSignInClick = { viewModel.openGoogleSignInModal() },
+                    userEmail = uiState.userGoogleEmail
                 )
             }
         ) { paddingValues ->
@@ -273,10 +276,42 @@ fun WeatherScreen(
                             onCustomizeClick = { viewModel.openCustomizeSheet() }
                         )
 
-                        // Simulated Precipitation Radar
+                        // Gemini AI Voice Conversation Section
+                        GeminiVoiceConversationSection(
+                            weatherData = weather,
+                            isListening = uiState.isVoiceListening,
+                            isSpeaking = uiState.isVoiceSpeaking,
+                            lastVoiceQuery = uiState.lastVoiceQuery,
+                            lastAiVoiceResponse = uiState.lastAiVoiceResponse,
+                            onStartListeningClick = { },
+                            onStopVoiceClick = {
+                                viewModel.stopVoiceSpeaking()
+                            }
+                        )
+
+                        // Gemini AI Weather Chat Section
+                        GeminiChatSection(
+                            weatherData = weather,
+                            messages = uiState.chatMessages,
+                            isGenerating = uiState.isGeneratingAiChat,
+                            onSendMessage = { text ->
+                                viewModel.sendGeminiChatMessage(text)
+                            },
+                            onConnectApiClick = {
+                                viewModel.openGoogleSignInModal()
+                            }
+                        )
+
+                        // Third-party RainViewer radar layer
                         InteractiveRadarView(cityName = weather.location.name)
                     }
                 }
+
+                // Google Sign In & Gemini API Link Modal Sheet
+                GoogleSignInModal(
+                    isOpen = uiState.isGoogleSignInModalOpen,
+                    onDismiss = { viewModel.closeGoogleSignInModal() }
+                )
 
                 // City Search Bottom Sheet Modal
                 CitySearchSheet(
@@ -322,6 +357,15 @@ fun WeatherScreen(
                         viewModel.publishAudioBulletin(title, script)
                     }
                 )
+
+                // Full Screen Leaflet Weather Map Screen Overlay
+                if (uiState.isLeafletMapScreenOpen) {
+                    LeafletWeatherMapScreen(
+                        currentCity = uiState.selectedCity,
+                        onCitySelected = { viewModel.loadWeather(it) },
+                        onBackClick = { viewModel.closeLeafletMapScreen() }
+                    )
+                }
             }
         }
     }
@@ -339,7 +383,10 @@ fun WeatherTopBar(
     onGpsClick: () -> Unit,
     onUnitToggle: () -> Unit,
     onRefresh: () -> Unit,
-    onToggleFavorite: () -> Unit
+    onToggleFavorite: () -> Unit,
+    onMapClick: () -> Unit,
+    onGoogleSignInClick: () -> Unit,
+    userEmail: String? = null
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "refreshAnim")
     val rotation by infiniteTransition.animateFloat(
@@ -404,12 +451,57 @@ fun WeatherTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // GPS Location Button
+            // Google Account / API Button
+            Box(
+                modifier = Modifier
+                    .height(38.dp)
+                    .clip(RoundedCornerShape(19.dp))
+                    .background(if (userEmail != null) Color(0xFF166534) else Color(0xFF4285F4))
+                    .clickable { onGoogleSignInClick() }
+                    .padding(horizontal = 10.dp)
+                    .testTag("google_signin_topbar_button"),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (userEmail != null) Icons.Default.AccountCircle else Icons.Default.Login,
+                        contentDescription = "حساب Google",
+                        tint = Color.White,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (userEmail != null) "جوجل متصل" else "دخول Google",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+            // Leaflet Map Screen Button
             Box(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
                     .background(Color(0xFF0284C7).copy(alpha = 0.85f))
+                    .clickable { onMapClick() }
+                    .testTag("leaflet_map_topbar_button"),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Public,
+                    contentDescription = "فتح خريطة Leaflet",
+                    tint = Color.White,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+
+            // GPS Location Button
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.18f))
                     .clickable { onGpsClick() }
                     .testTag("gps_location_button"),
                 contentAlignment = Alignment.Center
