@@ -550,7 +550,7 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                 }).addTo(map);
 
                 var radarLayer = null;
-                var selectedWeatherOverlay = 'precipitation';
+                var selectedWeatherOverlay = '${overlay.name.lowercase()}';
                 var radarStatusControl = L.control({ position: 'bottomleft' });
                 radarStatusControl.onAdd = function() {
                     var div = L.DomUtil.create('div', 'radar-status');
