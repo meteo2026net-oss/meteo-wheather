@@ -109,10 +109,11 @@ class WeatherRepository(private val context: Context) {
                 val rawTime = hourlyTimes[i]
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)
                 val code = hourlyCodes.getOrNull(i) ?: continue
-                val tempValue = hourlyTemps.getOrNull(i)
+                // Treat non-finite provider measurements as missing, not as displayable readings.
+                val tempValue = hourlyTemps.getOrNull(i)?.takeIf { it.isFinite() }
                 val precipValue = hourlyPrecip.getOrNull(i)
                 val humidityValue = hourlyHum.getOrNull(i)
-                val windValue = hourlyWind.getOrNull(i)
+                val windValue = hourlyWind.getOrNull(i)?.takeIf { it.isFinite() }
                 val temp = tempValue ?: currentDto.temperature
                 val precip = precipValue ?: 0
                 val hum = humidityValue ?: currentDto.relativeHumidity
