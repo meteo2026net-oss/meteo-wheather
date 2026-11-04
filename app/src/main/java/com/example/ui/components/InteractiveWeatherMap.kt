@@ -142,6 +142,11 @@ fun InteractiveWeatherMap(
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
+                    Text(
+                        text = "طبقة توضيحية ببيانات ثابتة — ليست رصداً مباشراً",
+                        fontSize = 10.sp,
+                        color = Color(0xFFFACC15)
+                    )
                 }
             }
 
