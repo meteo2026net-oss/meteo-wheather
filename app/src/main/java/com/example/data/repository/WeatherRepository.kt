@@ -527,17 +527,17 @@ class WeatherRepository(private val context: Context) {
             )
         }
 
-        // 6. Dust Storm / Hazardous AQI Alert
+        // 6. Poor air quality. AQI alone does not identify the pollution source.
         if (aqi >= 75) {
             list.add(
                 SevereWeatherAlert(
                     id = "air_quality_${location.name}",
-                    titleAr = "تنبيه تلوث هواء وعوالق ترابية",
+                    titleAr = "تنبيه بشأن تراجع جودة الهواء",
                     severity = AlertSeverity.ADVISORY,
-                    descriptionAr = "جودة الهواء منخفضة بسبب العوالق والجسيمات الدقيقة في الجو (AQI: $aqi).",
-                    safetyInstructionsAr = "ارتداء كمامة لمرضى الجهاز التنفسي والحد من الأنشطة البدنية في الخارج.",
-                    source = "Open-Meteo — تقدير آلي غير رسمي",
-                    validUntil = "طوال فترة بقاء العوالق"
+                    descriptionAr = "تشير قراءة مؤشر جودة الهواء الأوروبي إلى تراجع جودة الهواء (European AQI: $aqi). لا تحدد هذه القراءة وحدها مصدر الملوثات.",
+                    safetyInstructionsAr = "قلّل الأنشطة البدنية الشاقة في الخارج، واتبع الإرشادات الصحية المحلية، خصوصاً إذا كنت من الفئات الحساسة.",
+                    source = "Open-Meteo European AQI — تقدير آلي غير رسمي",
+                    validUntil = "مدة صلاحية التوقع غير محددة من هذا المصدر"
                 )
             )
         }
