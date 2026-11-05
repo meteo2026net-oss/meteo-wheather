@@ -53,6 +53,7 @@ data class CapReconciliationState(
     ): CapReconciliationState {
         val target = resolveSingleTarget(message) ?: return this
         if (target.cancelled || !target.currentMessage.expiresAt.isActiveAt(now)) return this
+        if (reference in target.messageHistory || alerts.values.any { reference in it.messageHistory }) return this
         if (!isStrictlyNewer(message, target.latestReference)) return this
         if (!message.isPubliclyDisplayable(now, target.messageHistory)) return this
 
@@ -71,8 +72,9 @@ data class CapReconciliationState(
     ): CapReconciliationState {
         val target = resolveSingleTarget(message) ?: return this
         if (target.cancelled || !target.currentMessage.expiresAt.isActiveAt(now)) return this
+        if (reference in target.messageHistory || alerts.values.any { reference in it.messageHistory }) return this
         if (!isStrictlyNewer(message, target.latestReference)) return this
-        if (!isValidActualPublicEnvelope(message, now)) return this
+        if (!isValidCancelEnvelope(message, now)) return this
 
         val cancelled = target.copy(
             latestReference = reference,
@@ -100,14 +102,14 @@ data class CapReconciliationState(
         previous: CapReference
     ): Boolean = message.sentAt?.isAfter(previous.sentAt) == true
 
-    private fun isValidActualPublicEnvelope(
+    private fun isValidCancelEnvelope(
         message: CapFeedMessage,
         now: Instant
     ): Boolean =
         message.status == "Actual" &&
             message.scope == "Public" &&
-            message.sentAt?.let { !it.isAfter(now) } == true &&
-            message.expiresAt.isActiveAt(now)
+            message.messageType == "Cancel" &&
+            message.sentAt?.let { !it.isAfter(now) } == true
 
     private fun CapFeedMessage.toReference(): CapReference? {
         val senderValue = sender?.takeIf(String::isNotBlank) ?: return null
