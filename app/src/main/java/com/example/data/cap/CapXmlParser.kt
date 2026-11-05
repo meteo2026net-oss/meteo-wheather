@@ -36,11 +36,11 @@ data class CapFeedMessage(
     val expires: String?,
     val expiresAt: Instant?
 ) {
-    fun isPubliclyDisplayable(now: Instant = Instant.now()): Boolean {
+    fun isPubliclyDisplayable(now: Instant = Instant.now(), updateHasBeenReconciled: Boolean = false): Boolean {
         return status.equals("Actual", ignoreCase = true) &&
             scope.equals("Public", ignoreCase = true) &&
             (messageType.equals("Alert", ignoreCase = true) ||
-                messageType.equals("Update", ignoreCase = true)) &&
+                (messageType.equals("Update", ignoreCase = true) && updateHasBeenReconciled && references.isNotEmpty())) &&
             sentAt?.let { !it.isAfter(now) } == true &&
             expiresAt?.let { expiry ->
                 expiry.isAfter(now) && sentAt?.let(expiry::isAfter) == true

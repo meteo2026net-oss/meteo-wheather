@@ -77,9 +77,21 @@ class CapXmlParserTest {
     }
 
     @Test
-    fun updateMessagesCanBeDisplayedOnlyWhileActualPublicAndUnexpired() {
-        assertTrue(CapXmlParser.parse(cap(messageType = "Update"))
-            .isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+    fun updateMessagesRequireExplicitReconciliationAndReferences() {
+        val noReferences = CapXmlParser.parse(cap(messageType = "Update"))
+        assertFalse(noReferences.isPubliclyDisplayable(
+            Instant.parse("2026-11-04T06:30:00Z"),
+            updateHasBeenReconciled = true
+        ))
+        val withReferences = CapXmlParser.parse(cap(messageType = "Update").replace(
+            "<scope>Public</scope>",
+            "<scope>Public</scope><references>issuer@example.gov.sy,base-001,2026-11-04T05:00:00Z</references>"
+        ))
+        assertFalse(withReferences.isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+        assertTrue(withReferences.isPubliclyDisplayable(
+            Instant.parse("2026-11-04T06:30:00Z"),
+            updateHasBeenReconciled = true
+        ))
     }
 
     @Test

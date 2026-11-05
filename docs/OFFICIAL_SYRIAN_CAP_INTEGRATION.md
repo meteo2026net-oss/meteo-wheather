@@ -15,7 +15,7 @@ This establishes the registered source identity and endpoint listing. It does **
 - Parser disables DTD and external entity processing, rejects oversized documents, and requires a CAP `alert` root plus an identifier.
 - Arabic `info` content is preferred when multiple language blocks are present.
 - CAP severity values are mapped to the app's existing alert severity enum.
-- Public display gate accepts only `status=Actual`, `scope=Public`, `msgType=Alert|Update`, and a valid future `expires` timestamp.
+- Public display gate accepts only `status=Actual`, `scope=Public`, `msgType=Alert directly, or Update only after references are reconciled against an existing alert`, and a valid future `expires` timestamp.
 - Test, Exercise, Private, Cancel, expired, and expiry-less messages are not treated as active public warnings.
 - CAP references are retained so a later feed processor can reconcile Update and Cancel messages.
 
@@ -63,3 +63,11 @@ This establishes the registered source identity and endpoint listing. It does **
 - A fresh retrieval attempt for the registered RSS URL was not accessible through the review web-access path. Do not interpret this as a confirmed server outage; re-test from the app's intended network environment when implementing the fixed-host client.
 - The next CAP integration gate remains: inspect a real, sanitized RSS/CAP fixture; validate item links and redirect behavior; enforce HTTPS and the registered host; parse CAP 1.2 documents; verify sender/source trust independently; then test Update/Cancel/expiry reconciliation before enabling official-alert presentation.
 - No official CAP alert is currently fetched or displayed by this application.
+
+
+## Update reconciliation safety gate — 5 November 2026
+
+- CAP Update documents are not standalone alerts. Their references must be resolved against a previously accepted alert before the update can be shown.
+- The parser display predicate rejects every Update by default. A caller must explicitly pass `updateHasBeenReconciled = true`, and the parsed message must contain at least one CAP reference.
+- Regression tests cover missing references, default rejection, and explicit reconciliation acceptance.
+- This is a fail-closed display gate, not a complete reconciliation store. No caller may pass the flag until it verifies the referenced message triples and applies the update to the original alert.
