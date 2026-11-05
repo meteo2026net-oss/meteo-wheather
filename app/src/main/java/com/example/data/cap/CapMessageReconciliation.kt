@@ -72,6 +72,7 @@ data class CapReconciliationState(
     ): CapReconciliationState {
         val target = resolveSingleTarget(message) ?: return this
         if (target.cancelled || !target.currentMessage.expiresAt.isActiveAt(now)) return this
+        if (hasUsedIdentifier(reference)) return this
         if (reference in target.messageHistory || alerts.values.any { reference in it.messageHistory }) return this
         if (!isStrictlyNewer(message, target.latestReference)) return this
         if (!isValidCancelEnvelope(message, now)) return this

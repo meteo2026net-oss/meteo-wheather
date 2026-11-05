@@ -108,6 +108,14 @@ class CapMessageReconciliationTest {
         assertEquals(afterUpdate, afterUpdate.apply(reused, now))
     }
 
+    @Test fun rejectsCancelWhenSenderReusesAnExistingMessageIdentifier() {
+        val initial = CapReconciliationState().apply(message("base-1"), now)
+        val reusedIdentifier = message(
+            "base-1", "Cancel", "2026-11-04T06:15:00Z", base
+        )
+        assertEquals(initial, initial.apply(reusedIdentifier, now))
+    }
+
     @Test fun rejectsCancelWithUnknownReferenceAndDoesNotCreateAlertFromCancel() {
         val empty = CapReconciliationState()
         val orphanCancel = message("cancel-orphan", "Cancel", "2026-11-04T06:15:00Z", base)
