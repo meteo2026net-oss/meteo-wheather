@@ -676,73 +676,14 @@ class WeatherRepository(private val context: Context) {
         return list
     }
 
-    private fun mapWeatherCodeToType(code: Int): WeatherConditionType {
-        return when (code) {
-            0 -> WeatherConditionType.CLEAR
-            1, 2 -> WeatherConditionType.PARTLY_CLOUDY
-            3 -> WeatherConditionType.CLOUDY
-            45, 48 -> WeatherConditionType.FOG
-            51, 53, 55 -> WeatherConditionType.DRIZZLE
-            56, 57 -> WeatherConditionType.DRIZZLE
-            61, 63 -> WeatherConditionType.RAIN
-            65 -> WeatherConditionType.HEAVY_RAIN
-            66, 67 -> WeatherConditionType.RAIN
-            71, 73, 75, 77 -> WeatherConditionType.SNOW
-            80, 81 -> WeatherConditionType.RAIN
-            82 -> WeatherConditionType.HEAVY_RAIN
-            85, 86 -> WeatherConditionType.SNOW
-            95, 96, 99 -> WeatherConditionType.THUNDERSTORM
-            else -> WeatherConditionType.PARTLY_CLOUDY
-        }
-    }
+    private fun mapWeatherCodeToType(code: Int): WeatherConditionType =
+        WeatherCodeMapping.description(code).conditionType
 
-    private fun mapWeatherCodeToAr(code: Int): String {
-        return when (code) {
-            0 -> "صافٍ ومشرق"
-            1 -> "صافٍ غالباً"
-            2 -> "غائم جزئياً"
-            3 -> "غائم كلياً"
-            45 -> "ضباب خفيف"
-            48 -> "ضباب متجمد كثيف"
-            51 -> "رذاذ خفيف"
-            53 -> "رذاذ معتدل"
-            55 -> "رذاذ كثيف"
-            56, 57 -> "رذاذ متجمد"
-            61 -> "أمطار خفيفة"
-            63 -> "أمطار معتدلة"
-            65 -> "أمطار غزيرة"
-            66, 67 -> "أمطار جليدية"
-            71 -> "ثلوج خفيفة"
-            73 -> "تساقط ثلوج"
-            75 -> "ثلوج كثيفة"
-            77 -> "حبيبات ثلجية"
-            80 -> "زخات مطر خفيفة"
-            81 -> "زخات مطر معتدلة"
-            82 -> "زخات مطر عنيفة"
-            85, 86 -> "زخات ثلجية"
-            95 -> "عاصفة رعدية"
-            96, 99 -> "عاصفة رعدية مع بَرَد"
-            else -> "معتدل"
-        }
-    }
+    private fun mapWeatherCodeToAr(code: Int): String =
+        WeatherCodeMapping.description(code).arabic
 
-    private fun mapWeatherCodeToEn(code: Int): String {
-        return when (code) {
-            0 -> "Clear Sky"
-            1 -> "Mainly Clear"
-            2 -> "Partly Cloudy"
-            3 -> "Overcast"
-            45, 48 -> "Foggy"
-            51, 53, 55 -> "Drizzle"
-            61, 63 -> "Rain"
-            65 -> "Heavy Rain"
-            71, 73, 75 -> "Snow"
-            80, 81, 82 -> "Rain Showers"
-            95, 96, 99 -> "Thunderstorm"
-            else -> "Variable"
-        }
-    }
-
+    private fun mapWeatherCodeToEn(code: Int): String =
+        WeatherCodeMapping.description(code).english
     private fun formatHourLabel(isoString: String, isNow: Boolean): String {
         if (isNow) return "الآن"
         return try {
