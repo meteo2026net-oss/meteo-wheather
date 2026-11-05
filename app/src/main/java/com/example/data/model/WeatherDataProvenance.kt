@@ -84,23 +84,69 @@ data class StationObservation(
 )
 
 /**
- * Converts the legacy station record into the provenance-aware domain model.
- *
- * Existing hard-coded station fixtures are explicitly tagged as simulated.
- * A record marked non-demo is not assumed to be live: until a verified feed
- * supplies timestamps and source metadata, its measurements remain unavailable.
+ * A station can provide live values only after its source was verified,
+ * the station is online, and its provider timestamp is within the freshness window.
  */
-fun SyrianWeatherStation.toQualifiedObservation(): StationObservation {
+fun SyrianWeatherStation.canShowLiveMeasurements(
+    nowEpochMillis: Long = System.currentTimeMillis()
+): Boolean =
+    hasVerifiedLiveData &&
+        isOnline &&
+        !isDemoData &&
+        StationReadingFreshnessPolicy.isFresh(
+            observedAtEpochMillis = lastReadingEpochMillis,
+            nowEpochMillis = nowEpochMillis
+        )
+
+/**
+ * Converts a legacy station record without allowing unverified or stale values
+ * to leak into the qualified live-observation model.
+ *
+ * Demo fixtures remain explicitly simulated. A verified but old/offline reading
+ * is marked stale and its numeric values are withheld.
+ */
+fun SyrianWeatherStation.toQualifiedObservation(
+    nowEpochMillis: Long = System.currentTimeMillis()
+): StationObservation {
     val isSimulation = isDemoData
+    val canShowLive = canShowLiveMeasurements(nowEpochMillis)
+    val status = when {
+        isSimulation -> WeatherDataStatus.SIMULATED
+        canShowLive -> WeatherDataStatus.AVAILABLE
+        hasVerifiedLiveData -> WeatherDataStatus.STALE
+        else -> WeatherDataStatus.UNAVAILABLE
+    }
     val source = WeatherDataProvenance(
-        provider = if (isSimulation) "MCNC local demonstration fixtures" else "Unverified station source",
-        kind = if (isSimulation) WeatherDataKind.SIMULATION else WeatherDataKind.UNKNOWN,
-        status = if (isSimulation) WeatherDataStatus.SIMULATED else WeatherDataStatus.UNAVAILABLE,
-        attribution = if (isSimulation) "قيم ثابتة للتوضيح فقط؛ ليست قياسات رصد فعلية." else null
+        provider = when {
+            isSimulation -> "MCNC local demonstration fixtures"
+            hasVerifiedLiveData -> "Verified station feed"
+            else -> "Unverified station source"
+        },
+        kind = when {
+            isSimulation -> WeatherDataKind.SIMULATION
+            hasVerifiedLiveData -> WeatherDataKind.OBSERVATION
+            else -> WeatherDataKind.UNKNOWN
+        },
+        status = status,
+        observedAtEpochMillis = lastReadingEpochMillis.takeIf { canShowLive },
+        retrievedAtEpochMillis = nowEpochMillis.takeIf { canShowLive },
+        attribution = if (isSimulation) {
+            "قيم ثابتة للتوضيح فقط؛ ليست قياسات رصد فعلية."
+        } else {
+            null
+        },
+        sourceRecordId = id.takeIf { canShowLive }
     )
 
-    fun measurement(value: Double, unit: String): QualifiedWeatherValue? =
-        if (isSimulation) QualifiedWeatherValue(value, unit, source) else null
+    fun measurement(
+        value: Double,
+        unit: String,
+        isValid: (Double) -> Boolean = { it.isFinite() }
+    ): QualifiedWeatherValue? {
+        if (!isSimulation && !canShowLive) return null
+        if (!value.isFinite() || !isValid(value)) return null
+        return QualifiedWeatherValue(value, unit, source)
+    }
 
     return StationObservation(
         stationId = id,
@@ -109,9 +155,9 @@ fun SyrianWeatherStation.toQualifiedObservation(): StationObservation {
         latitude = latitude,
         longitude = longitude,
         temperatureCelsius = measurement(temperatureCelsius, "°C"),
-        relativeHumidityPercent = measurement(humidity.toDouble(), "%"),
-        pressureHpa = measurement(pressureHpa, "hPa"),
-        windSpeedKmh = measurement(windSpeedKmh, "km/h"),
+        relativeHumidityPercent = measurement(humidity.toDouble(), "%") { it in 0.0..100.0 },
+        pressureHpa = measurement(pressureHpa, "hPa") { it > 0.0 },
+        windSpeedKmh = measurement(windSpeedKmh, "km/h") { it >= 0.0 },
         windDirectionDegrees = null,
         conditionCode = null,
         provenance = source

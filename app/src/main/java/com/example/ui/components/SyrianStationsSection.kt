@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.SyrianWeatherStation
-import com.example.data.model.StationReadingFreshnessPolicy
+import com.example.data.model.canShowLiveMeasurements
 
 @Composable
 fun SyrianStationsSection(
@@ -30,13 +30,7 @@ fun SyrianStationsSection(
 ) {
     val nowEpochMillis = System.currentTimeMillis()
     val hasFreshVerifiedReadings = stations.any { station ->
-        station.hasVerifiedLiveData &&
-            station.isOnline &&
-            !station.isDemoData &&
-            StationReadingFreshnessPolicy.isFresh(
-                observedAtEpochMillis = station.lastReadingEpochMillis,
-                nowEpochMillis = nowEpochMillis
-            )
+        station.canShowLiveMeasurements(nowEpochMillis)
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -81,11 +75,7 @@ fun SyrianStationsSection(
         ) {
             items(stations) { station ->
                 val hasVerifiedSource = station.hasVerifiedLiveData && !station.isDemoData
-                val sourceIsOnline = hasVerifiedSource && station.isOnline
-                val canShowLiveMeasurements = sourceIsOnline && StationReadingFreshnessPolicy.isFresh(
-                    observedAtEpochMillis = station.lastReadingEpochMillis,
-                    nowEpochMillis = nowEpochMillis
-                )
+                val canShowLiveMeasurements = station.canShowLiveMeasurements(nowEpochMillis)
                 Column(
                     modifier = Modifier
                         .width(160.dp)

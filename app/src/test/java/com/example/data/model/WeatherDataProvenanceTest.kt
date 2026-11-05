@@ -193,6 +193,7 @@ class WeatherDataProvenanceTest {
         )
 
         assertTrue(value.isDisplayable)
+        assertFalse(value.isLiveDisplayable)
         assertTrue(value.provenance.status == WeatherDataStatus.SIMULATED)
     }
 
@@ -250,6 +251,130 @@ class WeatherDataProvenanceTest {
         assertTrue(observation.relativeHumidityPercent == null)
         assertTrue(observation.pressureHpa == null)
         assertTrue(observation.windSpeedKmh == null)
+    }
+
+    @Test
+    fun verifiedFreshOnlineStationProducesAvailableQualifiedMeasurements() {
+        val now = 1_800_000_000_000L
+        val station = SyrianWeatherStation(
+            id = "st-live",
+            nameAr = "محطة رصد موثقة",
+            governorate = "دمشق",
+            latitude = 33.5,
+            longitude = 36.2,
+            temperatureCelsius = 18.5,
+            humidity = 55,
+            pressureHpa = 1012.4,
+            windSpeedKmh = 8.0,
+            conditionAr = "غائم",
+            conditionType = WeatherConditionType.PARTLY_CLOUDY,
+            isOnline = true,
+            isDemoData = false,
+            lastReadingEpochMillis = now - 30L * 60L * 1000L,
+            hasVerifiedLiveData = true
+        )
+
+        val observation = station.toQualifiedObservation(now)
+
+        assertTrue(station.canShowLiveMeasurements(now))
+        assertEquals(WeatherDataStatus.AVAILABLE, observation.provenance.status)
+        assertEquals(now - 30L * 60L * 1000L, observation.provenance.observedAtEpochMillis)
+        assertEquals(now, observation.provenance.retrievedAtEpochMillis)
+        assertEquals("st-live", observation.provenance.sourceRecordId)
+        assertTrue(observation.temperatureCelsius?.isLiveDisplayable == true)
+        assertEquals(18.5, observation.temperatureCelsius?.value ?: -1.0, 0.0)
+        assertEquals(55.0, observation.relativeHumidityPercent?.value ?: -1.0, 0.0)
+        assertEquals(1012.4, observation.pressureHpa?.value ?: -1.0, 0.0)
+        assertEquals(8.0, observation.windSpeedKmh?.value ?: -1.0, 0.0)
+    }
+
+    @Test
+    fun verifiedButStaleStationDoesNotExposeMeasurements() {
+        val now = 1_800_000_000_000L
+        val station = SyrianWeatherStation(
+            id = "st-stale",
+            nameAr = "محطة قديمة",
+            governorate = "حلب",
+            latitude = 36.2,
+            longitude = 37.1,
+            temperatureCelsius = 22.0,
+            humidity = 40,
+            pressureHpa = 1013.0,
+            windSpeedKmh = 5.0,
+            conditionAr = "صافٍ",
+            conditionType = WeatherConditionType.CLEAR,
+            isOnline = true,
+            isDemoData = false,
+            lastReadingEpochMillis = now - 2L * 60L * 60L * 1000L,
+            hasVerifiedLiveData = true
+        )
+
+        val observation = station.toQualifiedObservation(now)
+
+        assertFalse(station.canShowLiveMeasurements(now))
+        assertEquals(WeatherDataStatus.STALE, observation.provenance.status)
+        assertNull(observation.temperatureCelsius)
+        assertNull(observation.relativeHumidityPercent)
+        assertNull(observation.pressureHpa)
+        assertNull(observation.windSpeedKmh)
+    }
+
+    @Test
+    fun verifiedButOfflineStationDoesNotExposeMeasurements() {
+        val now = 1_800_000_000_000L
+        val station = SyrianWeatherStation(
+            id = "st-offline",
+            nameAr = "محطة غير متصلة",
+            governorate = "حمص",
+            latitude = 34.7,
+            longitude = 36.7,
+            temperatureCelsius = 19.0,
+            humidity = 50,
+            pressureHpa = 1011.0,
+            windSpeedKmh = 6.0,
+            conditionAr = "صافٍ",
+            conditionType = WeatherConditionType.CLEAR,
+            isOnline = false,
+            isDemoData = false,
+            lastReadingEpochMillis = now - 10L * 60L * 1000L,
+            hasVerifiedLiveData = true
+        )
+
+        val observation = station.toQualifiedObservation(now)
+
+        assertFalse(station.canShowLiveMeasurements(now))
+        assertEquals(WeatherDataStatus.STALE, observation.provenance.status)
+        assertNull(observation.temperatureCelsius)
+    }
+
+    @Test
+    fun invalidVerifiedStationMeasurementsAreIndividuallyWithheld() {
+        val now = 1_800_000_000_000L
+        val station = SyrianWeatherStation(
+            id = "st-invalid",
+            nameAr = "محطة بقياسات غير صالحة",
+            governorate = "اللاذقية",
+            latitude = 35.5,
+            longitude = 35.8,
+            temperatureCelsius = Double.NaN,
+            humidity = 120,
+            pressureHpa = 0.0,
+            windSpeedKmh = -2.0,
+            conditionAr = "غير محدد",
+            conditionType = WeatherConditionType.CLEAR,
+            isOnline = true,
+            isDemoData = false,
+            lastReadingEpochMillis = now,
+            hasVerifiedLiveData = true
+        )
+
+        val observation = station.toQualifiedObservation(now)
+
+        assertTrue(station.canShowLiveMeasurements(now))
+        assertNull(observation.temperatureCelsius)
+        assertNull(observation.relativeHumidityPercent)
+        assertNull(observation.pressureHpa)
+        assertNull(observation.windSpeedKmh)
     }
 
     @Test
