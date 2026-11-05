@@ -296,16 +296,27 @@ class WeatherRepository(private val context: Context) {
             // Severe Weather Alerts detection
             val alerts = detectSevereWeatherAlerts(location, currentWeather, dailyList, if (aqiAvailable) aqiVal else -1, pollenInfo)
 
-            // Push notifications if enabled and severe alerts exist
+            // Track active notifications per location. Notify every newly active severe alert,
+            // and only remember alerts accepted by the notification API.
             if (areAlertsEnabled()) {
-                alerts.firstOrNull { it.severity == AlertSeverity.WARNING || it.severity == AlertSeverity.EMERGENCY }?.let { alert ->
-                    // Notify once per alert ID
-                    val lastNotifiedId = prefs.getString("last_notified_alert_id", "")
-                    if (lastNotifiedId != alert.id) {
-                        NotificationHelper.postSevereWeatherNotification(context, alert)
-                        prefs.edit().putString("last_notified_alert_id", alert.id).apply()
-                    }
-                }
+                val notificationStateKey =
+                    "active_weather_alert_ids_${location.latitude}_${location.longitude}"
+                val previouslyNotifiedIds =
+                    prefs.getStringSet(notificationStateKey, emptySet())?.toSet().orEmpty()
+                val alertsToNotify = SevereAlertNotificationPolicy.alertsRequiringNotification(
+                    alerts,
+                    previouslyNotifiedIds
+                )
+                val successfullyPostedIds = alertsToNotify
+                    .filter { NotificationHelper.postSevereWeatherNotification(context, it) }
+                    .map { it.id }
+                    .toSet()
+                val updatedNotifiedIds = SevereAlertNotificationPolicy.updatedNotifiedIds(
+                    alerts = alerts,
+                    previouslyNotifiedIds = previouslyNotifiedIds,
+                    successfullyPostedIds = successfullyPostedIds
+                )
+                prefs.edit().putStringSet(notificationStateKey, updatedNotifiedIds).apply()
             }
 
             // Weather Insights
