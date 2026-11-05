@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AlertSeverity
+import com.example.data.model.AlertSelectionPolicy
 import com.example.data.model.SevereWeatherAlert
 
 @Composable
@@ -34,7 +35,10 @@ fun SevereWeatherAlertBanner(
 
     var isExpanded by remember { mutableStateOf(false) }
     var selectedAlertIndex by remember { mutableIntStateOf(0) }
-    val currentAlert = alerts.getOrElse(selectedAlertIndex) { alerts.first() }
+    // Alert lists can shrink after a refresh. Clamp the remembered selection so
+    // the counter, active dot and displayed alert always refer to the same item.
+    val safeSelectedAlertIndex = AlertSelectionPolicy.safeIndex(selectedAlertIndex, alerts.size) ?: return
+    val currentAlert = alerts[safeSelectedAlertIndex]
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulseAlert")
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -68,7 +72,6 @@ fun SevereWeatherAlertBanner(
             .animateContentSize()
             .testTag("severe_weather_alert_banner")
     ) {
-        // Top Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -120,7 +123,7 @@ fun SevereWeatherAlertBanner(
                         if (alerts.size > 1) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "(${selectedAlertIndex + 1}/${alerts.size})",
+                                text = "(${safeSelectedAlertIndex + 1}/${alerts.size})",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.8f)
                             )
@@ -152,7 +155,6 @@ fun SevereWeatherAlertBanner(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Short Summary
         Text(
             text = currentAlert.descriptionAr,
             fontSize = 12.sp,
@@ -160,7 +162,6 @@ fun SevereWeatherAlertBanner(
             lineHeight = 17.sp
         )
 
-        // Expanded Details
         AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically() + fadeIn(),
@@ -171,7 +172,6 @@ fun SevereWeatherAlertBanner(
                     .fillMaxWidth()
                     .padding(top = 10.dp)
             ) {
-                // Safety Instructions Box
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -207,7 +207,6 @@ fun SevereWeatherAlertBanner(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Source & Validity Info
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -226,7 +225,6 @@ fun SevereWeatherAlertBanner(
                         )
                     }
 
-                    // Test Push Notification Button
                     OutlinedButton(
                         onClick = { onTestNotification(currentAlert) },
                         shape = RoundedCornerShape(12.dp),
@@ -245,7 +243,6 @@ fun SevereWeatherAlertBanner(
                     }
                 }
 
-                // If multiple alerts, allow switching
                 if (alerts.size > 1) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(
@@ -256,10 +253,10 @@ fun SevereWeatherAlertBanner(
                             Box(
                                 modifier = Modifier
                                     .padding(horizontal = 4.dp)
-                                    .size(if (idx == selectedAlertIndex) 18.dp else 8.dp, 8.dp)
+                                    .size(if (idx == safeSelectedAlertIndex) 18.dp else 8.dp, 8.dp)
                                     .clip(CircleShape)
                                     .background(
-                                        if (idx == selectedAlertIndex) Color.White else Color.White.copy(alpha = 0.35f)
+                                        if (idx == safeSelectedAlertIndex) Color.White else Color.White.copy(alpha = 0.35f)
                                     )
                                     .clickable { selectedAlertIndex = idx }
                             )
