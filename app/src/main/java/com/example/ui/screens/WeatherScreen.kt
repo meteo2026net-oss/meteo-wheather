@@ -44,6 +44,7 @@ import com.example.data.model.WeatherConditionType
 import com.example.ui.components.*
 import com.example.ui.viewmodel.WeatherViewModel
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import java.util.Locale
 
 @SuppressLint("MissingPermission")
@@ -923,42 +924,63 @@ fun SmartAdviceCard(
 private fun fetchGpsLocation(context: Context, viewModel: WeatherViewModel) {
     try {
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
-        fusedClient.lastLocation.addOnSuccessListener { loc ->
-            if (loc != null) {
-                var detectedName = "موقعي الحالي"
-                var detectedCountry = "غير محدد"
-                try {
-                    val geocoder = Geocoder(context, Locale.forLanguageTag("ar"))
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        geocoder.getFromLocation(loc.latitude, loc.longitude, 1) { list ->
-                            val address = list.firstOrNull()
-                            val name = address?.let {
-                                it.locality ?: it.subAdminArea ?: it.adminArea
-                            }?.takeIf { it.isNotBlank() } ?: "موقعي الحالي"
-                            val country = address?.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
-                            // Always deliver the coordinates, even when reverse geocoding returns no address.
-                            viewModel.onGpsLocationReceived(
-                                loc.latitude, loc.longitude, name, country
-                            )
-                        }
-                        return@addOnSuccessListener
-                    } else {
-                        @Suppress("DEPRECATION")
-                        val list = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
-                        list?.firstOrNull()?.let { addr ->
-                            detectedName = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
-                            detectedCountry = addr.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
-                        }
+
+        fun deliverLocation(loc: android.location.Location) {
+            var detectedName = "موقعي الحالي"
+            var detectedCountry = "غير محدد"
+            try {
+                val geocoder = Geocoder(context, Locale.forLanguageTag("ar"))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    geocoder.getFromLocation(loc.latitude, loc.longitude, 1) { list ->
+                        val address = list.firstOrNull()
+                        val name = address?.let {
+                            it.locality ?: it.subAdminArea ?: it.adminArea
+                        }?.takeIf { it.isNotBlank() } ?: "موقعي الحالي"
+                        val country = address?.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
+                        // Always deliver the coordinates, even when reverse geocoding returns no address.
+                        viewModel.onGpsLocationReceived(
+                            loc.latitude, loc.longitude, name, country
+                        )
                     }
-                } catch (e: Exception) {
-                    // Ignore geocoder failure, use an explicit unknown-country fallback.
+                    return
+                } else {
+                    @Suppress("DEPRECATION")
+                    val list = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                    list?.firstOrNull()?.let { addr ->
+                        detectedName = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
+                        detectedCountry = addr.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
+                    }
                 }
-                viewModel.onGpsLocationReceived(
-                    loc.latitude, loc.longitude, detectedName, detectedCountry
-                )
+            } catch (e: Exception) {
+                // Ignore geocoder failure, use an explicit unknown-country fallback.
+            }
+            viewModel.onGpsLocationReceived(
+                loc.latitude, loc.longitude, detectedName, detectedCountry
+            )
+        }
+
+        fun requestCurrentLocation() {
+            fusedClient.getCurrentLocation(
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                null
+            ).addOnSuccessListener { currentLocation ->
+                if (currentLocation != null) deliverLocation(currentLocation)
             }
         }
+
+        fusedClient.lastLocation
+            .addOnSuccessListener { lastLocation ->
+                if (lastLocation != null) {
+                    deliverLocation(lastLocation)
+                } else {
+                    // A device may have no cached fix; request a fresh location instead.
+                    requestCurrentLocation()
+                }
+            }
+            .addOnFailureListener {
+                requestCurrentLocation()
+            }
     } catch (e: Exception) {
-        // Fallback
+        // Location services may be unavailable; keep the current selected city unchanged.
     }
 }
