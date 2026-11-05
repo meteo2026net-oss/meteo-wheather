@@ -24,6 +24,15 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun weatherCodeValidatorAcceptsWmoRangeAndRejectsMissingOrOutOfRangeCodes() {
+        assertEquals(0, ForecastValueValidation.weatherCode(0))
+        assertEquals(99, ForecastValueValidation.weatherCode(99))
+        assertNull(ForecastValueValidation.weatherCode(null))
+        assertNull(ForecastValueValidation.weatherCode(-1))
+        assertNull(ForecastValueValidation.weatherCode(100))
+    }
+
+    @Test
     fun percentageValidatorsEnforceInclusiveZeroToOneHundredRange() {
         assertEquals(0, ForecastValueValidation.probabilityPercent(0))
         assertEquals(100, ForecastValueValidation.probabilityPercent(100))

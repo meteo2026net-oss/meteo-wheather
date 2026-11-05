@@ -94,6 +94,8 @@ object ForecastValueValidation {
     fun windDirectionDegrees(value: Double?): Double? =
         value?.takeIf { it.isFinite() && it in 0.0..360.0 }
     fun probabilityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
+    /** Open-Meteo uses WMO weather interpretation codes in the inclusive 0..99 range. */
+    fun weatherCode(value: Int?): Int? = value?.takeIf { it in 0..99 }
     fun humidityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
     fun nonNegativeInt(value: Int?): Int? = value?.takeIf { it >= 0 }
 
@@ -468,7 +470,7 @@ object CityMapForecastMapper {
             windDirectionDegrees = ForecastValueValidation.windDirectionDegrees(current?.windDirection),
             cloudCoverPercent = current?.cloudCover?.takeIf { it in 0..100 },
             precipitationMm = ForecastValueValidation.nonNegativeFinite(current?.precipitation),
-            weatherCode = current?.weatherCode?.takeIf { it in 0..99 }
+            weatherCode = ForecastValueValidation.weatherCode(current?.weatherCode)
         )
     }
 }
@@ -537,7 +539,7 @@ object HourlyForecastSelection {
         val firstIndex = startIndex.coerceIn(0, times.size)
         return (firstIndex until times.size).filter { index ->
             ForecastValueValidation.hourOfDay(times[index]) != null &&
-                weatherCodes.getOrNull(index) != null
+                ForecastValueValidation.weatherCode(weatherCodes.getOrNull(index)) != null
         }.take(limit)
     }
 }
@@ -554,7 +556,7 @@ object DailyForecastSelection {
         if (limit <= 0) return emptyList()
         return dates.indices.filter { index ->
             ForecastValueValidation.validIsoDate(dates[index]) != null &&
-                weatherCodes.getOrNull(index) != null &&
+                ForecastValueValidation.weatherCode(weatherCodes.getOrNull(index)) != null &&
                 ForecastValueValidation.temperatureRange(
                     maxTemperatures.getOrNull(index), minTemperatures.getOrNull(index)
                 ) != null

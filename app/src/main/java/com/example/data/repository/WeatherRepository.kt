@@ -81,8 +81,8 @@ class WeatherRepository(private val context: Context) {
                 ?: throw IllegalStateException("حالة النهار الحالية غير متاحة أو غير صالحة")
             val currentPrecipitation = currentDto.precipitation?.takeIf { it.isFinite() && it >= 0.0 }
                 ?: throw IllegalStateException("الهطول الحالي غير متاح أو غير صالح")
-            val currentWeatherCode = currentDto.weatherCode
-                ?: throw IllegalStateException("رمز حالة الطقس الحالية غير متاح")
+            val currentWeatherCode = ForecastValueValidation.weatherCode(currentDto.weatherCode)
+                ?: throw IllegalStateException("رمز حالة الطقس الحالية غير متاح أو غير صالح")
             val currentPressure = ForecastValueValidation.pressureHpa(currentDto.surfacePressure)
                 ?: throw IllegalStateException("الضغط السطحي الحالي غير متاح أو غير صالح")
             val currentWindSpeed = ForecastValueValidation.windSpeedKmh(currentDto.windSpeed)
