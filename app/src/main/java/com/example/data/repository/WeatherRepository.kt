@@ -347,17 +347,12 @@ class WeatherRepository(private val context: Context) {
             latitude = cities.joinToString(",") { it.latitude.toString() },
             longitude = cities.joinToString(",") { it.longitude.toString() }
         )
-        require(responses.size == cities.size) { "عدد مواقع التوقعات لا يطابق عدد المدن المطلوبة" }
+        val matchedResponses = MapForecastResponseMatching.match(cities, responses)
+            ?: throw IllegalStateException(
+                "تعذر مطابقة استجابات الطقس مع المدن المطلوبة اعتماداً على إحداثيات خلايا النموذج"
+            )
 
-        val forecasts = cities.zip(responses).map { (city, response) ->
-            // Open-Meteo returns the selected model grid-cell centre, which may
-            // be several kilometres from the requested city coordinates. Validate
-            // geographic bounds, not an artificial near-exact city-coordinate match.
-            require(
-                MapForecastCoordinateValidation.isValidGridCell(
-                    response.latitude, response.longitude
-                )
-            ) { "إحداثيات خلية النموذج غير صالحة للمدينة ${city.name}" }
+        val forecasts = matchedResponses.map { (city, response) ->
             val current = response.current
             CityMapForecast(
                 city = city,

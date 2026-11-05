@@ -360,6 +360,79 @@ object MapForecastCoordinateValidation {
             longitude.isFinite() && longitude in -180.0..180.0
 }
 
+
+/**
+ * Associates multi-location forecast responses with their requested cities by
+ * returned model-grid coordinates, rather than relying on response array order.
+ *
+ * Open-Meteo reports grid-cell centres which can differ from requested points.
+ * These conservative distance and separation checks prevent silently attaching
+ * a neighbouring city's forecast when a response is malformed or ambiguous.
+ */
+object MapForecastResponseMatching {
+    private const val MAX_GRID_CELL_DISTANCE_KM = 30.0
+    private const val MIN_NEAREST_CITY_MARGIN_KM = 5.0
+
+    fun match(
+        cities: List<CityLocation>,
+        responses: List<WeatherResponseDto>
+    ): List<Pair<CityLocation, WeatherResponseDto>>? {
+        if (cities.isEmpty() || cities.size != responses.size) return null
+        if (cities.any {
+                !MapForecastCoordinateValidation.isValidGridCell(it.latitude, it.longitude)
+            }
+        ) return null
+
+        val matched = arrayOfNulls<WeatherResponseDto>(cities.size)
+        for (response in responses) {
+            if (!MapForecastCoordinateValidation.isValidGridCell(
+                    response.latitude, response.longitude
+                )
+            ) return null
+
+            val rankedCities = cities.indices
+                .map { index ->
+                    index to distanceKm(
+                        response.latitude,
+                        response.longitude,
+                        cities[index].latitude,
+                        cities[index].longitude
+                    )
+                }
+                .sortedBy { it.second }
+
+            val nearest = rankedCities.first()
+            val secondNearest = rankedCities.getOrNull(1)
+            if (nearest.second > MAX_GRID_CELL_DISTANCE_KM) return null
+            if (secondNearest != null &&
+                secondNearest.second - nearest.second < MIN_NEAREST_CITY_MARGIN_KM
+            ) return null
+            if (matched[nearest.first] != null) return null
+            matched[nearest.first] = response
+        }
+
+        if (matched.any { it == null }) return null
+        return cities.indices.map { index -> cities[index] to matched[index]!! }
+    }
+
+    private fun distanceKm(
+        latitude1: Double,
+        longitude1: Double,
+        latitude2: Double,
+        longitude2: Double
+    ): Double {
+        val earthRadiusKm = 6371.0
+        val lat1 = Math.toRadians(latitude1)
+        val lat2 = Math.toRadians(latitude2)
+        val deltaLatitude = Math.toRadians(latitude2 - latitude1)
+        val deltaLongitude = Math.toRadians(longitude2 - longitude1)
+        val a = kotlin.math.sin(deltaLatitude / 2).let { it * it } +
+            kotlin.math.cos(lat1) * kotlin.math.cos(lat2) *
+            kotlin.math.sin(deltaLongitude / 2).let { it * it }
+        return 2.0 * earthRadiusKm * kotlin.math.asin(kotlin.math.sqrt(a.coerceIn(0.0, 1.0)))
+    }
+}
+
 /** Forecast values for a map location; these are model outputs, not station observations. */
 data class CityMapForecast(
     val city: CityLocation,
