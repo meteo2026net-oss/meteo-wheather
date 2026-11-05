@@ -110,6 +110,15 @@ object CapXmlParser {
         require(messageType.isNotBlank()) { "CAP message type is missing" }
         val scope = root.directText("scope").orEmpty()
         require(scope.isNotBlank()) { "CAP scope is missing" }
+        require(status in setOf("Actual", "Exercise", "System", "Test", "Draft")) {
+            "CAP status is not a recognized CAP 1.2 value"
+        }
+        require(messageType in setOf("Alert", "Update", "Cancel", "Ack", "Error")) {
+            "CAP message type is not a recognized CAP 1.2 value"
+        }
+        require(scope in setOf("Public", "Restricted", "Private")) {
+            "CAP scope is not a recognized CAP 1.2 value"
+        }
 
         val infos = root.directChildren("info")
         val info = infos.firstOrNull {

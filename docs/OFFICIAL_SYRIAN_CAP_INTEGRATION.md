@@ -12,7 +12,7 @@ This establishes the registered source identity and endpoint listing. It does **
 ## Implemented in this branch
 
 - Added a side-effect-free CAP XML parser for CAP alert documents.
-- Parser disables DTD and external entity processing, rejects oversized documents, and requires a CAP `alert` root plus non-empty identifier, sender, status, message type and scope.
+- Parser disables DTD and external entity processing, rejects oversized documents, and requires a CAP `alert` root plus non-empty identifier and sender. Status, message type and scope must use recognized CAP 1.2 enumeration values.
 - Arabic `info` content is preferred when multiple language blocks are present.
 - CAP severity values are mapped to the app's existing alert severity enum.
 - Public display gate accepts only `status=Actual`, `scope=Public`, `msgType=Alert`, or an `Update` whose every parsed CAP reference exactly matches a caller-supplied reconciled-reference set, plus a valid future `expires` timestamp.

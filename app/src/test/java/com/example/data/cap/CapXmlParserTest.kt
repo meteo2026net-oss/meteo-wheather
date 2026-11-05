@@ -143,6 +143,22 @@ class CapXmlParserTest {
     }
 
     @Test
+    fun rejectsUnknownCapEnvelopeEnumerationValues() {
+        val unknownStatus = cap().replace("<status>Actual</status>", "<status>Urgent</status>")
+        val unknownMessageType = cap().replace("<msgType>Alert</msgType>", "<msgType>Broadcast</msgType>")
+        val unknownScope = cap().replace("<scope>Public</scope>", "<scope>Everyone</scope>")
+
+        listOf(unknownStatus, unknownMessageType, unknownScope).forEach { xml ->
+            try {
+                CapXmlParser.parse(xml)
+                throw AssertionError("Unknown CAP enumeration values must be rejected")
+            } catch (_: IllegalArgumentException) {
+                // Expected: CAP 1.2 envelope enumerations are closed sets.
+            }
+        }
+    }
+
+    @Test
     fun rejectsDoctypeAndExternalEntityPayloads() {
         val unsafe = """
             <!DOCTYPE alert [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
