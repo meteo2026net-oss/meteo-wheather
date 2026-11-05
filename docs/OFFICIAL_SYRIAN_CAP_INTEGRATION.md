@@ -54,3 +54,12 @@ This establishes the registered source identity and endpoint listing. It does **
 - Unit-test report artifact: `android-unit-test-reports`, ID `13334321811`, 17,946 bytes; expires 18 November 2026.
 - The APK is signed with an ephemeral runner-only Debug key. This is not a production Release build or release-signing validation.
 - This run verifies JVM unit tests, Android Debug compilation and APK packaging for this exact head. It does not verify live CAP feed reachability, RSS item structure, sender authenticity, official alert distribution, station ingestion or physical-device behavior.
+
+
+## Current implementation boundary — 5 November 2026
+
+- The CAP parser and its regression tests are included in development head `bb0a19d8fb5eee549f5b0e2772a0ed15fb4436ca`, which passed [Android CI run 41946175462](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41946175462).
+- This exact-head CI result verifies JVM tests and Android Debug compilation/packaging. It does **not** verify the registered RSS endpoint, RSS item structure, CAP document retrieval, sender authenticity, Update/Cancel reconciliation, or official alert distribution.
+- A fresh retrieval attempt for the registered RSS URL was not accessible through the review web-access path. Do not interpret this as a confirmed server outage; re-test from the app's intended network environment when implementing the fixed-host client.
+- The next CAP integration gate remains: inspect a real, sanitized RSS/CAP fixture; validate item links and redirect behavior; enforce HTTPS and the registered host; parse CAP 1.2 documents; verify sender/source trust independently; then test Update/Cancel/expiry reconciliation before enabling official-alert presentation.
+- No official CAP alert is currently fetched or displayed by this application.

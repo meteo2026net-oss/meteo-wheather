@@ -287,3 +287,21 @@ This section supersedes earlier "pending CI" statements in the chronological not
 - Debug APK artifact `13356445828`: 22,709,099 bytes; digest `890ab1ae3fe4d41769f050db221532d95399f76e3cedd14e911d880eb28e41a6`; expires 2 February 2027.
 - Unit-test report artifact `13356825599`: 17,929 bytes; digest `c7156f8c84cb7712bc6dfdff26b406b60cc8762df8b6f30bbd575791651d7be9`; expires 18 November 2026.
 - This is a temporary-key CI Debug APK, not a production Release build. The exact workflow action migration is now verified on this head.
+
+
+## Exact-head verification and next data-quality gates — 5 November 2026
+
+- Development head `bb0a19d8fb5eee549f5b0e2772a0ed15fb4436ca` passed [Android CI run 41946175462](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41946175462). Every job step succeeded, including Java 17/Android SDK/Gradle setup, unit tests, Debug APK assembly, both artifact uploads and cleanup.
+- Debug APK artifact `mcnc-weather-debug-apk`, ID `13378966662`, size 22,713,863 bytes, SHA-256 `e84b66897a020dd3740a3b1567cc9707964da671a90c0dfe0fc36cfbe305e18e`; expires 3 February 2027.
+- Unit-test report artifact `android-unit-test-reports`, ID `13378782410`, size 22,967 bytes, SHA-256 `a61cff67b9d962dc6db29f1deb92e83d3af0251eef7a64f6ad238a2912984be7`; expires 19 November 2026.
+- The Debug APK uses a temporary CI signing key and is not a production Release build. This run verifies automated JVM tests, Android Debug compilation/packaging and artifact upload only.
+- `android-actions/setup-android` was upgraded from v3 to v4. The Node.js 20 action-runtime warning from that action is absent from this run. A separate Android SDK Manager CLI deprecation notice remains; do not change SDK command-line tooling without checking compatibility with the pinned Android Gradle Plugin and CI image.
+- PR #1 remains open and unmerged; this change does not alter `main`.
+
+### Remaining data-quality gates
+
+1. The multi-city map repository pairs the Open-Meteo response list with the requested city list by position (`cities.zip(responses)`). It checks response count and geographic coordinate bounds, but does not independently establish city-to-response association. Confirm the provider's ordering contract and add a regression test using reordered/mismatched response fixtures before strengthening this path.
+2. The returned model grid-cell centre is expected to differ from the requested city coordinate. Do not restore an arbitrary tiny-distance equality check; any association tolerance must be based on documented model resolution and the intended map scale.
+3. The redundant precipitation-unavailable branch in `DailyForecastSection` contains an availability condition that is already known to be false in that branch. It currently renders the correct unavailable marker and is a non-functional cleanup, not a user-visible defect.
+4. No live Syrian station feed, official CAP RSS ingestion, authenticated central administration, or verified temperature/wind/cloud map grid is enabled by this branch. Keep these capabilities explicitly unavailable/demo until the source and transport contract are verified.
+5. The registered Syrian CAP endpoint could not be retrieved through the web access path during this review. This is an access limitation of the review session, not proof that the origin server is offline.
