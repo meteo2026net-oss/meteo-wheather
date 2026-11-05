@@ -102,6 +102,14 @@ object CapXmlParser {
 
         val identifier = root.directText("identifier").orEmpty()
         require(identifier.isNotBlank()) { "CAP identifier is missing" }
+        val sender = root.directText("sender").orEmpty()
+        require(sender.isNotBlank()) { "CAP sender is missing" }
+        val status = root.directText("status").orEmpty()
+        require(status.isNotBlank()) { "CAP status is missing" }
+        val messageType = root.directText("msgType").orEmpty()
+        require(messageType.isNotBlank()) { "CAP message type is missing" }
+        val scope = root.directText("scope").orEmpty()
+        require(scope.isNotBlank()) { "CAP scope is missing" }
 
         val infos = root.directChildren("info")
         val info = infos.firstOrNull {
@@ -144,14 +152,18 @@ object CapXmlParser {
             CapReference(sender = parts[0], identifier = parts[1], sentAt = referenceSentAt)
         }
 
+        require(parsedReferences.distinct().size == parsedReferences.size) {
+            "CAP references must not contain duplicate message triples"
+        }
+
         return CapFeedMessage(
             identifier = identifier,
-            sender = root.directText("sender"),
+            sender = sender,
             sent = sent,
             sentAt = sentAt,
-            status = root.directText("status").orEmpty(),
-            messageType = root.directText("msgType").orEmpty(),
-            scope = root.directText("scope").orEmpty(),
+            status = status,
+            messageType = messageType,
+            scope = scope,
             references = references,
             parsedReferences = parsedReferences,
             event = info?.directText("event"),

@@ -12,7 +12,7 @@ This establishes the registered source identity and endpoint listing. It does **
 ## Implemented in this branch
 
 - Added a side-effect-free CAP XML parser for CAP alert documents.
-- Parser disables DTD and external entity processing, rejects oversized documents, and requires a CAP `alert` root plus an identifier.
+- Parser disables DTD and external entity processing, rejects oversized documents, and requires a CAP `alert` root plus non-empty identifier, sender, status, message type and scope.
 - Arabic `info` content is preferred when multiple language blocks are present.
 - CAP severity values are mapped to the app's existing alert severity enum.
 - Public display gate accepts only `status=Actual`, `scope=Public`, `msgType=Alert`, or an `Update` whose every parsed CAP reference exactly matches a caller-supplied reconciled-reference set, plus a valid future `expires` timestamp.
@@ -70,6 +70,6 @@ This establishes the registered source identity and endpoint listing. It does **
 
 - CAP Update documents are not standalone alerts. Their references must be resolved against a previously accepted alert before the update can be shown.
 - The parser display predicate rejects every Update by default. The caller must provide the exact typed reference triples already reconciled against accepted alerts; every reference in the Update must match.
-- Reference parsing rejects incomplete triples and timestamps without a timezone offset.
+- Reference parsing rejects incomplete triples, timestamps without a timezone offset, and duplicate message triples. The required CAP envelope fields (identifier, sender, status, message type and scope) must also be non-empty.
 - Regression tests cover missing references, partial matches, complete matches, malformed triples, and timezone-less timestamps.
 - This is a fail-closed display gate, not a reconciliation store. The application still has no connected CAP feed processor or caller supplying reconciled references.

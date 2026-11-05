@@ -121,6 +121,28 @@ class CapXmlParserTest {
     }
 
     @Test
+    fun rejectsMissingRequiredEnvelopeFieldsAndDuplicateReferences() {
+        val missingSender = cap().replace(
+            "<sender>alerts@example.gov.sy</sender>",
+            ""
+        )
+        val missingStatus = cap().replace("<status>Actual</status>", "")
+        val duplicateReferences = cap(messageType = "Update").replace(
+            "<scope>Public</scope>",
+            "<scope>Public</scope><references>issuer@example.gov.sy,base-001,2026-11-04T05:00:00Z issuer@example.gov.sy,base-001,2026-11-04T05:00:00Z</references>"
+        )
+
+        listOf(missingSender, missingStatus, duplicateReferences).forEach { xml ->
+            try {
+                CapXmlParser.parse(xml)
+                throw AssertionError("Invalid required CAP envelope fields must be rejected")
+            } catch (_: IllegalArgumentException) {
+                // Expected: reject incomplete or ambiguous CAP envelope data.
+            }
+        }
+    }
+
+    @Test
     fun rejectsDoctypeAndExternalEntityPayloads() {
         val unsafe = """
             <!DOCTYPE alert [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
