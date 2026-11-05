@@ -8,7 +8,7 @@ import com.squareup.moshi.JsonClass
 data class WeatherResponseDto(
     val latitude: Double,
     val longitude: Double,
-    @Json(name = "utc_offset_seconds") val utcOffsetSeconds: Int = 0,
+    @param:Json(name = "utc_offset_seconds") val utcOffsetSeconds: Int = 0,
     val timezone: String? = null,
     val current: CurrentWeatherDto? = null,
     val hourly: HourlyWeatherDto? = null,
@@ -18,40 +18,40 @@ data class WeatherResponseDto(
 @JsonClass(generateAdapter = true)
 data class CurrentWeatherDto(
     val time: String? = null,
-    @Json(name = "temperature_2m") val temperature: Double? = null,
-    @Json(name = "relative_humidity_2m") val relativeHumidity: Int? = null,
-    @Json(name = "apparent_temperature") val apparentTemperature: Double? = null,
-    @Json(name = "is_day") val isDay: Int? = null,
+    @param:Json(name = "temperature_2m") val temperature: Double? = null,
+    @param:Json(name = "relative_humidity_2m") val relativeHumidity: Int? = null,
+    @param:Json(name = "apparent_temperature") val apparentTemperature: Double? = null,
+    @param:Json(name = "is_day") val isDay: Int? = null,
     val precipitation: Double? = null,
-    @Json(name = "weather_code") val weatherCode: Int? = null,
-    @Json(name = "surface_pressure") val surfacePressure: Double? = null,
-    @Json(name = "wind_speed_10m") val windSpeed: Double? = null,
-    @Json(name = "wind_direction_10m") val windDirection: Double? = null,
-    @Json(name = "cloud_cover") val cloudCover: Int? = null,
-    @Json(name = "uv_index") val uvIndex: Double? = null
+    @param:Json(name = "weather_code") val weatherCode: Int? = null,
+    @param:Json(name = "surface_pressure") val surfacePressure: Double? = null,
+    @param:Json(name = "wind_speed_10m") val windSpeed: Double? = null,
+    @param:Json(name = "wind_direction_10m") val windDirection: Double? = null,
+    @param:Json(name = "cloud_cover") val cloudCover: Int? = null,
+    @param:Json(name = "uv_index") val uvIndex: Double? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class HourlyWeatherDto(
     val time: List<String> = emptyList(),
-    @Json(name = "temperature_2m") val temperature: List<Double?> = emptyList(),
-    @Json(name = "relative_humidity_2m") val relativeHumidity: List<Int?> = emptyList(),
-    @Json(name = "precipitation_probability") val precipitationProbability: List<Int>? = emptyList(),
-    @Json(name = "weather_code") val weatherCode: List<Int?> = emptyList(),
-    @Json(name = "wind_speed_10m") val windSpeed: List<Double?> = emptyList(),
-    @Json(name = "visibility") val visibility: List<Double?>? = emptyList()
+    @param:Json(name = "temperature_2m") val temperature: List<Double?> = emptyList(),
+    @param:Json(name = "relative_humidity_2m") val relativeHumidity: List<Int?> = emptyList(),
+    @param:Json(name = "precipitation_probability") val precipitationProbability: List<Int>? = emptyList(),
+    @param:Json(name = "weather_code") val weatherCode: List<Int?> = emptyList(),
+    @param:Json(name = "wind_speed_10m") val windSpeed: List<Double?> = emptyList(),
+    @param:Json(name = "visibility") val visibility: List<Double?>? = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
 data class DailyWeatherDto(
     val time: List<String> = emptyList(),
-    @Json(name = "weather_code") val weatherCode: List<Int?> = emptyList(),
-    @Json(name = "temperature_2m_max") val temperatureMax: List<Double?> = emptyList(),
-    @Json(name = "temperature_2m_min") val temperatureMin: List<Double?> = emptyList(),
+    @param:Json(name = "weather_code") val weatherCode: List<Int?> = emptyList(),
+    @param:Json(name = "temperature_2m_max") val temperatureMax: List<Double?> = emptyList(),
+    @param:Json(name = "temperature_2m_min") val temperatureMin: List<Double?> = emptyList(),
     val sunrise: List<String?> = emptyList(),
     val sunset: List<String?> = emptyList(),
-    @Json(name = "uv_index_max") val uvIndexMax: List<Double?>? = emptyList(),
-    @Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int?>? = emptyList()
+    @param:Json(name = "uv_index_max") val uvIndexMax: List<Double?>? = emptyList(),
+    @param:Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int?>? = emptyList()
 )
 
 /**
@@ -178,7 +178,7 @@ data class GeocodingResultDto(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val country: String? = null,
-    @Json(name = "country_code") val countryCode: String? = null,
+    @param:Json(name = "country_code") val countryCode: String? = null,
     val admin1: String? = null,
     val timezone: String? = null
 )
