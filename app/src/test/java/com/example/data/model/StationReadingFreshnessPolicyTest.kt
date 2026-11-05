@@ -13,6 +13,16 @@ class StationReadingFreshnessPolicyTest {
     }
 
     @Test
+    fun observationExactlyAtNinetyMinuteLimitIsFresh() {
+        assertTrue(
+            StationReadingFreshnessPolicy.isFresh(
+                now - StationReadingFreshnessPolicy.DEFAULT_MAX_AGE_MILLIS,
+                now
+            )
+        )
+    }
+
+    @Test
     fun observationOlderThanNinetyMinutesIsStale() {
         assertFalse(StationReadingFreshnessPolicy.isFresh(now - 91L * 60L * 1000L, now))
     }
@@ -25,6 +35,16 @@ class StationReadingFreshnessPolicyTest {
     @Test
     fun smallClockSkewIntoFutureIsAccepted() {
         assertTrue(StationReadingFreshnessPolicy.isFresh(now + 2L * 60L * 1000L, now))
+    }
+
+    @Test
+    fun timestampExactlyAtFutureSkewLimitIsAccepted() {
+        assertTrue(
+            StationReadingFreshnessPolicy.isFresh(
+                now + StationReadingFreshnessPolicy.MAX_FUTURE_SKEW_MILLIS,
+                now
+            )
+        )
     }
 
     @Test

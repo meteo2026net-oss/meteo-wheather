@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.model.CityLocation
 import com.example.data.model.SyrianWeatherStation
 import com.example.data.model.StationReadingFreshnessPolicy
 
@@ -29,6 +28,17 @@ fun SyrianStationsSection(
     onStationSelected: (SyrianWeatherStation) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val nowEpochMillis = System.currentTimeMillis()
+    val hasFreshVerifiedReadings = stations.any { station ->
+        station.hasVerifiedLiveData &&
+            station.isOnline &&
+            !station.isDemoData &&
+            StationReadingFreshnessPolicy.isFresh(
+                observedAtEpochMillis = station.lastReadingEpochMillis,
+                nowEpochMillis = nowEpochMillis
+            )
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -53,7 +63,11 @@ fun SyrianStationsSection(
                         color = Color.White
                     )
                     Text(
-                        text = "عرض تجريبي — لا يمثل قياسات حية من المحطات",
+                        text = if (hasFreshVerifiedReadings) {
+                            "توجد قراءات حديثة من مصادر موثقة"
+                        } else {
+                            "لا توجد حالياً قراءات حية موثقة — القيم غير المتاحة مخفية"
+                        },
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -66,10 +80,11 @@ fun SyrianStationsSection(
             contentPadding = PaddingValues(horizontal = 2.dp)
         ) {
             items(stations) { station ->
-                val sourceIsVerified = station.hasVerifiedLiveData && station.isOnline && !station.isDemoData
-                val canShowLiveMeasurements = sourceIsVerified && StationReadingFreshnessPolicy.isFresh(
+                val hasVerifiedSource = station.hasVerifiedLiveData && !station.isDemoData
+                val sourceIsOnline = hasVerifiedSource && station.isOnline
+                val canShowLiveMeasurements = sourceIsOnline && StationReadingFreshnessPolicy.isFresh(
                     observedAtEpochMillis = station.lastReadingEpochMillis,
-                    nowEpochMillis = System.currentTimeMillis()
+                    nowEpochMillis = nowEpochMillis
                 )
                 Column(
                     modifier = Modifier
@@ -95,7 +110,11 @@ fun SyrianStationsSection(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(if (station.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                .background(
+                                    if (station.isDemoData) Color(0xFFFACC15)
+                                    else if (canShowLiveMeasurements) Color(0xFF4ADE80)
+                                    else Color(0xFFEF4444)
+                                )
                         )
                     }
 
@@ -110,13 +129,16 @@ fun SyrianStationsSection(
                     Text(
                         text = when {
                             station.isDemoData -> "بيانات تجريبية غير حية"
+                            !hasVerifiedSource -> "مصدر القياسات غير موثق"
+                            !station.isOnline -> "المحطة غير متصلة"
                             canShowLiveMeasurements -> "متصلة — قراءة حديثة موثقة"
-                            sourceIsVerified && station.lastReadingEpochMillis != null -> "القراءة قديمة أو توقيتها غير صالح"
-                            sourceIsVerified -> "وقت آخر قراءة غير متاح"
-                            else -> "مصدر القياسات غير موثق"
+                            station.lastReadingEpochMillis != null -> "القراءة قديمة أو توقيتها غير صالح"
+                            else -> "وقت آخر قراءة غير متاح"
                         },
                         fontSize = 9.sp,
-                        color = if (station.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFFCA5A5)
+                        color = if (station.isDemoData) Color(0xFFFACC15)
+                        else if (canShowLiveMeasurements) Color(0xFF4ADE80)
+                        else Color(0xFFFCA5A5)
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
