@@ -43,9 +43,14 @@ data class QualifiedWeatherValue(
     val unit: String,
     val provenance: WeatherDataProvenance
 ) {
+    /**
+     * Only verified, current measurements are eligible for presentation as readings.
+     * Stale and simulated values may be shown in a separately labelled history/demo UI,
+     * but must never pass the live-measurement display gate.
+     */
     val isDisplayable: Boolean
         get() = value?.isFinite() == true &&
-            provenance.status != WeatherDataStatus.UNAVAILABLE
+            provenance.status == WeatherDataStatus.AVAILABLE
 }
 
 /**
@@ -101,4 +106,3 @@ fun SyrianWeatherStation.toQualifiedObservation(): StationObservation {
         provenance = source
     )
 }
-
