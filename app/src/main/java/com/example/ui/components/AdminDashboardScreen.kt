@@ -27,6 +27,9 @@ import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.SyrianWeatherStation
 import com.example.data.model.canShowLiveMeasurements
 import com.example.data.model.canShowLiveTemperature
+import com.example.data.model.canShowLiveHumidity
+import com.example.data.model.canShowLivePressure
+import com.example.data.model.canShowLiveWindSpeed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -289,6 +292,9 @@ fun AdminDashboardScreen(
                         items(stations) { st ->
                             val canShowLiveMeasurements = st.canShowLiveMeasurements(nowEpochMillis)
                             val canShowLiveTemperature = st.canShowLiveTemperature(nowEpochMillis)
+                            val canShowLiveHumidity = st.canShowLiveHumidity(nowEpochMillis)
+                            val canShowLivePressure = st.canShowLivePressure(nowEpochMillis)
+                            val canShowLiveWindSpeed = st.canShowLiveWindSpeed(nowEpochMillis)
                             val stationStatus = when {
                                 st.isDemoData -> "بيانات تجريبية"
                                 !st.hasVerifiedLiveData -> "مصدر غير موثق"
@@ -296,33 +302,45 @@ fun AdminDashboardScreen(
                                 canShowLiveMeasurements -> "قراءة حديثة موثقة"
                                 else -> "قراءة قديمة أو توقيتها غير صالح"
                             }
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(Color.White.copy(alpha = 0.08f))
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .clip(CircleShape)
-                                            .background(if (st.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFEF4444))
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(text = st.nameAr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(text = "${st.governorate} | $stationStatus", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .clip(CircleShape)
+                                                .background(if (st.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Text(text = st.nameAr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text(text = "${st.governorate} | $stationStatus", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
+                                        }
                                     }
+                                    Text(
+                                        text = if (canShowLiveTemperature) "${st.temperatureCelsius.toInt()}°C" else "—",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFFFD54F)
+                                    )
                                 }
                                 Text(
-                                    text = if (canShowLiveTemperature) "${st.temperatureCelsius.toInt()}°C" else "—",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFFFD54F)
+                                    text = "الرطوبة: ${if (canShowLiveHumidity) "${st.humidity}%" else "—"}   " +
+                                        "الضغط: ${if (canShowLivePressure) "${"%.1f".format(java.util.Locale.US, st.pressureHpa)} hPa" else "—"}   " +
+                                        "الرياح: ${if (canShowLiveWindSpeed) "${"%.1f".format(java.util.Locale.US, st.windSpeedKmh)} كم/س" else "—"}",
+                                    fontSize = 10.sp,
+                                    color = Color.White.copy(alpha = 0.78f)
                                 )
                             }
                         }
