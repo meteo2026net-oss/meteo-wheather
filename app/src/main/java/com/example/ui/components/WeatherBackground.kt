@@ -75,7 +75,8 @@ fun getAtmosphere(condition: WeatherConditionType, isDay: Boolean): WeatherAtmos
             isDarkBackground = false
         )
         WeatherConditionType.CLOUDY,
-        WeatherConditionType.FOG -> WeatherAtmosphere(
+        WeatherConditionType.FOG,
+        WeatherConditionType.UNKNOWN -> WeatherAtmosphere(
             topColor = Color(0xFF475569),
             middleColor = Color(0xFF64748B),
             bottomColor = Color(0xFF94A3B8),

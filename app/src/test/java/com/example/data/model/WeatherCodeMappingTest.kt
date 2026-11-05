@@ -65,6 +65,7 @@ class WeatherCodeMappingTest {
         val description = WeatherCodeMapping.description(999)
         assertEquals("حالة جوية غير معروفة", description.arabic)
         assertEquals("Unknown weather condition", description.english)
+        assertEquals(WeatherConditionType.UNKNOWN, description.conditionType)
     }
 
     @Test

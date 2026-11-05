@@ -215,7 +215,8 @@ enum class WeatherConditionType {
     RAIN,
     HEAVY_RAIN,
     SNOW,
-    THUNDERSTORM
+    THUNDERSTORM,
+    UNKNOWN
 }
 
 data class CityLocation(

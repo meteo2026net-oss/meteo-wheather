@@ -41,7 +41,7 @@ object WeatherCodeMapping {
         96 -> WeatherCodeDescription(WeatherConditionType.THUNDERSTORM, "عاصفة رعدية مع بَرَد", "Thunderstorm with slight hail")
         99 -> WeatherCodeDescription(WeatherConditionType.THUNDERSTORM, "عاصفة رعدية مع بَرَد كثيف", "Thunderstorm with heavy hail")
         else -> WeatherCodeDescription(
-            WeatherConditionType.PARTLY_CLOUDY,
+            WeatherConditionType.UNKNOWN,
             "حالة جوية غير معروفة",
             "Unknown weather condition"
         )

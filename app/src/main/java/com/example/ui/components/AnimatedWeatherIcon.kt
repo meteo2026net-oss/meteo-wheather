@@ -162,7 +162,8 @@ fun AnimatedWeatherIcon(
                         drawMoonBehindCloud(w, h, cloudDrift)
                     }
                 }
-                WeatherConditionType.CLOUDY -> {
+                WeatherConditionType.CLOUDY,
+                WeatherConditionType.UNKNOWN -> {
                     drawLayeredClouds(w, h, cloudDrift)
                 }
                 WeatherConditionType.DRIZZLE,
