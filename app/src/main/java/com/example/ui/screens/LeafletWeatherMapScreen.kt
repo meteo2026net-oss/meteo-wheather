@@ -470,7 +470,7 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                 put("code", forecast.weatherCode ?: JSONObject.NULL)
             })
         }
-    }.toString()
+    }.toString().let(::encodeJsonForHtmlScript)
 
     return """
         <!DOCTYPE html>
@@ -781,16 +781,21 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                     var humidityText = Number.isFinite(c.humidity) ? c.humidity + '%' : '—';
                     var windText = Number.isFinite(c.wind) ? c.wind.toFixed(1) + ' كم/س' : '—';
                     var cloudText = Number.isFinite(c.clouds) ? c.clouds + '%' : '—';
-                    marker.bindPopup(
-                        '<div class="city-popup">' +
-                        '<div class="city-title">' + c.name + '</div>' +
+                    var popupContent = document.createElement('div');
+                    popupContent.className = 'city-popup';
+                    var cityTitle = document.createElement('div');
+                    cityTitle.className = 'city-title';
+                    cityTitle.textContent = c.name;
+                    popupContent.appendChild(cityTitle);
+                    var forecastDetails = document.createElement('div');
+                    forecastDetails.innerHTML =
                         '<b>الحرارة المتوقعة:</b> ' + tempText + '<br/>' +
                         '<b>الرطوبة:</b> ' + humidityText + '<br/>' +
                         '<b>الرياح:</b> ' + windText + '<br/>' +
                         '<b>الغطاء السحابي:</b> ' + cloudText + '<br/>' +
-                        '<small>توقعات نموذج Open-Meteo وليست رصداً لمحطة</small>' +
-                        '</div>'
-                    );
+                        '<small>توقعات نموذج Open-Meteo وليست رصداً لمحطة</small>';
+                    popupContent.appendChild(forecastDetails);
+                    marker.bindPopup(popupContent);
                 });
 
                 styleCityMarkers(selectedWeatherOverlay);
