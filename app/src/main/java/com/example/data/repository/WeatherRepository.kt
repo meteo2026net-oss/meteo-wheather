@@ -350,9 +350,9 @@ class WeatherRepository(private val context: Context) {
 
     /** Retrieves the 13 Syrian city forecasts in a single request, cached for ten minutes. */
     suspend fun getSyrianCityMapForecasts(forceRefresh: Boolean = false): List<CityMapForecast> = withContext(Dispatchers.IO) {
-        val now = System.currentTimeMillis()
+        val cacheAgeMs = System.currentTimeMillis() - cityMapForecastsFetchedAtMs
         if (!forceRefresh && cachedCityMapForecasts.isNotEmpty() &&
-            now - cityMapForecastsFetchedAtMs < 10 * 60 * 1000L
+            cacheAgeMs in 0 until 10 * 60 * 1000L
         ) return@withContext cachedCityMapForecasts
 
         val cities = DEFAULT_CITIES
@@ -380,7 +380,7 @@ class WeatherRepository(private val context: Context) {
             )
         }
         cachedCityMapForecasts = forecasts
-        cityMapForecastsFetchedAtMs = now
+        cityMapForecastsFetchedAtMs = System.currentTimeMillis()
         forecasts
     }
 
