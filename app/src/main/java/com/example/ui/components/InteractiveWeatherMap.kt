@@ -102,6 +102,25 @@ fun InteractiveWeatherMap(
                     )
                 }
             }
+            IconButton(
+                onClick = onRefreshCityForecasts,
+                enabled = !isLoadingCityForecasts,
+                modifier = Modifier.testTag("refresh_city_forecasts")
+            ) {
+                if (isLoadingCityForecasts) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color(0xFF7DD3FC),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "تحديث توقعات المدن السورية",
+                        tint = Color(0xFF7DD3FC)
+                    )
+                }
+            }
         }
 
         Text(
