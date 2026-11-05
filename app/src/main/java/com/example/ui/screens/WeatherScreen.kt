@@ -931,13 +931,15 @@ private fun fetchGpsLocation(context: Context, viewModel: WeatherViewModel) {
                     val geocoder = Geocoder(context, Locale.forLanguageTag("ar"))
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         geocoder.getFromLocation(loc.latitude, loc.longitude, 1) { list ->
-                            list.firstOrNull()?.let { addr ->
-                                val name = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
-                                val country = addr.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
-                                viewModel.onGpsLocationReceived(
-                                    loc.latitude, loc.longitude, name, country
-                                )
-                            }
+                            val address = list.firstOrNull()
+                            val name = address?.let {
+                                it.locality ?: it.subAdminArea ?: it.adminArea
+                            }?.takeIf { it.isNotBlank() } ?: "موقعي الحالي"
+                            val country = address?.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
+                            // Always deliver the coordinates, even when reverse geocoding returns no address.
+                            viewModel.onGpsLocationReceived(
+                                loc.latitude, loc.longitude, name, country
+                            )
                         }
                         return@addOnSuccessListener
                     } else {
