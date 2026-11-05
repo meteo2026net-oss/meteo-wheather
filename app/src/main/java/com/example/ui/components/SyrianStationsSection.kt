@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CityLocation
 import com.example.data.model.SyrianWeatherStation
+import com.example.data.model.StationReadingFreshnessPolicy
 
 @Composable
 fun SyrianStationsSection(
@@ -65,7 +66,11 @@ fun SyrianStationsSection(
             contentPadding = PaddingValues(horizontal = 2.dp)
         ) {
             items(stations) { station ->
-                val canShowLiveMeasurements = station.hasVerifiedLiveData && station.isOnline && !station.isDemoData
+                val sourceIsVerified = station.hasVerifiedLiveData && station.isOnline && !station.isDemoData
+                val canShowLiveMeasurements = sourceIsVerified && StationReadingFreshnessPolicy.isFresh(
+                    observedAtEpochMillis = station.lastReadingEpochMillis,
+                    nowEpochMillis = System.currentTimeMillis()
+                )
                 Column(
                     modifier = Modifier
                         .width(160.dp)
@@ -103,7 +108,13 @@ fun SyrianStationsSection(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = when { station.isDemoData -> "بيانات تجريبية غير حية"; canShowLiveMeasurements -> "متصلة — بيانات موثقة"; else -> "مصدر القياسات غير موثق" },
+                        text = when {
+                            station.isDemoData -> "بيانات تجريبية غير حية"
+                            canShowLiveMeasurements -> "متصلة — قراءة حديثة موثقة"
+                            sourceIsVerified && station.lastReadingEpochMillis != null -> "القراءة قديمة أو توقيتها غير صالح"
+                            sourceIsVerified -> "وقت آخر قراءة غير متاح"
+                            else -> "مصدر القياسات غير موثق"
+                        },
                         fontSize = 9.sp,
                         color = if (station.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFFCA5A5)
                     )

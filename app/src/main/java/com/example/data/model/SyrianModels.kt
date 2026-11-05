@@ -15,6 +15,8 @@ data class SyrianWeatherStation(
     val isOnline: Boolean = false,
     val lastReadingTime: String = "غير محدد",
     val isDemoData: Boolean = true,
+    /** Provider observation time in Unix epoch milliseconds; required before showing live values. */
+    val lastReadingEpochMillis: Long? = null,
     /** True only after a station feed and its measurement provenance have been verified. */
     val hasVerifiedLiveData: Boolean = false
 )
