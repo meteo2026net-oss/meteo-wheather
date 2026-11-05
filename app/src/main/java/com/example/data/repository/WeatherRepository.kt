@@ -176,7 +176,7 @@ class WeatherRepository(private val context: Context) {
                 )
             }
 
-            // Parse daily forecasts (next 7 days)
+            // Parse the full 16-day forecast window supported by the free Open-Meteo API.
             val dailyList = mutableListOf<DailyForecast>()
             val dailyTimes = forecastDto.daily?.time ?: emptyList()
             val dailyCodes = forecastDto.daily?.weatherCode ?: emptyList()
@@ -191,7 +191,8 @@ class WeatherRepository(private val context: Context) {
                 dates = dailyTimes,
                 weatherCodes = dailyCodes,
                 maxTemperatures = dailyMax,
-                minTemperatures = dailyMin
+                minTemperatures = dailyMin,
+                limit = 16
             )
             for (i in validDailyIndices) {
                 val dateRaw = dailyTimes[i]

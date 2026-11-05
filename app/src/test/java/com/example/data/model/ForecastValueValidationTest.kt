@@ -186,6 +186,25 @@ class ForecastValueValidationTest {
 
 class DailyForecastSelectionTest {
     @org.junit.Test
+    fun validIndicesCanReturnTheFullSixteenDayForecastWindow() {
+        val dates = (1..16).map { "2026-11-%02d".format(it) }
+        val codes = List(16) { 0 }
+        val maxima = List(16) { 20.0 }
+        val minima = List(16) { 10.0 }
+
+        assertEquals(
+            (0..15).toList(),
+            DailyForecastSelection.validIndices(
+                dates = dates,
+                weatherCodes = codes,
+                maxTemperatures = maxima,
+                minTemperatures = minima,
+                limit = 16
+            )
+        )
+    }
+
+    @org.junit.Test
     fun validIndicesCountsUsableDaysInsteadOfStoppingAtSevenRawRecords() {
         val dates = listOf(
             "2026-02-30", "2026-11-05", "2026-11-06", "2026-11-07",
