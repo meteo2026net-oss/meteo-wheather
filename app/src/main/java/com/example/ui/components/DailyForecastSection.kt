@@ -72,7 +72,7 @@ fun DailyForecastSection(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "توقعات 7 أيام القادمة",
+                    text = "توقعات الأيام القادمة (${dailyList.size} يوماً)",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
