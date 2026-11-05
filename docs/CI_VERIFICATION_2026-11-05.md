@@ -37,3 +37,14 @@ This run verifies JVM unit tests and Android Debug compilation/packaging for the
 - production Release signing or real-device behavior.
 
 The workflow also reports a deprecated Android SDK Manager CLI notice and an advisory that Gradle 9.3.1 is out of date. These are maintenance warnings, not failures in this run. Toolchain upgrades require a separate compatibility check.
+
+## Follow-up exact-head verification — 5 November 2026
+
+- Commit `a6099e70254c42af31cebf26bbc96dfe0a461884` removed machine-specific Robolectric settings from `gradle.properties`, including the hard-coded offline mode and an absolute local Maven repository path.
+- GitHub Actions run [41965685063](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41965685063) completed successfully on that exact commit.
+- The single CI job completed every step successfully: Java 17 and Android SDK setup, Gradle provisioning, unit tests, Debug APK assembly, Debug APK upload, unit-test report upload and cleanup.
+- Debug APK artifact: `mcnc-weather-debug-apk`, ID `13386769251`, size 22,725,058 bytes; expires 3 February 2027. Artifact digest: `sha256:4aaf52d4ede6e9b9b9d359f08b9903dd22e6718f85049c3e196f435cf04e43b1`.
+- Unit-test report artifact: `android-unit-test-reports`, ID `13387023814`, size 25,699 bytes; expires 19 November 2026. Artifact digest: `sha256:913c3443cc67b6b1cb2fcc20ba174a96c2c3900e59f4ca8b5ace3769a77bee67`.
+- The APK is a temporary-key CI Debug build, not a production Release build. This result verifies JVM unit tests and Android Debug compilation/packaging; it does not validate live station feeds, official CAP connectivity/authenticity, radar coverage, production signing or physical-device behavior.
+- The CI log still contains the Android SDK Manager CLI deprecation notice. It is non-fatal; replacement is deferred until a compatible supported setup path is confirmed.
+- PR #1 remains open and unmerged. The branch head and PR head were both `a6099e70254c42af31cebf26bbc96dfe0a461884` at verification time. No changes were made to `main` or the separate CAP repository.
