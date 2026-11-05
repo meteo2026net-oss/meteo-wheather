@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -369,7 +370,7 @@ fun InteractiveWeatherMap(
                             .clip(RoundedCornerShape(16.dp))
                             .background(if (isCurrent) Color(0xFF075985).copy(alpha = 0.72f) else Color(0xFF0F172A).copy(alpha = 0.92f))
                             .border(1.dp, if (isCurrent) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-                            .clickable { onCitySelected(forecast.city) }
+                            .clickable(role = Role.Button) { onCitySelected(forecast.city) }
                             .padding(12.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
