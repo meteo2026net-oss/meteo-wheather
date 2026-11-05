@@ -19,11 +19,18 @@ class WeatherDataProvenanceDisplayPolicyTest {
     )
 
     @Test
-    fun onlyAvailableFiniteMeasurementsAreDisplayable() {
-        assertTrue(value(status = WeatherDataStatus.AVAILABLE).isDisplayable)
-        assertFalse(value(status = WeatherDataStatus.STALE).isDisplayable)
-        assertFalse(value(status = WeatherDataStatus.UNAVAILABLE).isDisplayable)
-        assertFalse(value(status = WeatherDataStatus.SIMULATED).isDisplayable)
+    fun onlyAvailableFiniteMeasurementsAreEligibleForLiveDisplay() {
+        assertTrue(value(status = WeatherDataStatus.AVAILABLE).isLiveDisplayable)
+        assertFalse(value(status = WeatherDataStatus.STALE).isLiveDisplayable)
+        assertFalse(value(status = WeatherDataStatus.UNAVAILABLE).isLiveDisplayable)
+        assertFalse(value(status = WeatherDataStatus.SIMULATED).isLiveDisplayable)
+    }
+
+    @Test
+    fun simulatedValuesRemainAvailableOnlyToExplicitlyLabelledDemoUi() {
+        val simulated = value(status = WeatherDataStatus.SIMULATED)
+        assertTrue(simulated.isDisplayable)
+        assertFalse(simulated.isLiveDisplayable)
     }
 
     @Test
@@ -35,6 +42,8 @@ class WeatherDataProvenanceDisplayPolicyTest {
 
     @Test
     fun measuredZeroRemainsAValidAvailableValue() {
-        assertTrue(value(number = 0.0, status = WeatherDataStatus.AVAILABLE).isDisplayable)
+        val zero = value(number = 0.0, status = WeatherDataStatus.AVAILABLE)
+        assertTrue(zero.isDisplayable)
+        assertTrue(zero.isLiveDisplayable)
     }
 }

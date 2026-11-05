@@ -44,11 +44,22 @@ data class QualifiedWeatherValue(
     val provenance: WeatherDataProvenance
 ) {
     /**
-     * Only verified, current measurements are eligible for presentation as readings.
-     * Stale and simulated values may be shown in a separately labelled history/demo UI,
-     * but must never pass the live-measurement display gate.
+     * True when a finite value may be shown in any context.
+     * Simulated values remain eligible only for explicitly labelled demo UI.
+     * Stale and unavailable values are never displayable.
      */
     val isDisplayable: Boolean
+        get() = value?.isFinite() == true &&
+            provenance.status in setOf(
+                WeatherDataStatus.AVAILABLE,
+                WeatherDataStatus.SIMULATED
+            )
+
+    /**
+     * Strict gate for live readings: only finite, available measurements pass.
+     * Demo/simulated values must use [isDisplayable] only in a clearly labelled demo UI.
+     */
+    val isLiveDisplayable: Boolean
         get() = value?.isFinite() == true &&
             provenance.status == WeatherDataStatus.AVAILABLE
 }
