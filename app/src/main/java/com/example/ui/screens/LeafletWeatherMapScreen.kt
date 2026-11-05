@@ -402,7 +402,7 @@ fun LeafletWeatherMapScreen(
                         webView.stopLoading()
                         webView.removeJavascriptInterface("AndroidMapInterface")
                         webView.webChromeClient = null
-                        webView.webViewClient = null
+                        webView.webViewClient = WebViewClient()
                         webView.settings.javaScriptEnabled = false
                         webView.removeAllViews()
                         webView.destroy()
