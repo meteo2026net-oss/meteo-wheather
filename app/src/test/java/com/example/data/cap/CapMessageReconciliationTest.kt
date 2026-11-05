@@ -108,6 +108,13 @@ class CapMessageReconciliationTest {
         assertEquals(afterUpdate, afterUpdate.apply(reused, now))
     }
 
+    @Test fun rejectsNewAlertWhenSenderReusesAnExistingIdentifierAtAnotherSentTime() {
+        val initial = CapReconciliationState().apply(message("base-1"), now)
+        val reused = message("base-1", sent = "2026-11-04T06:05:00Z")
+        assertEquals(initial, initial.apply(reused, now))
+        assertEquals(1, initial.apply(reused, now).alerts.size)
+    }
+
     @Test fun rejectsCancelWhenSenderReusesAnExistingMessageIdentifier() {
         val initial = CapReconciliationState().apply(message("base-1"), now)
         val reusedIdentifier = message(
