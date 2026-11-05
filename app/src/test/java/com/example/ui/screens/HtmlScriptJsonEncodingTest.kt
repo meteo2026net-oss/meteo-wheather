@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import org.json.JSONObject
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,7 +25,9 @@ class HtmlScriptJsonEncodingTest {
 
     @Test
     fun safelyEncodesQuotedCityNameBeforeHtmlScriptEmbedding() {
-        val encoded = encodeJsonForHtmlScript(JSONObject.quote("</script><script>alert(1)</script>"))
+        // Supply the JSON-quoted representation directly: Android's org.json
+        // implementation is a framework stub in local JVM unit tests.
+        val encoded = encodeJsonForHtmlScript("\"</script><script>alert(1)</script>\"")
 
         assertFalse(encoded.contains("<"))
         assertFalse(encoded.contains(">"))
