@@ -45,7 +45,7 @@ data class HourlyWeatherDto(
 @JsonClass(generateAdapter = true)
 data class DailyWeatherDto(
     val time: List<String> = emptyList(),
-    @Json(name = "weather_code") val weatherCode: List<Int> = emptyList(),
+    @Json(name = "weather_code") val weatherCode: List<Int?> = emptyList(),
     @Json(name = "temperature_2m_max") val temperatureMax: List<Double?> = emptyList(),
     @Json(name = "temperature_2m_min") val temperatureMin: List<Double?> = emptyList(),
     val sunrise: List<String?> = emptyList(),
