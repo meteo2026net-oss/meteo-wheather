@@ -283,6 +283,7 @@ fun WeatherScreen(
                         // Interactive Weather Maps (Precipitation, Temperature, Wind, Clouds)
                         InteractiveWeatherMap(
                             currentCity = weather.location,
+                            cityForecasts = uiState.cityMapForecasts,
                             onCitySelected = { viewModel.loadWeather(it) }
                         )
 

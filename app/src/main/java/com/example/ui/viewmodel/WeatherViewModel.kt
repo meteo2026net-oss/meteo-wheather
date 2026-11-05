@@ -70,6 +70,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         NotificationHelper.createNotificationChannel(application)
         val initialCity = _uiState.value.favoriteCities.firstOrNull() ?: WeatherRepository.DEFAULT_CITIES[0]
         loadWeather(initialCity)
+        loadSyrianCityMapForecasts()
     }
 
     fun loadWeather(city: CityLocation) {

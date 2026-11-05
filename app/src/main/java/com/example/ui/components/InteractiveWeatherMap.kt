@@ -29,7 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.model.CityLocation
+import com.example.data.model.CityMapForecast
 import com.example.data.model.MapWeatherOverlay
+import com.example.data.model.WeatherCodeMapping
+import com.example.ui.screens.encodeJsonForHtmlScript
+import org.json.JSONArray
+import org.json.JSONObject
 
 enum class LeafletTileStyle(val titleAr: String, val icon: String, val tileType: String) {
     DARK("خريطة ليفليت الداكنة", "🗺️", "dark"),
@@ -41,6 +46,7 @@ enum class LeafletTileStyle(val titleAr: String, val icon: String, val tileType:
 @Composable
 fun InteractiveWeatherMap(
     currentCity: CityLocation,
+    cityForecasts: List<CityMapForecast>,
     onCitySelected: (CityLocation) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -94,9 +100,13 @@ fun InteractiveWeatherMap(
         }
 
         Text(
-            text = "تنبيه: طبقة RainViewer تعرض آخر إطار تاريخي متاح فقط؛ درجات الحرارة والرياح في علامات المدن غير متاحة.",
+            text = if (cityForecasts.isEmpty()) {
+                "جارٍ تحميل توقعات المدن السورية من Open-Meteo..."
+            } else {
+                "توقعات نموذجية محدثة لـ ${cityForecasts.size} مدينة سورية؛ ليست قياسات محطات رصد أرضية."
+            },
             fontSize = 10.sp,
-            color = Color(0xFFFACC15)
+            color = if (cityForecasts.isEmpty()) Color(0xFFFACC15) else Color(0xFF86EFAC)
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -186,8 +196,8 @@ fun InteractiveWeatherMap(
                 .background(Color(0xFF090D1A))
                 .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(20.dp))
         ) {
-            val htmlContent = remember(selectedTileStyle, selectedOverlay) {
-                buildLeafletMapHtml(selectedTileStyle.tileType, selectedOverlay)
+            val htmlContent = remember(selectedTileStyle, selectedOverlay, cityForecasts) {
+                buildLeafletMapHtml(selectedTileStyle.tileType, selectedOverlay, cityForecasts)
             }
 
             AndroidView(
@@ -303,8 +313,32 @@ fun InteractiveWeatherMap(
 }
 
 // Helper to build Leaflet HTML map string centered on Syria
-private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): String {
+private fun buildLeafletMapHtml(
+    tileStyle: String,
+    overlay: MapWeatherOverlay,
+    cityForecasts: List<CityMapForecast>
+): String {
     val baseMap = LeafletBaseMapConfigs.forStyle(tileStyle)
+    val cityForecastsJson = JSONArray().apply {
+        cityForecasts.forEach { forecast ->
+            val condition = forecast.weatherCode?.let(WeatherCodeMapping::description)?.arabic
+                ?: "الحالة غير متاحة"
+            put(
+                JSONObject()
+                    .put("name", forecast.city.name)
+                    .put("latitude", forecast.city.latitude)
+                    .put("longitude", forecast.city.longitude)
+                    .put("temperature", forecast.temperatureCelsius ?: JSONObject.NULL)
+                    .put("humidity", forecast.humidityPercent ?: JSONObject.NULL)
+                    .put("wind", forecast.windSpeedKmh ?: JSONObject.NULL)
+                    .put("windDirection", forecast.windDirectionDegrees ?: JSONObject.NULL)
+                    .put("cloudCover", forecast.cloudCoverPercent ?: JSONObject.NULL)
+                    .put("precipitation", forecast.precipitationMm ?: JSONObject.NULL)
+                    .put("condition", condition)
+                    .put("time", forecast.time ?: JSONObject.NULL)
+            )
+        }
+    }.toString().let(::encodeJsonForHtmlScript)
     val subdomainsOption = baseMap.subdomains?.let { "subdomains: '$it'," }.orEmpty()
 
     return """
@@ -525,39 +559,55 @@ private fun buildLeafletMapHtml(tileStyle: String, overlay: MapWeatherOverlay): 
 
 
 
-                // Syrian Cities Meteorological Pins
-                var syrianCities = [
-                    { name: 'دمشق (العاصمة)', lat: 33.5138, lng: 36.2765, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'حلب', lat: 36.2021, lng: 37.1343, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'اللاذقية (الساحل)', lat: 35.5317, lng: 35.7915, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'حمص', lat: 34.7324, lng: 36.7137, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'طرطوس', lat: 34.8890, lng: 35.8866, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'حماة', lat: 35.1318, lng: 36.7578, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'دير الزور (المنطقة الشرقية)', lat: 35.3333, lng: 40.1500, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'القامشلي', lat: 37.0494, lng: 41.2268, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'السويداء (المنطقة الجنوبية)', lat: 32.7130, lng: 36.5694, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'درعا', lat: 32.6186, lng: 36.1011, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'إدلب', lat: 35.9306, lng: 36.6339, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'الرقة', lat: 35.9556, lng: 39.0078, temp: '—', state: 'بيانات غير متاحة', wind: '—' },
-                    { name: 'تدمر (البادية السورية)', lat: 34.5577, lng: 38.2753, temp: '—', state: 'بيانات غير متاحة', wind: '—' }
-                ];
+                // Live model forecasts for Syrian cities (not station observations).
+                var syrianCities = ${cityForecastsJson};
+                if (syrianCities.length === 0) {
+                    var emptyForecastNotice = L.control({ position: 'topright' });
+                    emptyForecastNotice.onAdd = function() {
+                        var notice = L.DomUtil.create('div', 'radar-status');
+                        notice.textContent = 'توقعات المدن غير متاحة حالياً؛ أعد المحاولة لاحقاً.';
+                        return notice;
+                    };
+                    emptyForecastNotice.addTo(map);
+                }
 
-                syrianCities.forEach(function(c) {
-                    var circle = L.circleMarker([c.lat, c.lng], {
+                function appendPopupLine(container, label, value, suffix) {
+                    var line = document.createElement('div');
+                    var labelNode = document.createElement('strong');
+                    labelNode.textContent = label + ': ';
+                    var valueNode = document.createElement('span');
+                    valueNode.textContent = value === null || value === undefined
+                        ? 'غير متاح'
+                        : String(value) + (suffix || '');
+                    line.appendChild(labelNode);
+                    line.appendChild(valueNode);
+                    container.appendChild(line);
+                }
+
+                syrianCities.forEach(function(city) {
+                    if (!Number.isFinite(city.latitude) || !Number.isFinite(city.longitude)) return;
+                    var marker = L.circleMarker([city.latitude, city.longitude], {
                         color: '#38BDF8',
                         fillColor: '#0284C7',
                         fillOpacity: 0.9,
                         radius: 8
                     }).addTo(map);
 
-                    circle.bindPopup(
-                        '<div class="city-popup">' +
-                        '<div class="city-title">' + c.name + '</div>' +
-                        '<b>الحرارة:</b> ' + c.temp + '<br/>' +
-                        '<b>حالة الطقس:</b> ' + c.state + '<br/>' +
-                        '<b>سرعة الرياح:</b> ' + c.wind +
-                        '</div>'
-                    );
+                    var popup = document.createElement('div');
+                    popup.className = 'city-popup';
+                    var title = document.createElement('div');
+                    title.className = 'city-title';
+                    title.textContent = city.name;
+                    popup.appendChild(title);
+                    appendPopupLine(popup, 'الحرارة', city.temperature, ' °م');
+                    appendPopupLine(popup, 'الحالة', city.condition, '');
+                    appendPopupLine(popup, 'الرطوبة', city.humidity, '%');
+                    appendPopupLine(popup, 'سرعة الرياح', city.wind, ' كم/س');
+                    appendPopupLine(popup, 'اتجاه الرياح', city.windDirection, '°');
+                    appendPopupLine(popup, 'الغطاء السحابي', city.cloudCover, '%');
+                    appendPopupLine(popup, 'الهطول', city.precipitation, ' مم');
+                    appendPopupLine(popup, 'وقت البيانات', city.time, '');
+                    marker.bindPopup(popup);
                 });
             </script>
         </body>
