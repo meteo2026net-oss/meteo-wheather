@@ -105,9 +105,9 @@ object ForecastValueValidation {
         val date = validIsoDate(prefix.take(10)) ?: return null
         if (!prefix.startsWith(date + "T")) return null
         val hourText = prefix.substring(11, 13)
-        if (!Regex("""^([01]\\d|2[0-3])$""").matches(hourText)) return null
+        if (!Regex("""^([01]\d|2[0-3])$""").matches(hourText)) return null
         val suffix = raw.substring(13)
-        if (!Regex("""^(:[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?)?$""").matches(suffix)) return null
+        if (!Regex("""^(:[0-5]\d(?::[0-5]\d(?:\.\d+)?)?)?$""").matches(suffix)) return null
         return hourText.toInt()
     }
 
