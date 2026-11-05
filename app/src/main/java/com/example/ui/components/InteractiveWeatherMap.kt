@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.data.model.TemperatureUnitConversion
 import com.example.data.model.CityLocation
 import com.example.data.model.CityMapForecast
 import com.example.data.model.MapWeatherOverlay
@@ -390,11 +391,10 @@ fun InteractiveWeatherMap(
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = forecast.temperatureCelsius?.let { temperatureCelsius ->
-                                val displayTemperature = if (isFahrenheit) {
-                                    (temperatureCelsius * 9 / 5 + 32).toInt()
-                                } else {
-                                    temperatureCelsius.toInt()
-                                }
+                                val displayTemperature = TemperatureUnitConversion.toDisplayValue(
+                                    temperatureCelsius,
+                                    isFahrenheit
+                                )
                                 "${displayTemperature}°${if (isFahrenheit) "F" else "C"}"
                             } ?: "—°",
                             color = Color.White,
