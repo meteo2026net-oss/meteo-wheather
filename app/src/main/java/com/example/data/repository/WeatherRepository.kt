@@ -296,11 +296,13 @@ class WeatherRepository(private val context: Context) {
             // Severe Weather Alerts detection
             val alerts = detectSevereWeatherAlerts(location, currentWeather, dailyList, if (aqiAvailable) aqiVal else -1, pollenInfo)
 
-            // Track active notifications per location. Notify every newly active severe alert,
-            // and only remember alerts accepted by the notification API.
-            if (areAlertsEnabled()) {
-                val notificationStateKey =
-                    "active_weather_alert_ids_${location.latitude}_${location.longitude}"
+            // Track active notifications per location. Clear the history while alerts
+            // are disabled so re-enabling starts a fresh notification tracking period.
+            val notificationStateKey =
+                "active_weather_alert_ids_${location.latitude}_${location.longitude}"
+            if (!areAlertsEnabled()) {
+                prefs.edit().remove(notificationStateKey).apply()
+            } else {
                 val previouslyNotifiedIds =
                     prefs.getStringSet(notificationStateKey, emptySet())?.toSet().orEmpty()
                 val alertsToNotify = SevereAlertNotificationPolicy.alertsRequiringNotification(

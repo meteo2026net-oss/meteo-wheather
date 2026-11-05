@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.DailyForecastSelection
+import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.WeatherConditionType
 import com.example.ui.components.*
 import com.example.ui.viewmodel.WeatherViewModel
@@ -68,11 +69,26 @@ fun WeatherScreen(
         }
     }
 
+    // Keep the permission request's intent separate: a test notification must
+    // never change the user's persistent severe-alert preference.
+    var pendingTestAlert by remember { mutableStateOf<SevereWeatherAlert?>(null) }
+    var pendingEnableAlerts by remember { mutableStateOf(false) }
+
     // Notification Permission launcher (Android 13+)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        viewModel.toggleAlertsNotification(isGranted)
+        val testAlert = pendingTestAlert
+        val enableAlerts = pendingEnableAlerts
+        pendingTestAlert = null
+        pendingEnableAlerts = false
+
+        if (isGranted) {
+            testAlert?.let(viewModel::testPushNotification)
+            if (enableAlerts) viewModel.toggleAlertsNotification(true)
+        } else if (enableAlerts) {
+            viewModel.toggleAlertsNotification(false)
+        }
     }
 
     val requestGpsAction = {
@@ -231,6 +247,7 @@ fun WeatherScreen(
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                                         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                                     ) {
+                                        pendingTestAlert = alert
                                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     } else {
                                         viewModel.testPushNotification(alert)
@@ -340,6 +357,7 @@ fun WeatherScreen(
                         if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                         ) {
+                            pendingEnableAlerts = true
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
                             viewModel.toggleAlertsNotification(enabled)
