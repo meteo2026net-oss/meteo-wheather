@@ -350,10 +350,14 @@ class WeatherRepository(private val context: Context) {
         require(responses.size == cities.size) { "عدد مواقع التوقعات لا يطابق عدد المدن المطلوبة" }
 
         val forecasts = cities.zip(responses).map { (city, response) ->
+            // Open-Meteo returns the selected model grid-cell centre, which may
+            // be several kilometres from the requested city coordinates. Validate
+            // geographic bounds, not an artificial near-exact city-coordinate match.
             require(
-                kotlin.math.abs(response.latitude - city.latitude) < 0.05 &&
-                    kotlin.math.abs(response.longitude - city.longitude) < 0.05
-            ) { "إحداثيات الاستجابة لا تطابق المدينة ${city.name}" }
+                MapForecastCoordinateValidation.isValidGridCell(
+                    response.latitude, response.longitude
+                )
+            ) { "إحداثيات خلية النموذج غير صالحة للمدينة ${city.name}" }
             val current = response.current
             CityMapForecast(
                 city = city,

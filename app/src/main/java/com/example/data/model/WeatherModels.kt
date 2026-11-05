@@ -349,6 +349,17 @@ data class MetricPreference(
     val isEnabled: Boolean = true
 )
 
+/**
+ * Validates the geographic coordinates returned for an Open-Meteo model grid cell.
+ * These coordinates identify the grid-cell centre and are not expected to equal
+ * the requested city coordinates exactly.
+ */
+object MapForecastCoordinateValidation {
+    fun isValidGridCell(latitude: Double, longitude: Double): Boolean =
+        latitude.isFinite() && latitude in -90.0..90.0 &&
+            longitude.isFinite() && longitude in -180.0..180.0
+}
+
 /** Forecast values for a map location; these are model outputs, not station observations. */
 data class CityMapForecast(
     val city: CityLocation,
