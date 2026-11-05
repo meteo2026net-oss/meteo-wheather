@@ -17,6 +17,12 @@ import javax.xml.parsers.DocumentBuilderFactory
  * Callers must obtain the document from the configured official source and apply
  * the display gate before presenting it as a public warning.
  */
+data class CapReference(
+    val sender: String,
+    val identifier: String,
+    val sentAt: Instant
+)
+
 data class CapFeedMessage(
     val identifier: String,
     val sender: String?,
@@ -26,6 +32,7 @@ data class CapFeedMessage(
     val messageType: String,
     val scope: String,
     val references: List<String>,
+    val parsedReferences: List<CapReference>,
     val event: String?,
     val severity: AlertSeverity?,
     val urgency: String?,
@@ -36,11 +43,16 @@ data class CapFeedMessage(
     val expires: String?,
     val expiresAt: Instant?
 ) {
-    fun isPubliclyDisplayable(now: Instant = Instant.now(), updateHasBeenReconciled: Boolean = false): Boolean {
+    fun isPubliclyDisplayable(
+        now: Instant = Instant.now(),
+        reconciledReferences: Set<CapReference> = emptySet()
+    ): Boolean {
         return status.equals("Actual", ignoreCase = true) &&
             scope.equals("Public", ignoreCase = true) &&
             (messageType.equals("Alert", ignoreCase = true) ||
-                (messageType.equals("Update", ignoreCase = true) && updateHasBeenReconciled && references.isNotEmpty())) &&
+                (messageType.equals("Update", ignoreCase = true) &&
+                    parsedReferences.isNotEmpty() &&
+                    parsedReferences.all { it in reconciledReferences })) &&
             sentAt?.let { !it.isAfter(now) } == true &&
             expiresAt?.let { expiry ->
                 expiry.isAfter(now) && sentAt?.let(expiry::isAfter) == true
@@ -115,6 +127,23 @@ object CapXmlParser {
             }
         }
 
+        val references = root.directText("references")
+            ?.split(Regex("\\s+"))
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        val parsedReferences = references.map { rawReference ->
+            val parts = rawReference.split(',', limit = 3).map(String::trim)
+            require(parts.size == 3 && parts.all(String::isNotBlank)) {
+                "CAP reference must contain sender, identifier and sent timestamp"
+            }
+            val referenceSentAt = try {
+                OffsetDateTime.parse(parts[2]).toInstant()
+            } catch (error: Exception) {
+                throw IllegalArgumentException("CAP reference timestamp must include a valid timezone offset", error)
+            }
+            CapReference(sender = parts[0], identifier = parts[1], sentAt = referenceSentAt)
+        }
+
         return CapFeedMessage(
             identifier = identifier,
             sender = root.directText("sender"),
@@ -123,10 +152,8 @@ object CapXmlParser {
             status = root.directText("status").orEmpty(),
             messageType = root.directText("msgType").orEmpty(),
             scope = root.directText("scope").orEmpty(),
-            references = root.directText("references")
-                ?.split(Regex("\\s+"))
-                ?.filter { it.isNotBlank() }
-                .orEmpty(),
+            references = references,
+            parsedReferences = parsedReferences,
             event = info?.directText("event"),
             severity = info?.directText("severity")?.toCapSeverity(),
             urgency = info?.directText("urgency"),

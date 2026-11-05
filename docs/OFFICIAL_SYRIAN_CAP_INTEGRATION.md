@@ -15,9 +15,10 @@ This establishes the registered source identity and endpoint listing. It does **
 - Parser disables DTD and external entity processing, rejects oversized documents, and requires a CAP `alert` root plus an identifier.
 - Arabic `info` content is preferred when multiple language blocks are present.
 - CAP severity values are mapped to the app's existing alert severity enum.
-- Public display gate accepts only `status=Actual`, `scope=Public`, `msgType=Alert directly, or Update only after references are reconciled against an existing alert`, and a valid future `expires` timestamp.
+- Public display gate accepts only `status=Actual`, `scope=Public`, `msgType=Alert`, or an `Update` whose every parsed CAP reference exactly matches a caller-supplied reconciled-reference set, plus a valid future `expires` timestamp.
 - Test, Exercise, Private, Cancel, expired, and expiry-less messages are not treated as active public warnings.
-- CAP references are retained so a later feed processor can reconcile Update and Cancel messages.
+- CAP references are retained in raw and typed form; each typed reference must contain a non-empty sender, identifier, and timezone-qualified sent timestamp.
+- An Update is displayable only when **all** of its parsed reference triples are present in the reconciled-reference set. A partial match is rejected.
 
 ## Not yet implemented / not claimed
 
@@ -68,6 +69,7 @@ This establishes the registered source identity and endpoint listing. It does **
 ## Update reconciliation safety gate — 5 November 2026
 
 - CAP Update documents are not standalone alerts. Their references must be resolved against a previously accepted alert before the update can be shown.
-- The parser display predicate rejects every Update by default. A caller must explicitly pass `updateHasBeenReconciled = true`, and the parsed message must contain at least one CAP reference.
-- Regression tests cover missing references, default rejection, and explicit reconciliation acceptance.
-- This is a fail-closed display gate, not a complete reconciliation store. No caller may pass the flag until it verifies the referenced message triples and applies the update to the original alert.
+- The parser display predicate rejects every Update by default. The caller must provide the exact typed reference triples already reconciled against accepted alerts; every reference in the Update must match.
+- Reference parsing rejects incomplete triples and timestamps without a timezone offset.
+- Regression tests cover missing references, partial matches, complete matches, malformed triples, and timezone-less timestamps.
+- This is a fail-closed display gate, not a reconciliation store. The application still has no connected CAP feed processor or caller supplying reconciled references.

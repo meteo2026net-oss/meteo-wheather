@@ -77,21 +77,47 @@ class CapXmlParserTest {
     }
 
     @Test
-    fun updateMessagesRequireExplicitReconciliationAndReferences() {
+    fun updateMessagesRequireEveryReferenceToMatchReconciledAlert() {
         val noReferences = CapXmlParser.parse(cap(messageType = "Update"))
-        assertFalse(noReferences.isPubliclyDisplayable(
-            Instant.parse("2026-11-04T06:30:00Z"),
-            updateHasBeenReconciled = true
-        ))
+        assertFalse(noReferences.isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+
+        val referenceA = "issuer@example.gov.sy,base-001,2026-11-04T05:00:00Z"
+        val referenceB = "issuer@example.gov.sy,base-002,2026-11-04T05:15:00Z"
         val withReferences = CapXmlParser.parse(cap(messageType = "Update").replace(
             "<scope>Public</scope>",
-            "<scope>Public</scope><references>issuer@example.gov.sy,base-001,2026-11-04T05:00:00Z</references>"
+            "<scope>Public</scope><references>$referenceA $referenceB</references>"
         ))
-        assertFalse(withReferences.isPubliclyDisplayable(Instant.parse("2026-11-04T06:30:00Z")))
+        assertEquals(2, withReferences.parsedReferences.size)
+        val reconciledA = withReferences.parsedReferences.first()
+
+        assertFalse(withReferences.isPubliclyDisplayable(
+            Instant.parse("2026-11-04T06:30:00Z"),
+            setOf(reconciledA)
+        ))
         assertTrue(withReferences.isPubliclyDisplayable(
             Instant.parse("2026-11-04T06:30:00Z"),
-            updateHasBeenReconciled = true
+            withReferences.parsedReferences.toSet()
         ))
+    }
+
+    @Test
+    fun rejectsMalformedCapReferenceAndTimezoneLessReferenceTimestamp() {
+        val malformed = cap(messageType = "Update").replace(
+            "<scope>Public</scope>",
+            "<scope>Public</scope><references>issuer@example.gov.sy,missing-time</references>"
+        )
+        val timezoneLess = cap(messageType = "Update").replace(
+            "<scope>Public</scope>",
+            "<scope>Public</scope><references>issuer@example.gov.sy,base-001,2026-11-04T05:00:00</references>"
+        )
+        listOf(malformed, timezoneLess).forEach { xml ->
+            try {
+                CapXmlParser.parse(xml)
+                throw AssertionError("Malformed CAP references must be rejected")
+            } catch (_: IllegalArgumentException) {
+                // Expected: a CAP reference is a strict sender, identifier, sent triple.
+            }
+        }
     }
 
     @Test
