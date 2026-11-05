@@ -257,11 +257,16 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun onGpsLocationReceived(latitude: Double, longitude: Double, cityName: String = "موقعي الحالي") {
+    fun onGpsLocationReceived(
+        latitude: Double,
+        longitude: Double,
+        cityName: String = "موقعي الحالي",
+        countryName: String = "غير محدد"
+    ) {
         val location = CityLocation(
             name = cityName,
             nameEn = "Current Location",
-            country = "سوريا",
+            country = countryName.ifBlank { "غير محدد" },
             latitude = latitude,
             longitude = longitude,
             isFavorite = false

@@ -926,13 +926,17 @@ private fun fetchGpsLocation(context: Context, viewModel: WeatherViewModel) {
         fusedClient.lastLocation.addOnSuccessListener { loc ->
             if (loc != null) {
                 var detectedName = "موقعي الحالي"
+                var detectedCountry = "غير محدد"
                 try {
                     val geocoder = Geocoder(context, Locale.forLanguageTag("ar"))
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         geocoder.getFromLocation(loc.latitude, loc.longitude, 1) { list ->
                             list.firstOrNull()?.let { addr ->
                                 val name = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
-                                viewModel.onGpsLocationReceived(loc.latitude, loc.longitude, name)
+                                val country = addr.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
+                                viewModel.onGpsLocationReceived(
+                                    loc.latitude, loc.longitude, name, country
+                                )
                             }
                         }
                         return@addOnSuccessListener
@@ -941,12 +945,15 @@ private fun fetchGpsLocation(context: Context, viewModel: WeatherViewModel) {
                         val list = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
                         list?.firstOrNull()?.let { addr ->
                             detectedName = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
+                            detectedCountry = addr.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
                         }
                     }
                 } catch (e: Exception) {
-                    // Ignore geocoder failure, use fallback name
+                    // Ignore geocoder failure, use an explicit unknown-country fallback.
                 }
-                viewModel.onGpsLocationReceived(loc.latitude, loc.longitude, detectedName)
+                viewModel.onGpsLocationReceived(
+                    loc.latitude, loc.longitude, detectedName, detectedCountry
+                )
             }
         }
     } catch (e: Exception) {
