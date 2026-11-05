@@ -83,6 +83,31 @@ class CapMessageReconciliationTest {
         assertEquals(result, result.apply(laterUpdate, now))
     }
 
+    @Test fun acceptsValidCancelWithoutOptionalInfoOrExpiry() {
+        val initial = CapReconciliationState().apply(message("base-1"), now)
+        val cancel = CapXmlParser.parse("""
+            <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+              <identifier>cancel-no-info</identifier>
+              <sender>issuer@example.gov.sy</sender>
+              <sent>2026-11-04T06:15:00Z</sent>
+              <status>Actual</status><msgType>Cancel</msgType><scope>Public</scope>
+              <references>$base</references>
+            </alert>
+        """.trimIndent())
+        assertEquals(null, cancel.expiresAt)
+        val result = initial.apply(cancel, now)
+        assertTrue(result.alerts.values.single().cancelled)
+    }
+
+    @Test fun rejectsReusedMessageReferenceInUpdateChain() {
+        val initial = CapReconciliationState().apply(message("base-1"), now)
+        val update = message("upd-1", "Update", "2026-11-04T06:10:00Z", base)
+        val afterUpdate = initial.apply(update, now)
+        val reused = message("base-1", "Update", "2026-11-04T06:20:00Z",
+            "issuer@example.gov.sy,upd-1,2026-11-04T06:10:00Z")
+        assertEquals(afterUpdate, afterUpdate.apply(reused, now))
+    }
+
     @Test fun rejectsCancelWithUnknownReferenceAndDoesNotCreateAlertFromCancel() {
         val empty = CapReconciliationState()
         val orphanCancel = message("cancel-orphan", "Cancel", "2026-11-04T06:15:00Z", base)
