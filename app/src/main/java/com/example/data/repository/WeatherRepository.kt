@@ -136,8 +136,12 @@ class WeatherRepository(private val context: Context) {
             val hourlyHum = forecastDto.hourly?.relativeHumidity ?: emptyList()
             val hourlyWind = forecastDto.hourly?.windSpeed ?: emptyList()
 
-            val endIndex = (startIndex + 24).coerceAtMost(hourlyTimes.size)
-            for (i in startIndex until endIndex) {
+            val validHourlyIndices = HourlyForecastSelection.validIndices(
+                times = hourlyTimes,
+                weatherCodes = hourlyCodes,
+                startIndex = startIndex
+            )
+            for (i in validHourlyIndices) {
                 val rawTime = hourlyTimes[i]
                 val hourOfDay = ForecastValueValidation.hourOfDay(rawTime) ?: continue
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)

@@ -230,3 +230,46 @@ class DailyForecastSelectionTest {
         assertNull(DailyForecastSelection.forCurrentDate(listOf(forecast), null))
     }
 }
+
+class HourlyForecastSelectionTest {
+    @org.junit.Test
+    fun validIndicesCountsUsableHoursInsteadOfStoppingAtTwentyFourRawSlots() {
+        val times = listOf(
+            "2026-11-05T02garbage",
+            "2026-11-05T02:99",
+            "2026-11-05T03:00",
+            "2026-11-05T04:00",
+            "2026-11-05T05:00"
+        )
+        val codes = listOf(0, 0, 1, 2, 3)
+
+        assertEquals(listOf(2, 3, 4), HourlyForecastSelection.validIndices(
+            times, codes, startIndex = 0, limit = 24
+        ))
+    }
+
+    @org.junit.Test
+    fun validIndicesSkipsMissingWeatherCodesAndHonorsLimit() {
+        val times = listOf(
+            "2026-11-05T00:00",
+            "2026-11-05T01:00",
+            "2026-11-05T02:00",
+            "2026-11-05T03:00"
+        )
+        val codes = listOf(0, 1, 2)
+
+        assertEquals(listOf(1, 2), HourlyForecastSelection.validIndices(
+            times, codes, startIndex = 1, limit = 2
+        ))
+        assertEquals(emptyList<Int>(), HourlyForecastSelection.validIndices(
+            times, codes, startIndex = 0, limit = 0
+        ))
+    }
+
+    @org.junit.Test
+    fun validIndicesReturnsEmptyWhenStartIsAfterAvailableForecast() {
+        assertEquals(emptyList<Int>(), HourlyForecastSelection.validIndices(
+            listOf("2026-11-05T00:00"), listOf(0), startIndex = 5
+        ))
+    }
+}

@@ -401,6 +401,23 @@ data class FullWeatherData(
     val currentDateRaw: String? = null
 )
 
+object HourlyForecastSelection {
+    /** Selects up to [limit] valid hourly slots from [startIndex], skipping malformed times and missing weather codes. */
+    fun validIndices(
+        times: List<String>,
+        weatherCodes: List<Int>,
+        startIndex: Int,
+        limit: Int = 24
+    ): List<Int> {
+        if (limit <= 0) return emptyList()
+        val firstIndex = startIndex.coerceIn(0, times.size)
+        return (firstIndex until times.size).filter { index ->
+            ForecastValueValidation.hourOfDay(times[index]) != null &&
+                weatherCodes.getOrNull(index) != null
+        }.take(limit)
+    }
+}
+
 object DailyForecastSelection {
     /** Selects up to [limit] usable days, skipping malformed or incomplete raw records. */
     fun validIndices(
