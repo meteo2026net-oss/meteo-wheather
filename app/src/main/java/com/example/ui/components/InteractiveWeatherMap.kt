@@ -361,7 +361,12 @@ fun InteractiveWeatherMap(
                 contentPadding = PaddingValues(vertical = 2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(cityForecasts, key = { it.city.name + it.city.country }) { forecast ->
+                items(
+                    cityForecasts.sortedByDescending { forecast ->
+                        forecast.city.name == currentCity.name && forecast.city.country == currentCity.country
+                    },
+                    key = { it.city.name + it.city.country }
+                ) { forecast ->
                     val isCurrent = forecast.city.name == currentCity.name && forecast.city.country == currentCity.country
                     val condition = forecast.weatherCode?.let(WeatherCodeMapping::description)?.arabic ?: "الحالة غير متاحة"
                     Column(
