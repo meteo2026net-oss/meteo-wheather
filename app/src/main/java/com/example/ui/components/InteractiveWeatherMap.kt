@@ -345,6 +345,12 @@ fun InteractiveWeatherMap(
             )
         }
 
+        val prioritizedCityForecasts = remember(cityForecasts, currentCity) {
+            cityForecasts.sortedByDescending { forecast ->
+                forecast.city.name == currentCity.name && forecast.city.country == currentCity.country
+            }
+        }
+
         if (cityForecasts.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Row(
@@ -362,9 +368,7 @@ fun InteractiveWeatherMap(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(
-                    cityForecasts.sortedByDescending { forecast ->
-                        forecast.city.name == currentCity.name && forecast.city.country == currentCity.country
-                    },
+                    prioritizedCityForecasts,
                     key = { it.city.name + it.city.country }
                 ) { forecast ->
                     val isCurrent = forecast.city.name == currentCity.name && forecast.city.country == currentCity.country
