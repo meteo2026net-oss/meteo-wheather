@@ -319,3 +319,23 @@ This section supersedes earlier "pending CI" statements in the chronological not
 - Gradle 9.3.1 also emits an advisory that it is out of date. No version bump is made here: check compatibility with the pinned Android Gradle Plugin and Kotlin toolchain before changing the CI Gradle version.
 - PR #1 remains open and unmerged. The base `main` SHA remains `9ce86e2e632dd8041c727b59331e8c2b433654a5`.
 
+
+
+## Follow-up correction — multi-city forecast association and latest CI — 5 November 2026
+
+The earlier numbered remaining-gates list above is superseded for items 1–3 by the subsequent implementation on PR head `abe0ca05e293df317cad85309cd18c81be1ed5b9`:
+
+- The map repository no longer pairs city and response lists by position. It calls `MapForecastResponseMatching.match`, which associates each returned model grid-cell centre with the nearest requested city and restores city input order in the result.
+- The matcher rejects empty or count-mismatched lists, invalid city/response coordinates, responses farther than 30 km from the nearest city, nearest/second-nearest margins under 5 km, duplicate assignments and unmatched cities. These are conservative application safeguards, not provider guarantees or universal grid-resolution claims; real provider grid centres and closely spaced cities remain an integration-validation risk.
+- Regression coverage now includes reordered responses, far-away responses, duplicate nearest-city assignment, ambiguous matches, invalid city coordinates, invalid response coordinates, and empty/mismatched lists. The map coordinate validation test class has 8 passing tests.
+- The redundant precipitation-unavailable conditional in the daily forecast component was removed; the unavailable state remains represented by an em dash.
+
+### Exact-head CI verification — 5 November 2026
+
+- Exact PR head `abe0ca05e293df317cad85309cd18c81be1ed5b9` passed [GitHub Actions run 41949887283](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41949887283).
+- `testDebugUnitTest` and `assembleDebug` succeeded; Gradle reported `BUILD SUCCESSFUL in 3m 30s`.
+- Downloaded HTML test report: **82 tests, 0 failures, 0 skipped (100% successful)**.
+- Debug APK artifact `mcnc-weather-debug-apk`, ID `13380327610`, 22,716,386 bytes; ZIP SHA-256 `15d7b38948104c1ddf864010be607ffe2d6f26ca1622b80c870e28c426b6521e`. Extracted APK SHA-256 `306eb8ae2138b0a6129c604bd863a3dec2037fe025d08113c105a9ba1a533e85`.
+- Unit-test report artifact `android-unit-test-reports`, ID `13380452167`, 23,111 bytes; ZIP SHA-256 `4553bc474984acac3a4492584bcdd98218a4ca852ee2143f35634989ec6a6aec`.
+- This is a temporary-key CI Debug APK, not a production Release build. The run verifies JVM unit tests and Android Debug compilation/packaging, not live Syrian station ingestion, official CAP feed authenticity/reachability, radar coverage, or physical-device acceptance.
+- The PR remains open and unmerged; base `main` remains `9ce86e2e632dd8041c727b59331e8c2b433654a5`.
