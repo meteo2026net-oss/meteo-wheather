@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.screens.encodeJsonForHtmlScript
+import org.json.JSONObject
+
 import android.annotation.SuppressLint
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -226,6 +229,7 @@ fun InteractiveRadarView(
 private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double, isSatellite: Boolean): String {
     val baseMap = LeafletBaseMapConfigs.forStyle(if (isSatellite) "satellite" else "dark")
     val subdomainsOption = baseMap.subdomains?.let { "subdomains: '$it'," }.orEmpty()
+    val cityNameJson = JSONObject.quote(cityName).let(::encodeJsonForHtmlScript)
 
     return """
         <!DOCTYPE html>
@@ -444,6 +448,7 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
 
 
                 // City Center Marker
+                var cityName = $cityNameJson;
                 var cityMarker = L.circleMarker([$lat, $lng], {
                     color: '#67E8F9',
                     fillColor: '#0284C7',
@@ -451,7 +456,11 @@ private fun buildCityRadarLeafletHtml(cityName: String, lat: Double, lng: Double
                     radius: 9
                 }).addTo(map);
 
-                cityMarker.bindPopup('<b>رادار منطقة $cityName</b>').openPopup();
+                var cityPopup = document.createElement('div');
+                var cityPopupTitle = document.createElement('b');
+                cityPopupTitle.textContent = 'رادار منطقة ' + cityName;
+                cityPopup.appendChild(cityPopupTitle);
+                cityMarker.bindPopup(cityPopup).openPopup();
             </script>
         </body>
         </html>
