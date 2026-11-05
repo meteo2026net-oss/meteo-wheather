@@ -305,3 +305,17 @@ This section supersedes earlier "pending CI" statements in the chronological not
 3. The redundant precipitation-unavailable branch in `DailyForecastSection` contains an availability condition that is already known to be false in that branch. It currently renders the correct unavailable marker and is a non-functional cleanup, not a user-visible defect.
 4. No live Syrian station feed, official CAP RSS ingestion, authenticated central administration, or verified temperature/wind/cloud map grid is enabled by this branch. Keep these capabilities explicitly unavailable/demo until the source and transport contract are verified.
 5. The registered Syrian CAP endpoint could not be retrieved through the web access path during this review. This is an access limitation of the review session, not proof that the origin server is offline.
+
+
+
+## Exact-head CI verification — 5 November 2026 (PR head fd09dae)
+
+- Exact PR head `fd09dae6a13c4bf4a0fffe87df7ee79e4ecead74` passed [GitHub Actions run 41947193146](https://github.com/meteo2026net-oss/meteo-wheather/actions/runs/41947193146). The job completed successfully; unit tests, Debug APK assembly, both artifact uploads and cleanup all succeeded.
+- The downloaded JUnit HTML report records **76 tests, 0 failures and 0 skipped** (100% successful). This includes 10 CAP parser tests, 15 forecast-value validation tests, 18 provenance tests, 8 Leaflet bridge tests and the map/radar/favorites/forecast selection regression suites.
+- Debug APK artifact `mcnc-weather-debug-apk`, ID `13378309956`, size 22,713,864 bytes, SHA-256 `4d166a00796a799865d8d1d5119f6ded012bd605e551a60eadaa987814d78b9d`; expires 3 February 2027.
+- Unit-test report artifact `android-unit-test-reports`, ID `13378324919`, size 22,961 bytes, SHA-256 `a7069920fbd1644b6a0bfd4a3dca3070d0c7b71b2307a0f95629792102cf0f10`; expires 19 November 2026.
+- The APK is a Debug build signed with a temporary CI key. It is not a production Release APK and does not validate production signing.
+- The HTML test report emits a Robolectric warning that Android SDK 36 requires Java 21 while this CI job uses Java 17; SDK 36 tests are not run unless explicitly requested. The passing count therefore must not be represented as SDK 36 coverage.
+- Gradle 9.3.1 also emits an advisory that it is out of date. No version bump is made here: check compatibility with the pinned Android Gradle Plugin and Kotlin toolchain before changing the CI Gradle version.
+- PR #1 remains open and unmerged. The base `main` SHA remains `9ce86e2e632dd8041c727b59331e8c2b433654a5`.
+
