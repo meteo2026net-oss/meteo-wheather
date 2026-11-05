@@ -25,6 +25,7 @@ import com.example.data.model.AlertSeverity
 import com.example.data.model.CapAlertItem
 import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.SyrianWeatherStation
+import com.example.data.model.canShowLiveMeasurements
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -264,6 +265,7 @@ fun AdminDashboardScreen(
 
                 1 -> {
                     // Stations Telemetry View
+                    val nowEpochMillis = System.currentTimeMillis()
                     LazyColumn(
                         modifier = Modifier.heightIn(max = 360.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -284,7 +286,14 @@ fun AdminDashboardScreen(
                             )
                         }
                         items(stations) { st ->
-                            val canShowLiveMeasurements = st.hasVerifiedLiveData && st.isOnline && !st.isDemoData
+                            val canShowLiveMeasurements = st.canShowLiveMeasurements(nowEpochMillis)
+                            val stationStatus = when {
+                                st.isDemoData -> "بيانات تجريبية"
+                                !st.hasVerifiedLiveData -> "مصدر غير موثق"
+                                !st.isOnline -> "المحطة غير متصلة"
+                                canShowLiveMeasurements -> "قراءة حديثة موثقة"
+                                else -> "قراءة قديمة أو توقيتها غير صالح"
+                            }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -304,7 +313,7 @@ fun AdminDashboardScreen(
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
                                         Text(text = st.nameAr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(text = "${st.governorate} | ضغط: —", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
+                                        Text(text = "${st.governorate} | $stationStatus", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
                                     }
                                 }
                                 Text(
