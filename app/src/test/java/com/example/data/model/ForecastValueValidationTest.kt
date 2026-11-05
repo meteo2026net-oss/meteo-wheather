@@ -80,6 +80,17 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun validIsoLocalTimestampRejectsMalformedDateTimeAndKeepsValidProviderTime() {
+        assertEquals("2026-11-05T03:15", ForecastValueValidation.validIsoLocalTimestamp("2026-11-05T03:15"))
+        assertEquals("2024-02-29T23:59:59", ForecastValueValidation.validIsoLocalTimestamp("2024-02-29T23:59:59"))
+        assertNull(ForecastValueValidation.validIsoLocalTimestamp(null))
+        assertNull(ForecastValueValidation.validIsoLocalTimestamp("2026-02-30T03:15"))
+        assertNull(ForecastValueValidation.validIsoLocalTimestamp("2026-11-05T24:00"))
+        assertNull(ForecastValueValidation.validIsoLocalTimestamp("2026-11-05T03:99"))
+        assertNull(ForecastValueValidation.validIsoLocalTimestamp("2026-11-05T03:15garbage"))
+    }
+
+    @Test
     fun currentHourIndexSelectsTheProviderCurrentLocalHour() {
         val times = listOf(
             "2026-11-05T00:00",

@@ -125,6 +125,10 @@ object ForecastValueValidation {
         return hourText.toInt()
     }
 
+    /** Returns the original timestamp only when its ISO local date and time are valid. */
+    fun validIsoLocalTimestamp(value: String?): String? =
+        value?.takeIf { hourOfDay(it) != null }
+
     /**
      * Finds the hourly forecast slot corresponding to the provider's current local time.
      * Falls back to the device's local hour prefix, then to the first available slot.

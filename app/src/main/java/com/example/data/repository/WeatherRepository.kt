@@ -370,7 +370,7 @@ class WeatherRepository(private val context: Context) {
             val current = response.current
             CityMapForecast(
                 city = city,
-                time = current?.time,
+                time = ForecastValueValidation.validIsoLocalTimestamp(current?.time),
                 temperatureCelsius = ForecastValueValidation.temperatureCelsius(current?.temperature),
                 humidityPercent = ForecastValueValidation.humidityPercent(current?.relativeHumidity),
                 windSpeedKmh = ForecastValueValidation.windSpeedKmh(current?.windSpeed),
