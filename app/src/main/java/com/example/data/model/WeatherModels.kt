@@ -34,24 +34,24 @@ data class CurrentWeatherDto(
 @JsonClass(generateAdapter = true)
 data class HourlyWeatherDto(
     val time: List<String> = emptyList(),
-    @Json(name = "temperature_2m") val temperature: List<Double> = emptyList(),
-    @Json(name = "relative_humidity_2m") val relativeHumidity: List<Int> = emptyList(),
+    @Json(name = "temperature_2m") val temperature: List<Double?> = emptyList(),
+    @Json(name = "relative_humidity_2m") val relativeHumidity: List<Int?> = emptyList(),
     @Json(name = "precipitation_probability") val precipitationProbability: List<Int>? = emptyList(),
-    @Json(name = "weather_code") val weatherCode: List<Int> = emptyList(),
-    @Json(name = "wind_speed_10m") val windSpeed: List<Double> = emptyList(),
-    @Json(name = "visibility") val visibility: List<Double>? = emptyList()
+    @Json(name = "weather_code") val weatherCode: List<Int?> = emptyList(),
+    @Json(name = "wind_speed_10m") val windSpeed: List<Double?> = emptyList(),
+    @Json(name = "visibility") val visibility: List<Double?>? = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
 data class DailyWeatherDto(
     val time: List<String> = emptyList(),
     @Json(name = "weather_code") val weatherCode: List<Int> = emptyList(),
-    @Json(name = "temperature_2m_max") val temperatureMax: List<Double> = emptyList(),
-    @Json(name = "temperature_2m_min") val temperatureMin: List<Double> = emptyList(),
-    val sunrise: List<String> = emptyList(),
-    val sunset: List<String> = emptyList(),
-    @Json(name = "uv_index_max") val uvIndexMax: List<Double>? = emptyList(),
-    @Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int>? = emptyList()
+    @Json(name = "temperature_2m_max") val temperatureMax: List<Double?> = emptyList(),
+    @Json(name = "temperature_2m_min") val temperatureMin: List<Double?> = emptyList(),
+    val sunrise: List<String?> = emptyList(),
+    val sunset: List<String?> = emptyList(),
+    @Json(name = "uv_index_max") val uvIndexMax: List<Double?>? = emptyList(),
+    @Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int?>? = emptyList()
 )
 
 /**
@@ -489,7 +489,7 @@ object HourlyForecastSelection {
     /** Selects up to [limit] valid hourly slots from [startIndex], skipping malformed times and missing weather codes. */
     fun validIndices(
         times: List<String>,
-        weatherCodes: List<Int>,
+        weatherCodes: List<Int?>,
         startIndex: Int,
         limit: Int = 24
     ): List<Int> {
@@ -506,7 +506,7 @@ object DailyForecastSelection {
     /** Selects up to [limit] usable days, skipping malformed or incomplete raw records. */
     fun validIndices(
         dates: List<String>,
-        weatherCodes: List<Int>,
+        weatherCodes: List<Int?>,
         maxTemperatures: List<Double?>,
         minTemperatures: List<Double?>,
         limit: Int = 7
