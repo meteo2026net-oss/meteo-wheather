@@ -12,6 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,6 +49,9 @@ enum class LeafletTileStyle(val titleAr: String, val icon: String, val tileType:
 fun InteractiveWeatherMap(
     currentCity: CityLocation,
     cityForecasts: List<CityMapForecast>,
+    isLoadingCityForecasts: Boolean,
+    cityForecastError: String?,
+    onRefreshCityForecasts: () -> Unit,
     onCitySelected: (CityLocation) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -100,14 +105,24 @@ fun InteractiveWeatherMap(
         }
 
         Text(
-            text = if (cityForecasts.isEmpty()) {
-                "جارٍ تحميل توقعات المدن السورية من Open-Meteo..."
-            } else {
-                "توقعات نموذجية محدثة لـ ${cityForecasts.size} مدينة سورية؛ ليست قياسات محطات رصد أرضية."
+            text = when {
+                cityForecastError != null -> "تعذر تحديث توقعات المدن: $cityForecastError"
+                isLoadingCityForecasts && cityForecasts.isEmpty() -> "جارٍ تحميل توقعات المدن السورية من Open-Meteo..."
+                cityForecasts.isEmpty() -> "لا تتوفر توقعات للمدن حالياً."
+                else -> "توقعات نموذجية محدثة لـ ${cityForecasts.size} مدينة سورية؛ ليست قياسات محطات رصد أرضية."
             },
             fontSize = 10.sp,
-            color = if (cityForecasts.isEmpty()) Color(0xFFFACC15) else Color(0xFF86EFAC)
+            color = if (cityForecastError != null) Color(0xFFFCA5A5) else if (cityForecasts.isEmpty()) Color(0xFFFACC15) else Color(0xFF86EFAC)
         )
+        if (cityForecastError != null || (cityForecasts.isEmpty() && !isLoadingCityForecasts)) {
+            TextButton(onClick = onRefreshCityForecasts, enabled = !isLoadingCityForecasts) {
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = Color(0xFF7DD3FC))
+                Spacer(Modifier.width(6.dp))
+                Text("إعادة تحميل التوقعات", color = Color(0xFF7DD3FC))
+            }
+        } else if (isLoadingCityForecasts) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Color(0xFF38BDF8))
+        }
         Spacer(modifier = Modifier.height(12.dp))
 
         // Tile Style Selector Tabs (Leaflet Dark / Satellite / Street)
@@ -308,6 +323,63 @@ fun InteractiveWeatherMap(
                         }
                     )
             )
+        }
+
+        if (cityForecasts.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("طقس المدن السورية", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("${cityForecasts.size} مدينة", color = Color(0xFF7DD3FC), fontSize = 11.sp)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(vertical = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(cityForecasts, key = { it.city.name + it.city.country }) { forecast ->
+                    val isCurrent = forecast.city.name == currentCity.name && forecast.city.country == currentCity.country
+                    val condition = forecast.weatherCode?.let(WeatherCodeMapping::description)?.arabic ?: "الحالة غير متاحة"
+                    Column(
+                        modifier = Modifier
+                            .width(142.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isCurrent) Color(0xFF075985).copy(alpha = 0.72f) else Color(0xFF0F172A).copy(alpha = 0.92f))
+                            .border(1.dp, if (isCurrent) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                            .clickable { onCitySelected(forecast.city) }
+                            .padding(12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(forecast.city.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                            if (isCurrent) Text("الحالية", color = Color(0xFFBAE6FD), fontSize = 9.sp)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = forecast.temperatureCelsius?.let { "${it.toInt()}°" } ?: "—°",
+                            color = Color.White,
+                            fontSize = 27.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(condition, color = Color(0xFFCBD5E1), fontSize = 10.sp, maxLines = 1)
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Air, contentDescription = null, tint = Color(0xFF7DD3FC), modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(forecast.windSpeedKmh?.let { "${it.toInt()} كم/س" } ?: "رياح —", color = Color(0xFFE2E8F0), fontSize = 10.sp)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.WaterDrop, contentDescription = null, tint = Color(0xFF7DD3FC), modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(forecast.humidityPercent?.let { "رطوبة $it%" } ?: "رطوبة —", color = Color(0xFFE2E8F0), fontSize = 10.sp)
+                        }
+                    }
+                }
+            }
+            Text("اضغط على بطاقة مدينة لعرض طقسها في الشاشة الرئيسية.", color = Color.White.copy(alpha = 0.65f), fontSize = 10.sp)
         }
     }
 }

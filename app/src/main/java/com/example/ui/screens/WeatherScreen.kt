@@ -284,6 +284,9 @@ fun WeatherScreen(
                         InteractiveWeatherMap(
                             currentCity = weather.location,
                             cityForecasts = uiState.cityMapForecasts,
+                            isLoadingCityForecasts = uiState.isLoadingCityMapForecasts,
+                            cityForecastError = uiState.cityMapForecastError,
+                            onRefreshCityForecasts = { viewModel.loadSyrianCityMapForecasts(forceRefresh = true) },
                             onCitySelected = { viewModel.loadWeather(it) }
                         )
 
