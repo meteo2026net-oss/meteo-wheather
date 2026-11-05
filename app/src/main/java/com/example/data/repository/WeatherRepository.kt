@@ -71,11 +71,11 @@ class WeatherRepository(private val context: Context) {
             // calm wind, or standard pressure). Reject an incomplete current observation clearly.
             val currentTime = currentDto.time.orEmpty()
             val currentDateRaw = ForecastValueValidation.validIsoDate(currentTime.take(10))
-            val currentTemperature = currentDto.temperature?.takeIf { it.isFinite() }
+            val currentTemperature = ForecastValueValidation.temperatureCelsius(currentDto.temperature)
                 ?: throw IllegalStateException("درجة الحرارة الحالية غير متاحة أو غير صالحة")
             val currentHumidity = currentDto.relativeHumidity?.takeIf { it in 0..100 }
                 ?: throw IllegalStateException("الرطوبة الحالية غير متاحة أو غير صالحة")
-            val currentApparentTemperature = currentDto.apparentTemperature?.takeIf { it.isFinite() }
+            val currentApparentTemperature = ForecastValueValidation.temperatureCelsius(currentDto.apparentTemperature)
                 ?: throw IllegalStateException("درجة الحرارة المحسوسة غير متاحة أو غير صالحة")
             val currentIsDay = currentDto.isDay?.takeIf { it == 0 || it == 1 }
                 ?: throw IllegalStateException("حالة النهار الحالية غير متاحة أو غير صالحة")
@@ -83,11 +83,11 @@ class WeatherRepository(private val context: Context) {
                 ?: throw IllegalStateException("الهطول الحالي غير متاح أو غير صالح")
             val currentWeatherCode = currentDto.weatherCode
                 ?: throw IllegalStateException("رمز حالة الطقس الحالية غير متاح")
-            val currentPressure = currentDto.surfacePressure?.takeIf { it.isFinite() && it > 0.0 }
+            val currentPressure = ForecastValueValidation.pressureHpa(currentDto.surfacePressure)
                 ?: throw IllegalStateException("الضغط السطحي الحالي غير متاح أو غير صالح")
-            val currentWindSpeed = currentDto.windSpeed?.takeIf { it.isFinite() && it >= 0.0 }
+            val currentWindSpeed = ForecastValueValidation.windSpeedKmh(currentDto.windSpeed)
                 ?: throw IllegalStateException("سرعة الرياح الحالية غير متاحة أو غير صالحة")
-            val currentWindDirection = currentDto.windDirection?.takeIf { it.isFinite() && it in 0.0..360.0 }
+            val currentWindDirection = ForecastValueValidation.windDirectionDegrees(currentDto.windDirection)
                 ?: throw IllegalStateException("اتجاه الرياح الحالي غير متاح أو غير صالح")
 
             val conditionType = mapWeatherCodeToType(currentWeatherCode)
@@ -147,10 +147,10 @@ class WeatherRepository(private val context: Context) {
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)
                 val code = hourlyCodes.getOrNull(i) ?: continue
                 // Treat non-finite provider measurements as missing, not as displayable readings.
-                val tempValue = ForecastValueValidation.finite(hourlyTemps.getOrNull(i))
+                val tempValue = ForecastValueValidation.temperatureCelsius(hourlyTemps.getOrNull(i))
                 val precipValue = ForecastValueValidation.probabilityPercent(hourlyPrecip.getOrNull(i))
                 val humidityValue = ForecastValueValidation.humidityPercent(hourlyHum.getOrNull(i))
-                val windValue = ForecastValueValidation.nonNegativeFinite(hourlyWind.getOrNull(i))
+                val windValue = ForecastValueValidation.windSpeedKmh(hourlyWind.getOrNull(i))
                 val temp = tempValue ?: currentTemperature
                 val precip = precipValue ?: 0
                 val hum = humidityValue ?: currentHumidity

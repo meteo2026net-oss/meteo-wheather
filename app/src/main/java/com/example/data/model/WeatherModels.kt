@@ -79,6 +79,20 @@ object CityFavoriteMatching {
 object ForecastValueValidation {
     fun finite(value: Double?): Double? = value?.takeIf { it.isFinite() }
     fun nonNegativeFinite(value: Double?): Double? = value?.takeIf { it.isFinite() && it >= 0.0 }
+
+    // Broad physical plausibility bounds: reject corrupt provider values without
+    // excluding credible global weather extremes.
+    fun temperatureCelsius(value: Double?): Double? =
+        value?.takeIf { it.isFinite() && it in -100.0..70.0 }
+
+    fun pressureHpa(value: Double?): Double? =
+        value?.takeIf { it.isFinite() && it in 800.0..1100.0 }
+
+    fun windSpeedKmh(value: Double?): Double? =
+        value?.takeIf { it.isFinite() && it in 0.0..300.0 }
+
+    fun windDirectionDegrees(value: Double?): Double? =
+        value?.takeIf { it.isFinite() && it in 0.0..360.0 }
     fun probabilityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
     fun humidityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
     fun nonNegativeInt(value: Int?): Int? = value?.takeIf { it >= 0 }
@@ -158,8 +172,8 @@ object ForecastValueValidation {
     }
 
     fun temperatureRange(max: Double?, min: Double?): Pair<Double, Double>? {
-        val validMax = finite(max) ?: return null
-        val validMin = finite(min) ?: return null
+        val validMax = temperatureCelsius(max) ?: return null
+        val validMin = temperatureCelsius(min) ?: return null
         return if (validMax >= validMin) validMax to validMin else null
     }
 

@@ -36,6 +36,29 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun physicalMeasurementValidatorsRejectImplausibleProviderValues() {
+        assertEquals(-100.0, ForecastValueValidation.temperatureCelsius(-100.0)!!, 0.0)
+        assertEquals(70.0, ForecastValueValidation.temperatureCelsius(70.0)!!, 0.0)
+        assertNull(ForecastValueValidation.temperatureCelsius(-100.1))
+        assertNull(ForecastValueValidation.temperatureCelsius(70.1))
+        assertNull(ForecastValueValidation.temperatureCelsius(Double.NaN))
+
+        assertEquals(800.0, ForecastValueValidation.pressureHpa(800.0)!!, 0.0)
+        assertEquals(1100.0, ForecastValueValidation.pressureHpa(1100.0)!!, 0.0)
+        assertNull(ForecastValueValidation.pressureHpa(799.9))
+        assertNull(ForecastValueValidation.pressureHpa(1100.1))
+
+        assertEquals(0.0, ForecastValueValidation.windSpeedKmh(0.0)!!, 0.0)
+        assertEquals(300.0, ForecastValueValidation.windSpeedKmh(300.0)!!, 0.0)
+        assertNull(ForecastValueValidation.windSpeedKmh(-0.1))
+        assertNull(ForecastValueValidation.windSpeedKmh(300.1))
+
+        assertEquals(360.0, ForecastValueValidation.windDirectionDegrees(360.0)!!, 0.0)
+        assertNull(ForecastValueValidation.windDirectionDegrees(-0.1))
+        assertNull(ForecastValueValidation.windDirectionDegrees(360.1))
+    }
+
+    @Test
     fun validIsoDateRejectsImpossibleDatesAndAcceptsLeapDays() {
         assertEquals("2024-02-29", ForecastValueValidation.validIsoDate("2024-02-29"))
         assertNull(ForecastValueValidation.validIsoDate("2026-02-29"))
