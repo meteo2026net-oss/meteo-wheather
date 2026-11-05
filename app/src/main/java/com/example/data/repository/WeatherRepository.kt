@@ -371,12 +371,12 @@ class WeatherRepository(private val context: Context) {
             CityMapForecast(
                 city = city,
                 time = current?.time,
-                temperatureCelsius = current?.temperature?.takeIf { it.isFinite() && it in -90.0..65.0 },
-                humidityPercent = current?.relativeHumidity?.takeIf { it in 0..100 },
-                windSpeedKmh = current?.windSpeed?.takeIf { it.isFinite() && it >= 0.0 },
-                windDirectionDegrees = current?.windDirection?.takeIf { it.isFinite() && it in 0.0..360.0 },
+                temperatureCelsius = ForecastValueValidation.temperatureCelsius(current?.temperature),
+                humidityPercent = ForecastValueValidation.humidityPercent(current?.relativeHumidity),
+                windSpeedKmh = ForecastValueValidation.windSpeedKmh(current?.windSpeed),
+                windDirectionDegrees = ForecastValueValidation.windDirectionDegrees(current?.windDirection),
                 cloudCoverPercent = current?.cloudCover?.takeIf { it in 0..100 },
-                precipitationMm = current?.precipitation?.takeIf { it.isFinite() && it >= 0.0 },
+                precipitationMm = ForecastValueValidation.nonNegativeFinite(current?.precipitation),
                 weatherCode = current?.weatherCode?.takeIf { it in 0..99 }
             )
         }
