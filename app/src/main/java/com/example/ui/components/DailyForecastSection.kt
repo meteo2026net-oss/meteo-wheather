@@ -167,7 +167,7 @@ fun DailyForecastSection(
                         }
                     } else {
                         Text(
-                            text = if (day.precipitationProbabilityAvailable) "0%" else "—",
+                            text = "—",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.65f),
                             modifier = Modifier.width(42.dp)

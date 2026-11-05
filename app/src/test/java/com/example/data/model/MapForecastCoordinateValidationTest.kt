@@ -26,6 +26,30 @@ class MapForecastCoordinateValidationTest {
     }
 
     @Test
+    fun rejectsEmptyOrMismatchedCityAndResponseLists() {
+        val damascus = city("دمشق", 33.5138, 36.2765)
+        val aleppo = city("حلب", 36.2021, 37.1343)
+
+        assertNull(MapForecastResponseMatching.match(emptyList(), emptyList()))
+        assertNull(MapForecastResponseMatching.match(listOf(damascus), emptyList()))
+        assertNull(
+            MapForecastResponseMatching.match(
+                listOf(damascus, aleppo), listOf(response(33.55, 36.30))
+            )
+        )
+    }
+
+    @Test
+    fun rejectsInvalidRequestedCityCoordinates() {
+        val invalidCity = city("مدينة غير صالحة", Double.NaN, 36.2765)
+        assertNull(
+            MapForecastResponseMatching.match(
+                listOf(invalidCity), listOf(response(33.55, 36.30))
+            )
+        )
+    }
+
+    @Test
     fun matchesReorderedResponsesToTheirNearestCities() {
         val damascus = city("دمشق", 33.5138, 36.2765)
         val aleppo = city("حلب", 36.2021, 37.1343)
