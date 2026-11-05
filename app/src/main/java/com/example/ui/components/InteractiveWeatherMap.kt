@@ -50,6 +50,7 @@ enum class LeafletTileStyle(val titleAr: String, val icon: String, val tileType:
 fun InteractiveWeatherMap(
     currentCity: CityLocation,
     cityForecasts: List<CityMapForecast>,
+    isFahrenheit: Boolean,
     isLoadingCityForecasts: Boolean,
     cityForecastError: String?,
     onRefreshCityForecasts: () -> Unit,
@@ -388,7 +389,14 @@ fun InteractiveWeatherMap(
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = forecast.temperatureCelsius?.let { "${it.toInt()}°" } ?: "—°",
+                            text = forecast.temperatureCelsius?.let { temperatureCelsius ->
+                                val displayTemperature = if (isFahrenheit) {
+                                    (temperatureCelsius * 9 / 5 + 32).toInt()
+                                } else {
+                                    temperatureCelsius.toInt()
+                                }
+                                "${displayTemperature}°${if (isFahrenheit) "F" else "C"}"
+                            } ?: "—°",
                             color = Color.White,
                             fontSize = 27.sp,
                             fontWeight = FontWeight.Bold
