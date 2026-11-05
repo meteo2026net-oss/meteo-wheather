@@ -26,6 +26,7 @@ import com.example.data.model.CapAlertItem
 import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.SyrianWeatherStation
 import com.example.data.model.canShowLiveMeasurements
+import com.example.data.model.canShowLiveTemperature
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -287,6 +288,7 @@ fun AdminDashboardScreen(
                         }
                         items(stations) { st ->
                             val canShowLiveMeasurements = st.canShowLiveMeasurements(nowEpochMillis)
+                            val canShowLiveTemperature = st.canShowLiveTemperature(nowEpochMillis)
                             val stationStatus = when {
                                 st.isDemoData -> "بيانات تجريبية"
                                 !st.hasVerifiedLiveData -> "مصدر غير موثق"
@@ -317,7 +319,7 @@ fun AdminDashboardScreen(
                                     }
                                 }
                                 Text(
-                                    text = if (canShowLiveMeasurements) "${st.temperatureCelsius.toInt()}°C" else "—",
+                                    text = if (canShowLiveTemperature) "${st.temperatureCelsius.toInt()}°C" else "—",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFFD54F)

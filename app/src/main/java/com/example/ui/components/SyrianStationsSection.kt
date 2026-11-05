@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.SyrianWeatherStation
 import com.example.data.model.canShowLiveMeasurements
+import com.example.data.model.canShowLiveTemperature
+import com.example.data.model.canShowLiveHumidity
+import com.example.data.model.canShowLiveWindSpeed
 
 @Composable
 fun SyrianStationsSection(
@@ -76,6 +79,9 @@ fun SyrianStationsSection(
             items(stations) { station ->
                 val hasVerifiedSource = station.hasVerifiedLiveData && !station.isDemoData
                 val canShowLiveMeasurements = station.canShowLiveMeasurements(nowEpochMillis)
+                val canShowTemperature = station.canShowLiveTemperature(nowEpochMillis)
+                val canShowHumidity = station.canShowLiveHumidity(nowEpochMillis)
+                val canShowWindSpeed = station.canShowLiveWindSpeed(nowEpochMillis)
                 Column(
                     modifier = Modifier
                         .width(160.dp)
@@ -135,14 +141,14 @@ fun SyrianStationsSection(
 
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = if (canShowLiveMeasurements) "${station.temperatureCelsius.toInt()}°" else "—",
+                            text = if (canShowTemperature) "${station.temperatureCelsius.toInt()}°" else "—",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD54F)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (canShowLiveMeasurements) station.conditionAr else "لا توجد قراءة موثقة",
+                            text = if (canShowTemperature) station.conditionAr else "لا توجد قراءة حرارة صالحة",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.9f),
                             modifier = Modifier.padding(bottom = 6.dp),
@@ -157,12 +163,12 @@ fun SyrianStationsSection(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = if (canShowLiveMeasurements) "رطوبة: ${station.humidity}%" else "رطوبة: —",
+                            text = if (canShowHumidity) "رطوبة: ${station.humidity}%" else "رطوبة: —",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = if (canShowLiveMeasurements) "رياح: ${station.windSpeedKmh.toInt()} كم" else "رياح: —",
+                            text = if (canShowWindSpeed) "رياح: ${station.windSpeedKmh.toInt()} كم" else "رياح: —",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
