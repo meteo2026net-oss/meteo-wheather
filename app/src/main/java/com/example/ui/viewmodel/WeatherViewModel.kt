@@ -77,7 +77,18 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         // response overwrite the weather currently selected by the user.
         weatherJob?.cancel()
         weatherJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, selectedCity = city) }
+            _uiState.update { state ->
+                val retainPreviousWeather = WeatherLoadDataPolicy.shouldRetainPreviousData(
+                    previous = state.selectedCity,
+                    requested = city
+                )
+                state.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    selectedCity = city,
+                    weatherData = state.weatherData.takeIf { retainPreviousWeather }
+                )
+            }
             val result = repository.getFullWeather(city)
             result.onSuccess { data ->
                 // Prepend any custom admin CAP alerts if present
