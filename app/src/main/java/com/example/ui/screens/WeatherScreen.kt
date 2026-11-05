@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.DailyForecastSelection
+import com.example.data.model.NotificationPermissionDecision
 import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.WeatherConditionType
 import com.example.ui.components.*
@@ -78,17 +79,16 @@ fun WeatherScreen(
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        val testAlert = pendingTestAlert
-        val enableAlerts = pendingEnableAlerts
+        val resolution = NotificationPermissionDecision.resolve(
+            permissionGranted = isGranted,
+            pendingTestAlert = pendingTestAlert,
+            pendingEnableAlerts = pendingEnableAlerts
+        )
         pendingTestAlert = null
         pendingEnableAlerts = false
 
-        if (isGranted) {
-            testAlert?.let(viewModel::testPushNotification)
-            if (enableAlerts) viewModel.toggleAlertsNotification(true)
-        } else if (enableAlerts) {
-            viewModel.toggleAlertsNotification(false)
-        }
+        resolution.testAlertToSend?.let(viewModel::testPushNotification)
+        resolution.alertsEnabled?.let(viewModel::toggleAlertsNotification)
     }
 
     val requestGpsAction = {
