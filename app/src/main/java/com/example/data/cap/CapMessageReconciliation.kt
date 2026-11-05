@@ -36,7 +36,7 @@ data class CapReconciliationState(
         reference: CapReference,
         now: Instant
     ): CapReconciliationState {
-        if (!message.isPubliclyDisplayable(now) || alerts.containsKey(reference)) return this
+        if (!message.isPubliclyDisplayable(now) || hasUsedIdentifier(reference)) return this
         val alert = CapReconciledAlert(
             originalReference = reference,
             latestReference = reference,
@@ -53,7 +53,7 @@ data class CapReconciliationState(
     ): CapReconciliationState {
         val target = resolveSingleTarget(message) ?: return this
         if (target.cancelled || !target.currentMessage.expiresAt.isActiveAt(now)) return this
-        if (reference in target.messageHistory || alerts.values.any { reference in it.messageHistory }) return this
+        if (hasUsedIdentifier(reference)) return this
         if (!isStrictlyNewer(message, target.latestReference)) return this
         if (!message.isPubliclyDisplayable(now, target.messageHistory)) return this
 
@@ -83,6 +83,16 @@ data class CapReconciliationState(
         )
         return replaceAlert(target.originalReference, cancelled)
     }
+
+    /** CAP identifier is unique per sender; sent time is part of a reference triple,
+     * but must not make a reused message identifier look like a new message.
+     */
+    private fun hasUsedIdentifier(reference: CapReference): Boolean =
+        alerts.values.any { alert ->
+            alert.messageHistory.any {
+                it.sender == reference.sender && it.identifier == reference.identifier
+            }
+        }
 
     private fun resolveSingleTarget(message: CapFeedMessage): CapReconciledAlert? {
         if (message.parsedReferences.isEmpty()) return null
