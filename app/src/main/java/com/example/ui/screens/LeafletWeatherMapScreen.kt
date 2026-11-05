@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.model.CityLocation
 import com.example.data.model.CityMapForecast
+import com.example.data.model.TemperatureUnitConversion
 import org.json.JSONArray
 import org.json.JSONObject
 import com.example.data.model.MapWeatherOverlay
@@ -95,6 +96,7 @@ fun LeafletWeatherMapScreen(
     onRefreshCityForecasts: () -> Unit,
     onCitySelected: (CityLocation) -> Unit,
     onBackClick: () -> Unit,
+    isFahrenheit: Boolean,
     modifier: Modifier = Modifier
 ) {
     var selectedTileType by remember { mutableStateOf("dark") }
@@ -122,8 +124,8 @@ fun LeafletWeatherMapScreen(
         )
     }
 
-    val htmlContent = remember(selectedTileType, selectedOverlay, cityForecasts) {
-        generateLeafletScreenHtml(selectedTileType, selectedOverlay, cityForecasts)
+    val htmlContent = remember(selectedTileType, selectedOverlay, cityForecasts, isFahrenheit) {
+        generateLeafletScreenHtml(selectedTileType, selectedOverlay, cityForecasts, isFahrenheit)
     }
 
     Scaffold(
@@ -329,7 +331,10 @@ fun LeafletWeatherMapScreen(
                                     val forecast = latestCityForecasts.firstOrNull { it.city.name == cityName }
                                     val details = forecast?.let {
                                         listOfNotNull(
-                                            it.temperatureCelsius?.let { value -> "الحرارة ${"%.1f".format(value)}°م" },
+                                            it.temperatureCelsius?.let { value ->
+                                                val displayValue = TemperatureUnitConversion.toDisplayValue(value, isFahrenheit)
+                                                "الحرارة $displayValue°${if (isFahrenheit) "ف" else "م"}"
+                                            },
                                             it.humidityPercent?.let { value -> "الرطوبة $value%" },
                                             it.windSpeedKmh?.let { value -> "الرياح ${"%.1f".format(value)} كم/س" },
                                             it.cloudCoverPercent?.let { value -> "السحب $value%" },
@@ -393,9 +398,12 @@ fun LeafletWeatherMapScreen(
                     onRelease = { webView ->
                         // Detach the JavaScript bridge and release WebView resources when the
                         // map leaves composition, avoiding a retained Activity/context.
+                        if (webViewRef === webView) webViewRef = null
                         webView.stopLoading()
                         webView.removeJavascriptInterface("AndroidMapInterface")
                         webView.webChromeClient = null
+                        webView.webViewClient = null
+                        webView.settings.javaScriptEnabled = false
                         webView.removeAllViews()
                         webView.destroy()
                     }
@@ -451,7 +459,13 @@ fun LeafletWeatherMapScreen(
     }
 }
 
-private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverlay, cityForecasts: List<CityMapForecast>): String {
+private fun generateLeafletScreenHtml(
+    tileType: String,
+    overlay: MapWeatherOverlay,
+    cityForecasts: List<CityMapForecast>,
+    isFahrenheit: Boolean
+): String {
+    val temperatureUnitLabel = if (isFahrenheit) "°ف" else "°م"
     val baseMap = LeafletBaseMapConfigs.forStyle(tileType)
     val subdomainsOption = baseMap.subdomains?.let { "subdomains: '$it'," }.orEmpty()
     val cityForecastsJson = JSONArray().apply {
@@ -462,6 +476,8 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                 put("lng", forecast.city.longitude)
                 put("time", forecast.time ?: JSONObject.NULL)
                 put("temp", forecast.temperatureCelsius ?: JSONObject.NULL)
+                put("tempDisplay", forecast.temperatureCelsius?.let { TemperatureUnitConversion.toDisplayValue(it, isFahrenheit) } ?: JSONObject.NULL)
+                put("temperatureUnit", if (isFahrenheit) "°ف" else "°م")
                 put("humidity", forecast.humidityPercent ?: JSONObject.NULL)
                 put("wind", forecast.windSpeedKmh ?: JSONObject.NULL)
                 put("windDirection", forecast.windDirectionDegrees ?: JSONObject.NULL)
@@ -742,7 +758,7 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                     var legend = document.getElementById('forecast-overlay-legend');
                     if (legend) {
                         var titles = {
-                            temperature: 'ألوان الحرارة المتوقعة (°م)',
+                            temperature: 'ألوان الحرارة المتوقعة ($temperatureUnitLabel)',
                             wind: 'ألوان سرعة الرياح المتوقعة (كم/س)',
                             clouds: 'ألوان الغطاء السحابي المتوقع (%)',
                             precipitation: 'ألوان الهطول المتوقع (مم)'
@@ -777,7 +793,7 @@ private fun generateLeafletScreenHtml(tileType: String, overlay: MapWeatherOverl
                         }
                     });
 
-                    var tempText = Number.isFinite(c.temp) ? c.temp.toFixed(1) + ' °م' : '—';
+                    var tempText = Number.isFinite(c.tempDisplay) ? c.tempDisplay + ' ' + c.temperatureUnit : '—';
                     var humidityText = Number.isFinite(c.humidity) ? c.humidity + '%' : '—';
                     var windText = Number.isFinite(c.wind) ? c.wind.toFixed(1) + ' كم/س' : '—';
                     var cloudText = Number.isFinite(c.clouds) ? c.clouds + '%' : '—';

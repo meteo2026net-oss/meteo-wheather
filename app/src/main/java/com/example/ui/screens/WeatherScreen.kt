@@ -393,7 +393,8 @@ fun WeatherScreen(
                         cityForecastError = uiState.cityMapForecastError,
                         onRefreshCityForecasts = { viewModel.loadSyrianCityMapForecasts(forceRefresh = true) },
                         onCitySelected = { viewModel.loadWeather(it) },
-                        onBackClick = { viewModel.closeLeafletMapScreen() }
+                        onBackClick = { viewModel.closeLeafletMapScreen() },
+                        isFahrenheit = uiState.isFahrenheit
                     )
                 }
             }
