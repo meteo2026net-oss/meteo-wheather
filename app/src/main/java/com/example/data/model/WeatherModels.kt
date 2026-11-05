@@ -452,6 +452,27 @@ object MapForecastResponseMatching {
     }
 }
 
+/**
+ * Converts one provider response into a validated city-map forecast.
+ * Keeping this mapping pure makes every displayed map measurement independently testable.
+ */
+object CityMapForecastMapper {
+    fun map(city: CityLocation, response: WeatherResponseDto): CityMapForecast {
+        val current = response.current
+        return CityMapForecast(
+            city = city,
+            time = ForecastValueValidation.validIsoLocalTimestamp(current?.time),
+            temperatureCelsius = ForecastValueValidation.temperatureCelsius(current?.temperature),
+            humidityPercent = ForecastValueValidation.humidityPercent(current?.relativeHumidity),
+            windSpeedKmh = ForecastValueValidation.windSpeedKmh(current?.windSpeed),
+            windDirectionDegrees = ForecastValueValidation.windDirectionDegrees(current?.windDirection),
+            cloudCoverPercent = current?.cloudCover?.takeIf { it in 0..100 },
+            precipitationMm = ForecastValueValidation.nonNegativeFinite(current?.precipitation),
+            weatherCode = current?.weatherCode?.takeIf { it in 0..99 }
+        )
+    }
+}
+
 /** Forecast values for a map location; these are model outputs, not station observations. */
 data class CityMapForecast(
     val city: CityLocation,

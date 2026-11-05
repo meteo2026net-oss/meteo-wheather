@@ -367,18 +367,7 @@ class WeatherRepository(private val context: Context) {
             )
 
         val forecasts = matchedResponses.map { (city, response) ->
-            val current = response.current
-            CityMapForecast(
-                city = city,
-                time = ForecastValueValidation.validIsoLocalTimestamp(current?.time),
-                temperatureCelsius = ForecastValueValidation.temperatureCelsius(current?.temperature),
-                humidityPercent = ForecastValueValidation.humidityPercent(current?.relativeHumidity),
-                windSpeedKmh = ForecastValueValidation.windSpeedKmh(current?.windSpeed),
-                windDirectionDegrees = ForecastValueValidation.windDirectionDegrees(current?.windDirection),
-                cloudCoverPercent = current?.cloudCover?.takeIf { it in 0..100 },
-                precipitationMm = ForecastValueValidation.nonNegativeFinite(current?.precipitation),
-                weatherCode = current?.weatherCode?.takeIf { it in 0..99 }
-            )
+            CityMapForecastMapper.map(city, response)
         }
         cachedCityMapForecasts = forecasts
         cityMapForecastsFetchedAtMs = System.currentTimeMillis()

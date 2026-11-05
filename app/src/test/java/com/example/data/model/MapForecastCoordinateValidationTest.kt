@@ -110,6 +110,68 @@ class MapForecastCoordinateValidationTest {
         )
     }
 
+    @Test
+    fun cityMapMapperKeepsValidMeasurementsAndRejectsInvalidProviderValues() {
+        val damascus = city("دمشق", 33.5138, 36.2765)
+        val mapped = CityMapForecastMapper.map(
+            damascus,
+            WeatherResponseDto(
+                latitude = 33.55,
+                longitude = 36.30,
+                current = CurrentWeatherDto(
+                    time = "2026-11-06T03:15",
+                    temperature = 24.5,
+                    relativeHumidity = 65,
+                    precipitation = 0.2,
+                    weatherCode = 61,
+                    windSpeed = 18.0,
+                    windDirection = 270.0,
+                    cloudCover = 80
+                )
+            )
+        )
+        assertEquals(damascus, mapped.city)
+        assertEquals("2026-11-06T03:15", mapped.time)
+        assertEquals(24.5, mapped.temperatureCelsius!!, 0.0)
+        assertEquals(65, mapped.humidityPercent)
+        assertEquals(18.0, mapped.windSpeedKmh!!, 0.0)
+        assertEquals(270.0, mapped.windDirectionDegrees!!, 0.0)
+        assertEquals(80, mapped.cloudCoverPercent)
+        assertEquals(0.2, mapped.precipitationMm!!, 0.0)
+        assertEquals(61, mapped.weatherCode)
+    }
+
+    @Test
+    fun cityMapMapperDoesNotExposeMalformedOrOutOfRangeMeasurements() {
+        val aleppo = city("حلب", 36.2021, 37.1343)
+        val mapped = CityMapForecastMapper.map(
+            aleppo,
+            WeatherResponseDto(
+                latitude = 36.24,
+                longitude = 37.16,
+                current = CurrentWeatherDto(
+                    time = "2026-02-30T25:90",
+                    temperature = 999.0,
+                    relativeHumidity = 120,
+                    precipitation = Double.NaN,
+                    weatherCode = 120,
+                    windSpeed = 301.0,
+                    windDirection = 361.0,
+                    cloudCover = -1
+                )
+            )
+        )
+        assertEquals(aleppo, mapped.city)
+        assertNull(mapped.time)
+        assertNull(mapped.temperatureCelsius)
+        assertNull(mapped.humidityPercent)
+        assertNull(mapped.windSpeedKmh)
+        assertNull(mapped.windDirectionDegrees)
+        assertNull(mapped.cloudCoverPercent)
+        assertNull(mapped.precipitationMm)
+        assertNull(mapped.weatherCode)
+    }
+
     private fun city(name: String, latitude: Double, longitude: Double) = CityLocation(
         name = name,
         country = "سوريا",
