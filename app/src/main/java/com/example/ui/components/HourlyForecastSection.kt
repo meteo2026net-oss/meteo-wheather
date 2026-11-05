@@ -37,8 +37,8 @@ fun HourlyForecastSection(
     modifier: Modifier = Modifier
 ) {
     var selectedHourIndex by remember { mutableIntStateOf(0) }
-    LaunchedEffect(hourlyList.size) {
-        // A refreshed or shorter forecast must not leave the inspector pointing past the list.
+    LaunchedEffect(hourlyList) {
+        // Reset selection whenever forecast content changes, even when its length stays the same.
         selectedHourIndex = 0
     }
     val selectedHour = hourlyList.getOrNull(selectedHourIndex)

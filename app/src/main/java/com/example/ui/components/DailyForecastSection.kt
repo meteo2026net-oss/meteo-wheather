@@ -37,11 +37,10 @@ fun DailyForecastSection(
     modifier: Modifier = Modifier
 ) {
     var expandedDayIndex by remember { mutableStateOf<Int?>(null) }
-    LaunchedEffect(dailyList.size) {
-        // Clear an expanded row if a refreshed forecast no longer contains that index.
-        expandedDayIndex?.let { index ->
-            if (index >= dailyList.size) expandedDayIndex = null
-        }
+    LaunchedEffect(dailyList) {
+        // A refreshed forecast can contain different dates at the same indices.
+        // Clear the expanded row so it never silently switches to another day.
+        expandedDayIndex = null
     }
 
     // Find week min and max to draw normalized temperature range bars
