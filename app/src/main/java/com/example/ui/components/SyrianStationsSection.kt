@@ -24,6 +24,7 @@ import com.example.data.model.canShowLiveMeasurements
 import com.example.data.model.canShowLiveTemperature
 import com.example.data.model.canShowLiveHumidity
 import com.example.data.model.canShowLiveWindSpeed
+import com.example.data.model.canShowLivePressure
 
 @Composable
 fun SyrianStationsSection(
@@ -83,6 +84,7 @@ fun SyrianStationsSection(
                 val canShowTemperature = station.canShowLiveTemperature(nowEpochMillis)
                 val canShowHumidity = station.canShowLiveHumidity(nowEpochMillis)
                 val canShowWindSpeed = station.canShowLiveWindSpeed(nowEpochMillis)
+                val canShowPressure = station.canShowLivePressure(nowEpochMillis)
                 Column(
                     modifier = Modifier
                         .width(160.dp)
@@ -174,6 +176,17 @@ fun SyrianStationsSection(
                             color = Color.White.copy(alpha = 0.8f)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = if (canShowPressure) {
+                            "الضغط: ${"%.1f".format(java.util.Locale.US, station.pressureHpa)} hPa"
+                        } else {
+                            "الضغط: —"
+                        },
+                        fontSize = 10.sp,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
                 }
             }
         }
