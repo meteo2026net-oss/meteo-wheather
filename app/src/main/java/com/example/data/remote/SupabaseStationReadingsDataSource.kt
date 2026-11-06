@@ -8,6 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import java.io.IOException
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
@@ -59,6 +60,14 @@ class SupabaseStationReadingsDataSource(
             }
         }
 
+    /**
+     * Returns the newest complete, timestamp-valid core observation per station.
+     *
+     * The UI currently displays temperature, humidity, pressure, and wind together.
+     * A newer partial row must not hide an older complete row that is still within the
+     * station freshness policy; invalid rows are skipped before the station is selected.
+     * Optional wind direction and precipitation are retained when valid.
+     */
     internal fun parseLatestReadings(rows: JSONArray): Map<String, StationObservation> {
         val latest = linkedMapOf<String, StationObservation>()
         for (index in 0 until rows.length()) {
@@ -67,6 +76,8 @@ class SupabaseStationReadingsDataSource(
             if (latest.containsKey(stationId)) continue
 
             val observedAt = row.optString("observed_at").takeIf { it.isNotBlank() } ?: continue
+            if (runCatching { Instant.parse(observedAt) }.isFailure) continue
+
             val temperature = row.optionalDouble("temperature_c")?.takeIf { it in -100.0..70.0 }
             val humidity = row.optionalDouble("relative_humidity")?.takeIf { it in 0.0..100.0 }
             val pressure = row.optionalDouble("pressure_hpa")?.takeIf { it in 800.0..1100.0 }
@@ -74,8 +85,8 @@ class SupabaseStationReadingsDataSource(
             val windDirection = row.optionalDouble("wind_direction_deg")?.takeIf { it in 0.0..360.0 }
             val precipitation = row.optionalDouble("precipitation_mm")?.takeIf { it >= 0.0 }
 
-            // A record with no usable meteorological measurement is not a reading.
-            if (listOf(temperature, humidity, pressure, windSpeed, windDirection, precipitation).all { it == null }) {
+            // Do not let a partial or out-of-range newest row mask a usable older row.
+            if (temperature == null || humidity == null || pressure == null || windSpeed == null) {
                 continue
             }
 
@@ -83,7 +94,7 @@ class SupabaseStationReadingsDataSource(
                 stationId = stationId,
                 observedAt = observedAt,
                 temperatureCelsius = temperature,
-                relativeHumidityPercent = humidity?.toInt(),
+                relativeHumidityPercent = humidity.toInt(),
                 pressureHpa = pressure,
                 windSpeedKmh = windSpeed,
                 windDirectionDegrees = windDirection,

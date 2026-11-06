@@ -3,7 +3,6 @@ package com.example.data.remote
 import org.json.JSONArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,7 +15,7 @@ class SupabaseStationReadingsDataSourceTest {
     private val dataSource = SupabaseStationReadingsDataSource()
 
     @Test
-    fun keepsNewestVerifiedRowPerStationWhenRowsAreNewestFirst() {
+    fun keepsNewestCompleteRowPerStationWhenRowsAreNewestFirst() {
         val rows = JSONArray(
             """
             [
@@ -48,23 +47,24 @@ class SupabaseStationReadingsDataSourceTest {
     }
 
     @Test
-    fun retainsValidFieldsAndDropsOutOfRangeFields() {
+    fun skipsNewerPartialOrInvalidRowsAndUsesNewestCompleteObservation() {
         val rows = JSONArray(
             """
             [
-              {"station_id":"aleppo","observed_at":"2026-11-06T02:00:00Z","temperature_c":21.0,"relative_humidity":140,"pressure_hpa":1010.0,"wind_speed_kmh":400.0,"wind_direction_deg":361.0,"precipitation_mm":-0.5}
+              {"station_id":"aleppo","observed_at":"2026-11-06T03:00:00Z","temperature_c":22.0,"relative_humidity":50,"pressure_hpa":1010.0},
+              {"station_id":"aleppo","observed_at":"not-a-timestamp","temperature_c":23.0,"relative_humidity":51,"pressure_hpa":1011.0,"wind_speed_kmh":9.0},
+              {"station_id":"aleppo","observed_at":"2026-11-06T01:00:00Z","temperature_c":21.0,"relative_humidity":49,"pressure_hpa":1009.0,"wind_speed_kmh":8.0,"wind_direction_deg":180.0,"precipitation_mm":0.0}
             ]
             """.trimIndent()
         )
 
         val reading = dataSource.parseLatestReadings(rows).getValue("aleppo")
 
+        assertEquals("2026-11-06T01:00:00Z", reading.observedAt)
         assertEquals(21.0, reading.temperatureCelsius!!, 0.0)
-        assertNull(reading.relativeHumidityPercent)
-        assertEquals(1010.0, reading.pressureHpa!!, 0.0)
-        assertNull(reading.windSpeedKmh)
-        assertNull(reading.windDirectionDegrees)
-        assertNull(reading.precipitationMm)
+        assertEquals(49, reading.relativeHumidityPercent)
+        assertEquals(180.0, reading.windDirectionDegrees!!, 0.0)
+        assertEquals(0.0, reading.precipitationMm!!, 0.0)
     }
 
     @Test
