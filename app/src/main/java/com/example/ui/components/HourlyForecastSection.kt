@@ -164,6 +164,14 @@ fun HourlyForecastSection(
                         Text("—", fontSize = 10.sp, color = Color.White.copy(alpha = 0.55f))
                         Spacer(modifier = Modifier.height(5.dp))
                     }
+                    Text(
+                        text = if (hour.precipitationAvailable)
+                            String.format(java.util.Locale.ROOT, "%.1f مم", hour.precipitationMm)
+                        else "— مم",
+                        fontSize = 10.sp,
+                        color = Color(0xFFBAE6FD),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
