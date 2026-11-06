@@ -18,7 +18,11 @@ data class SyrianWeatherStation(
     /** Provider observation time in Unix epoch milliseconds; required before showing live values. */
     val lastReadingEpochMillis: Long? = null,
     /** True only after a station feed and its measurement provenance have been verified. */
-    val hasVerifiedLiveData: Boolean = false
+    val hasVerifiedLiveData: Boolean = false,
+    /** Name of the upstream source attached to this verified observation. */
+    val sourceName: String? = null,
+    /** Reference supplied by the upstream observation provider, when available. */
+    val sourceReference: String? = null
 )
 
 data class CapAlertItem(

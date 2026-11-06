@@ -199,7 +199,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                         lastReadingTime = reading.observedAt,
                         isDemoData = false,
                         lastReadingEpochMillis = epochMillis,
-                        hasVerifiedLiveData = true
+                        hasVerifiedLiveData = true,
+                        sourceName = reading.sourceName,
+                        sourceReference = reading.sourceReference
                     )
                     if (!candidate.canShowLiveMeasurements(now)) return@map station
                     appliedCount++

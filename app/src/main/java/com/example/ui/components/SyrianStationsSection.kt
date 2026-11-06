@@ -117,6 +117,16 @@ fun SyrianStationsSection(
                         )
                     }
 
+                    if (hasVerifiedSource && !station.sourceName.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "المصدر: ${station.sourceName}",
+                            fontSize = 9.sp,
+                            color = Color(0xFF86EFAC),
+                            maxLines = 1
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = station.governorate,
