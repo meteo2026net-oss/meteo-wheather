@@ -346,13 +346,15 @@ fun MetricCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White.copy(alpha = 0.15f))
-            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
-            .padding(14.dp)
-    ) {
+    BoxWithConstraints(modifier = modifier) {
+        val compactLayout = maxWidth < 170.dp
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White.copy(alpha = 0.15f))
+                .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
+                .padding(if (compactLayout) 10.dp else 14.dp)
+        ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -361,18 +363,19 @@ fun MetricCard(
                 imageVector = icon,
                 contentDescription = null,
                 tint = iconTint,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(if (compactLayout) 15.dp else 16.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = title,
-                fontSize = 12.sp,
+                fontSize = if (compactLayout) 11.sp else 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White.copy(alpha = 0.85f)
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
         content()
+        }
     }
 }
 
