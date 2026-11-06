@@ -4,6 +4,10 @@ import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.GeolocationPermissions
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -326,7 +330,7 @@ fun LeafletWeatherMapScreen(
                             settings.allowUniversalAccessFromFileURLs = false
                             settings.databaseEnabled = false
                             settings.domStorageEnabled = true
-                            settings.setGeolocationEnabled(false)
+                            settings.setGeolocationEnabled(true)
                             settings.mediaPlaybackRequiresUserGesture = true
                             settings.loadWithOverviewMode = true
                             settings.useWideViewPort = true
@@ -380,7 +384,25 @@ fun LeafletWeatherMapScreen(
                                     return request?.isForMainFrame == true
                                 }
                             }
-                            webChromeClient = WebChromeClient()
+                            webChromeClient = object : WebChromeClient() {
+                                override fun onGeolocationPermissionsShowPrompt(
+                                    origin: String?,
+                                    callback: GeolocationPermissions.Callback?
+                                ) {
+                                    val permitted =
+                                        ContextCompat.checkSelfPermission(
+                                            ctx, Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED ||
+                                        ContextCompat.checkSelfPermission(
+                                            ctx, Manifest.permission.ACCESS_COARSE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                    callback?.invoke(
+                                        origin,
+                                        origin == "https://openstreetmap.org" && permitted,
+                                        false
+                                    )
+                                }
+                            }
                             setBackgroundColor(0xFF090D1A.toInt())
                             loadDataWithBaseURL(
                                 "https://openstreetmap.org",
