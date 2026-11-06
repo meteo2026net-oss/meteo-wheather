@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DailyForecast
@@ -37,6 +38,11 @@ fun DailyForecastSection(
     modifier: Modifier = Modifier
 ) {
     var expandedDayIndex by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(dailyList) {
+        // A refreshed forecast can contain different dates at the same indices.
+        // Clear the expanded row so it never silently switches to another day.
+        expandedDayIndex = null
+    }
 
     // Find week min and max to draw normalized temperature range bars
     val globalMin = dailyList.minOfOrNull { it.minTempCelsius } ?: 10.0
@@ -58,7 +64,10 @@ fun DailyForecastSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     imageVector = Icons.Default.CalendarMonth,
                     contentDescription = null,
@@ -67,15 +76,17 @@ fun DailyForecastSection(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "توقعات 7 أيام القادمة",
+                    text = "توقعات الأيام القادمة (${dailyList.size} يوماً)",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
                 text = "انقر للتفاصيل",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 color = Color.White.copy(alpha = 0.8f)
             )
         }
@@ -140,7 +151,7 @@ fun DailyForecastSection(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     // Rain Chance (if > 0)
-                    if (day.precipitationProb > 0) {
+                    if (day.precipitationProbabilityAvailable) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.width(42.dp)
@@ -160,7 +171,12 @@ fun DailyForecastSection(
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.width(42.dp))
+                        Text(
+                            text = "—",
+                            fontSize = 10.sp,
+                            color = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier.width(42.dp)
+                        )
                     }
 
                     // Min Temp
@@ -173,7 +189,7 @@ fun DailyForecastSection(
                     )
 
                     // Visual Temperature Range Slider Bar
-                    Box(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .weight(1f)
                             .height(6.dp)
@@ -189,7 +205,7 @@ fun DailyForecastSection(
                                 .fillMaxHeight()
                                 .fillMaxWidth(widthFrac)
                                 .align(Alignment.CenterStart)
-                                .offset(x = (startFrac * 100).dp) // approximate visual offset
+                                .offset(x = maxWidth * startFrac)
                                 .clip(CircleShape)
                                 .background(
                                     Brush.horizontalGradient(
@@ -236,7 +252,7 @@ fun DailyForecastSection(
                             color = Color(0xFFFFD54F)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-
+                        Text(text = if (day.precipitationSumAvailable) "هطول اليوم: " + String.format(java.util.Locale.ROOT, "%.1f مم", day.precipitationSumMm) else "هطول اليوم: غير متاح", fontSize = 12.sp, color = Color(0xFF67E8F9), fontWeight = FontWeight.SemiBold)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -250,7 +266,7 @@ fun DailyForecastSection(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "شروق: ${day.sunrise}",
+                                    text = "شروق: ${if (day.sunriseAvailable) day.sunrise else "—"}",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.9f)
                                 )
@@ -265,14 +281,14 @@ fun DailyForecastSection(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "غروب: ${day.sunset}",
+                                    text = "غروب: ${if (day.sunsetAvailable) day.sunset else "—"}",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.9f)
                                 )
                             }
 
                             Text(
-                                text = "مؤشر UV: ${day.uvIndexMax.toInt()}",
+                                text = "مؤشر UV: ${if (day.uvIndexAvailable) day.uvIndexMax.toInt().toString() else "—"}",
                                 fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.9f)
                             )

@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.HourlyForecast
@@ -37,6 +38,10 @@ fun HourlyForecastSection(
     modifier: Modifier = Modifier
 ) {
     var selectedHourIndex by remember { mutableIntStateOf(0) }
+    LaunchedEffect(hourlyList) {
+        // Reset selection whenever forecast content changes, even when its length stays the same.
+        selectedHourIndex = 0
+    }
     val selectedHour = hourlyList.getOrNull(selectedHourIndex)
 
     Column(
@@ -54,7 +59,10 @@ fun HourlyForecastSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
@@ -66,12 +74,14 @@ fun HourlyForecastSection(
                     text = "التوقعات الساعية (24 ساعة)",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
                 text = "انقر للتفاصيل",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 color = Color.White.copy(alpha = 0.8f)
             )
         }
@@ -133,13 +143,13 @@ fun HourlyForecastSection(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "$temp°",
+                        text = if (hour.temperatureAvailable) "$temp°" else "—",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
 
-                    if (hour.precipitationProb > 0) {
+                    if (hour.precipitationProbabilityAvailable) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -157,9 +167,51 @@ fun HourlyForecastSection(
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.height(15.dp))
+                        Text("—", fontSize = 10.sp, color = Color.White.copy(alpha = 0.55f))
+                        Spacer(modifier = Modifier.height(5.dp))
                     }
+                    Text(
+                        text = if (hour.precipitationAvailable)
+                            String.format(java.util.Locale.ROOT, "%.1f مم", hour.precipitationMm)
+                        else "— مم",
+                        fontSize = 10.sp,
+                        color = Color(0xFFBAE6FD),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
+            }
+        }
+
+        // Hourly precipitation amount is distinct from probability of rain.
+        selectedHour?.let { hour ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF0284C7).copy(alpha = 0.18f))
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.WaterDrop,
+                        contentDescription = null,
+                        tint = Color(0xFF67E8F9),
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("كمية الهطول المتوقعة خلال الساعة", fontSize = 12.sp, color = Color.White)
+                }
+                Text(
+                    text = if (hour.precipitationAvailable)
+                        String.format(java.util.Locale.ROOT, "%.1f مم", hour.precipitationMm)
+                    else "غير متاح",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF67E8F9)
+                )
             }
         }
 
@@ -200,7 +252,7 @@ fun HourlyForecastSection(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${hour.humidity}% رطوبة",
+                        text = if (hour.humidityAvailable) "${hour.humidity}% رطوبة" else "— رطوبة",
                         fontSize = 12.sp,
                         color = Color.White
                     )
@@ -216,7 +268,7 @@ fun HourlyForecastSection(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${hour.windSpeedKmh.toInt()} كم/س",
+                        text = if (hour.windSpeedAvailable) "${hour.windSpeedKmh.toInt()} كم/س" else "— كم/س",
                         fontSize = 12.sp,
                         color = Color.White
                     )

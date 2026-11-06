@@ -1,0 +1,70 @@
+package com.example.data.model
+
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class StationReadingFreshnessPolicyTest {
+    private val now = 1_800_000_000_000L
+
+    @Test
+    fun recentObservationIsFresh() {
+        assertTrue(StationReadingFreshnessPolicy.isFresh(now - 30L * 60L * 1000L, now))
+    }
+
+    @Test
+    fun observationExactlyAtNinetyMinuteLimitIsFresh() {
+        assertTrue(
+            StationReadingFreshnessPolicy.isFresh(
+                now - StationReadingFreshnessPolicy.DEFAULT_MAX_AGE_MILLIS,
+                now
+            )
+        )
+    }
+
+    @Test
+    fun observationOlderThanNinetyMinutesIsStale() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(now - 91L * 60L * 1000L, now))
+    }
+
+    @Test
+    fun missingTimestampIsNeverFresh() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(null, now))
+    }
+
+    @Test
+    fun smallClockSkewIntoFutureIsAccepted() {
+        assertTrue(StationReadingFreshnessPolicy.isFresh(now + 2L * 60L * 1000L, now))
+    }
+
+    @Test
+    fun timestampExactlyAtFutureSkewLimitIsAccepted() {
+        assertTrue(
+            StationReadingFreshnessPolicy.isFresh(
+                now + StationReadingFreshnessPolicy.MAX_FUTURE_SKEW_MILLIS,
+                now
+            )
+        )
+    }
+
+    @Test
+    fun implausiblyFutureTimestampIsRejected() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(now + 6L * 60L * 1000L, now))
+    }
+
+    @Test
+    fun timestampArithmeticOverflowIsRejected() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(Long.MIN_VALUE, Long.MAX_VALUE))
+        assertFalse(StationReadingFreshnessPolicy.isFresh(Long.MAX_VALUE, Long.MIN_VALUE))
+    }
+
+    @Test
+    fun negativeFreshnessWindowIsRejected() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(now, now, maxAgeMillis = -1L))
+    }
+
+    @Test
+    fun customFreshnessWindowIsRespected() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(now - 11_000L, now, maxAgeMillis = 10_000L))
+    }
+}

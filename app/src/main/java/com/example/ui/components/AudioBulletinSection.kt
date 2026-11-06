@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,7 +34,6 @@ fun AudioBulletinSection(
 ) {
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }
-    var playbackProgress by remember { mutableFloatStateOf(0f) }
     var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
     var ttsInitialized by remember { mutableStateOf(false) }
 
@@ -41,35 +41,43 @@ fun AudioBulletinSection(
     DisposableEffect(context) {
         val tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val result = ttsInstance?.setLanguage(Locale("ar"))
+                val result = ttsInstance?.setLanguage(Locale.forLanguageTag("ar"))
                 ttsInitialized = (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
             }
         }
         ttsInstance = tts
+        tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                isPlaying = true
+            }
+
+            override fun onDone(utteranceId: String?) {
+                isPlaying = false
+            }
+
+            override fun onError(utteranceId: String?) {
+                isPlaying = false
+            }
+        })
         onDispose {
             tts.stop()
             tts.shutdown()
         }
     }
 
-    // Handle playback state & TTS speech
-    LaunchedEffect(isPlaying) {
+    // Handle playback using Android TTS lifecycle callbacks; do not simulate a timeline.
+    LaunchedEffect(isPlaying, ttsInitialized) {
         if (isPlaying) {
             if (ttsInitialized && ttsInstance != null) {
-                ttsInstance?.speak(
+                val result = ttsInstance?.speak(
                     bulletin.bulletinScriptAr,
                     TextToSpeech.QUEUE_FLUSH,
                     null,
                     "mcnc_bulletin_utterance"
                 )
-            }
-            while (isPlaying) {
-                delay(400)
-                playbackProgress += 0.04f
-                if (playbackProgress >= 1f) {
-                    playbackProgress = 0f
-                    isPlaying = false
-                }
+                if (result != TextToSpeech.SUCCESS) isPlaying = false
+            } else {
+                isPlaying = false
             }
         } else {
             ttsInstance?.stop()
@@ -113,13 +121,13 @@ fun AudioBulletinSection(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "النشرة الصوتية الرسمية (MCNC TTS)",
+                        text = if (bulletin.isDemoData) "نشرة تجريبية — تحويل النص إلى صوت" else "النشرة الصوتية",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "قراءة صوتية حية: ${bulletin.announcerName} | ${bulletin.dateFormatted}",
+                        text = "صوت اصطناعي: ${bulletin.announcerName} | ${bulletin.dateFormatted}",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -134,7 +142,7 @@ fun AudioBulletinSection(
                     .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "صوت ناطق",
+                    text = if (bulletin.isDemoData) "تجريبي" else "TTS",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFFD54F)
@@ -164,17 +172,26 @@ fun AudioBulletinSection(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Playback Bar & Controls
+        // Playback state indicator (TTS does not expose a reliable seek timeline).
         Column(modifier = Modifier.fillMaxWidth()) {
-            LinearProgressIndicator(
-                progress = { playbackProgress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(CircleShape),
-                color = Color(0xFFFFD54F),
-                trackColor = Color.White.copy(alpha = 0.2f),
-            )
+            if (isPlaying) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(CircleShape),
+                    color = Color(0xFFFFD54F),
+                    trackColor = Color.White.copy(alpha = 0.2f)
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f))
+                )
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -184,49 +201,26 @@ fun AudioBulletinSection(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = if (isPlaying) "جاري قراءة النشرة الصوتية بصوت واضح..." else "اضغط لتشغيل القراءة الصوتية للنشرة",
+                    text = if (isPlaying) "تجري قراءة النص بصوت اصطناعي..." else "اضغط لتشغيل القراءة الصوتية للنص",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.8f)
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Replay 10s button
-                    IconButton(
-                        onClick = { playbackProgress = (playbackProgress - 0.1f).coerceAtLeast(0f) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Replay10, contentDescription = "تخلف 10 ثواني", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Play / Pause Button
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF0284C7))
-                            .clickable { isPlaying = !isPlaying }
-                            .testTag("audio_play_button"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isPlaying) "إيقاف مؤقت" else "تشغيل",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Forward 10s button
-                    IconButton(
-                        onClick = { playbackProgress = (playbackProgress + 0.1f).coerceAtMost(1f) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Forward10, contentDescription = "تقدم 10 ثواني", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF0284C7))
+                        .clickable { isPlaying = !isPlaying }
+                        .testTag("audio_play_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "إيقاف القراءة" else "تشغيل القراءة",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }

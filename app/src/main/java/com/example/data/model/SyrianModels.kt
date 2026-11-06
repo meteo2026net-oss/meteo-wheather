@@ -12,17 +12,26 @@ data class SyrianWeatherStation(
     val windSpeedKmh: Double,
     val conditionAr: String,
     val conditionType: WeatherConditionType,
-    val isOnline: Boolean = true,
-    val lastReadingTime: String = "منذ 10 دقائق"
+    val isOnline: Boolean = false,
+    val lastReadingTime: String = "غير محدد",
+    val isDemoData: Boolean = true,
+    /** Provider observation time in Unix epoch milliseconds; required before showing live values. */
+    val lastReadingEpochMillis: Long? = null,
+    /** True only after a station feed and its measurement provenance have been verified. */
+    val hasVerifiedLiveData: Boolean = false,
+    /** Name of the upstream source attached to this verified observation. */
+    val sourceName: String? = null,
+    /** Reference supplied by the upstream observation provider, when available. */
+    val sourceReference: String? = null
 )
 
 data class CapAlertItem(
     val identifier: String,
-    val sender: String = "MCNC.SY.CAP@meteo.gov.sy",
+    val sender: String = "local-demo@device.invalid",
     val sentTimestamp: String,
-    val status: String = "Actual", // Actual, Exercise, Test
+    val status: String = "Test", // Actual, Exercise, Test
     val msgType: String = "Alert", // Alert, Update, Cancel
-    val scope: String = "Public",
+    val scope: String = "Private",
     val eventAr: String,
     val severity: AlertSeverity, // ADVISORY, WATCH, WARNING, EMERGENCY
     val urgency: String = "Immediate",
@@ -39,12 +48,14 @@ data class AudioBulletinItem(
     val dateFormatted: String,
     val durationSec: Int,
     val announcerName: String,
-    val bulletinScriptAr: String
+    val bulletinScriptAr: String,
+    val isDemoData: Boolean = true
 )
+
 
 data class ChatMessageItem(
     val id: String,
-    val sender: String, // "user" or "gemini"
+    val sender: String,
     val text: String,
     val timestamp: String
 )

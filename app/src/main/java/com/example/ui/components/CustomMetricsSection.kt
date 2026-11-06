@@ -131,30 +131,34 @@ private fun RenderMetricCard(
                 icon = Icons.Default.WbSunny,
                 iconTint = Color(0xFFFFCA28)
             ) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = "$uv",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(color.copy(alpha = 0.25f))
-                            .border(1.dp, color, RoundedCornerShape(6.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(text = desc, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
+                if (!current.uvIndexAvailable) {
+                    Text("بيانات مؤشر الأشعة فوق البنفسجية غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = "$uv",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(color.copy(alpha = 0.25f))
+                                .border(1.dp, color, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(text = desc, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
+                        }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (uv <= 2) "لا حاجة للحماية" else if (uv <= 5) "نظارة شمسية" else "واقي شمس وقبعة",
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.75f)
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (uv <= 2) "لا حاجة للحماية" else if (uv <= 5) "نظارة شمسية" else "واقي شمس وقبعة",
-                    fontSize = 11.sp,
-                    color = Color.White.copy(alpha = 0.75f)
-                )
             }
         }
 
@@ -164,9 +168,12 @@ private fun RenderMetricCard(
                 icon = Icons.Default.Eco,
                 iconTint = Color(0xFF4ADE80)
             ) {
+                if (!airQuality.isAvailable) {
+                    Text("بيانات جودة الهواء غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "${airQuality.aqiValue}",
+                        text = if (airQuality.isAqiAvailable) "${airQuality.aqiValue}" else "—",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -184,10 +191,17 @@ private fun RenderMetricCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "PM2.5: ${airQuality.pm25.toInt()} | O₃: ${airQuality.ozone.toInt()}",
+                    text = "تركيزات الملوثات (ميكروغرام/م³)",
+                    fontSize = 10.sp,
+                    color = Color.White.copy(alpha = 0.65f)
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "PM2.5: ${if (airQuality.pm25Available) airQuality.pm25.toInt().toString() else "—"} | PM10: ${if (airQuality.pm10Available) airQuality.pm10.toInt().toString() else "—"} | O₃: ${if (airQuality.ozoneAvailable) airQuality.ozone.toInt().toString() else "—"} | NO₂: ${if (airQuality.no2Available) airQuality.no2.toInt().toString() else "—"} | CO: ${if (airQuality.carbonMonoxideAvailable) airQuality.carbonMonoxide.toInt().toString() else "—"}",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
+                }
             }
         }
 
@@ -196,6 +210,7 @@ private fun RenderMetricCard(
                 "منخفض جداً" -> Color(0xFF4ADE80) to "منخفض"
                 "معتدل" -> Color(0xFFFACC15) to "معتدل"
                 "مرتفع" -> Color(0xFFFB923C) to "مرتفع"
+                "بيانات جزئية" -> Color(0xFFCBD5E1) to "بيانات جزئية"
                 else -> Color(0xFFEF4444) to "تحذير"
             }
             MetricCard(
@@ -203,6 +218,9 @@ private fun RenderMetricCard(
                 icon = Icons.Default.Grass,
                 iconTint = Color(0xFFA3E635)
             ) {
+                if (!pollen.isAvailable) {
+                    Text("بيانات حبوب اللقاح غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = pollenTag,
@@ -213,7 +231,7 @@ private fun RenderMetricCard(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "أعشاب: ${pollen.grassPollen.toInt()} | زيتون: ${pollen.olivePollen.toInt()}",
+                    text = "أعشاب: ${if (pollen.grassAvailable) pollen.grassPollen.toInt().toString() else "—"} | بتولا: ${if (pollen.birchAvailable) pollen.birchPollen.toInt().toString() else "—"} | زيتون: ${if (pollen.oliveAvailable) pollen.olivePollen.toInt().toString() else "—"} | عشبة الرجيد: ${if (pollen.ragweedAvailable) pollen.ragweedPollen.toInt().toString() else "—"}",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.85f)
                 )
@@ -224,6 +242,7 @@ private fun RenderMetricCard(
                     color = Color.White.copy(alpha = 0.7f),
                     maxLines = 2
                 )
+                }
             }
         }
 
@@ -266,7 +285,7 @@ private fun RenderMetricCard(
 
         WeatherMetricType.HUMIDITY -> {
             MetricCard(
-                title = "الرطوبة النسبية",
+                title = "الرطوبة والغطاء السحابي",
                 icon = Icons.Default.WaterDrop,
                 iconTint = Color(0xFF38BDF8)
             ) {
@@ -306,6 +325,20 @@ private fun RenderMetricCard(
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("الغطاء السحابي", fontSize = 11.sp, color = Color.White.copy(alpha = 0.75f))
+                    Text(
+                        text = if (current.cloudCoverAvailable) "${current.cloudCoverPercent}%" else "غير متاح",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
             }
         }
 
@@ -321,11 +354,11 @@ private fun RenderMetricCard(
                 ) {
                     Column {
                         Text(text = "الشروق", fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
-                        Text(text = todayForecast?.sunrise ?: "06:15 ص", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(text = todayForecast?.takeIf { it.sunriseAvailable }?.sunrise ?: "—:—", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(text = "الغروب", fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
-                        Text(text = todayForecast?.sunset ?: "05:45 م", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(text = todayForecast?.takeIf { it.sunsetAvailable }?.sunset ?: "—:—", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -368,6 +401,9 @@ private fun RenderMetricCard(
                 icon = Icons.Default.Visibility,
                 iconTint = Color(0xFF2DD4BF)
             ) {
+                if (!current.visibilityAvailable) {
+                    Text("بيانات مدى الرؤية غير متاحة حالياً", fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
+                } else {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "${current.visibilityKm.toInt()}",
@@ -384,6 +420,7 @@ private fun RenderMetricCard(
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
+                }
             }
         }
     }

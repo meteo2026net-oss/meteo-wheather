@@ -15,13 +15,23 @@ import retrofit2.http.Url
 import java.util.concurrent.TimeUnit
 
 interface OpenMeteoForecastApi {
+    // One request for all map points; Open-Meteo returns one response per coordinate.
+    @GET("v1/forecast")
+    suspend fun getMultiLocationCurrent(
+        @Query("latitude") latitude: String,
+        @Query("longitude") longitude: String,
+        @Query("current") current: String = "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,cloud_cover,precipitation,weather_code",
+        @Query("timezone") timezone: String = "auto"
+    ): List<WeatherResponseDto>
+
     @GET("v1/forecast")
     suspend fun getForecast(
         @Query("latitude") latitude: Double,
         @Query("longitude") longitude: Double,
-        @Query("current") current: String = "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,uv_index",
-        @Query("hourly") hourly: String = "temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,visibility",
-        @Query("daily") daily: String = "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max",
+        @Query("current") current: String = "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,uv_index",
+        @Query("hourly") hourly: String = "temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,visibility",
+        @Query("daily") daily: String = "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,precipitation_sum",
+        @Query("forecast_days") forecastDays: Int = 16,
         @Query("timezone") timezone: String = "auto"
     ): WeatherResponseDto
 }
@@ -54,7 +64,12 @@ object NetworkClient {
 
     private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            // Request URLs include city coordinates; never emit them in production logs.
+            level = if (com.example.BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BASIC
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
         OkHttpClient.Builder()
             .addInterceptor(logging)

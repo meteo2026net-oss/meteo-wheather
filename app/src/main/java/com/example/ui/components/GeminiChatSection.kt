@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -86,13 +87,13 @@ fun GeminiChatSection(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "دردشة الذكاء الاصطناعي (Gemini AI)",
+                        text = "مساعد الطقس التجريبي",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "استشر Gemini حول طقس Open-Meteo في سوريا",
+                        text = "ردود محلية مبنية على بيانات الطقس المتاحة؛ غير متصل بخدمة Gemini حالياً",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -116,7 +117,7 @@ fun GeminiChatSection(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "ربط API",
+                        text = "حالة الربط",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -167,13 +168,13 @@ fun GeminiChatSection(
                     Text(text = "🤖", fontSize = 32.sp)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "أهلاً بك! أنا مساعد MCNC الذكي للطقس.",
+                        text = "أهلاً بك! هذا مساعد طقس تجريبي.",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "اسألني أي سؤال عن طقس سوريا والمحافظات بناءً على بيانات Open-Meteo.",
+                        text = "تستخدم هذه النسخة قواعد محلية بسيطة ولا تتصل بخدمة Gemini API.",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.6f),
                         textAlign = TextAlign.Center
@@ -209,7 +210,7 @@ fun GeminiChatSection(
                             ) {
                                 Column {
                                     Text(
-                                        text = if (isUser) "أنت" else "Gemini AI (MCNC)",
+                                        text = if (isUser) "أنت" else "مساعد الطقس التجريبي",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isUser) Color(0xFFFFD54F) else Color(0xFF38BDF8)
@@ -239,7 +240,7 @@ fun GeminiChatSection(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Gemini يفكّر في الإجابة بالذكاء الاصطناعي...",
+                                    text = "جارٍ إعداد رد محلي تجريبي...",
                                     fontSize = 11.sp,
                                     color = Color.White.copy(alpha = 0.7f)
                                 )
@@ -291,7 +292,7 @@ fun GeminiChatSection(
                     .background(Color(0xFF0284C7))
             ) {
                 Icon(
-                    imageVector = Icons.Default.Send,
+                    imageVector = Icons.AutoMirrored.Filled.Send,
                     contentDescription = "إرسال",
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)

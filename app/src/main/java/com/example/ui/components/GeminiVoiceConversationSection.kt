@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -57,7 +58,7 @@ fun GeminiVoiceConversationSection(
         var tts: TextToSpeech? = null
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale("ar")
+                tts?.language = Locale.forLanguageTag("ar")
             }
         }
         ttsInstance = tts
@@ -100,13 +101,13 @@ fun GeminiVoiceConversationSection(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "قسم المحادثة الصوتية (Gemini Voice)",
+                        text = "إخراج صوتي تجريبي (TTS)",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "تحدث مع المساعد الصوتي واسمعه يجيبك باللغة العربية",
+                        text = "يمكن قراءة الردود النصية بصوت آلي؛ إدخال الصوت غير مفعّل حالياً",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -119,7 +120,7 @@ fun GeminiVoiceConversationSection(
                     onStopVoiceClick()
                 }) {
                     Icon(
-                        imageVector = Icons.Default.VolumeOff,
+                        imageVector = Icons.AutoMirrored.Filled.VolumeOff,
                         contentDescription = "إيقاف الصوت",
                         tint = Color(0xFFFF6B6B)
                     )
@@ -151,13 +152,13 @@ fun GeminiVoiceConversationSection(
                                 else -> Color(0xFFEA580C)
                             }
                         )
-                        .clickable { onStartListeningClick() },
+                        .clickable(enabled = false) { onStartListeningClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = when {
                             isListening -> Icons.Default.GraphicEq
-                            isSpeaking -> Icons.Default.VolumeUp
+                            isSpeaking -> Icons.AutoMirrored.Filled.VolumeUp
                             else -> Icons.Default.Mic
                         },
                         contentDescription = "تحدث الآن",
@@ -170,9 +171,9 @@ fun GeminiVoiceConversationSection(
 
                 Text(
                     text = when {
-                        isListening -> "جاري الاستماع لصوتك... اضغط للإلغاء"
-                        isSpeaking -> "Gemini يتحدث بصوت جهوري..."
-                        else -> "اضغط على الميكروفون للبدء بالمحادثة الصوتية"
+                        isListening -> "إدخال الصوت غير مفعّل في هذه النسخة"
+                        isSpeaking -> "تتم قراءة النص بصوت اصطناعي..."
+                        else -> "استخدم المساعد النصي؛ الميكروفون غير موصول حالياً"
                     },
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -196,7 +197,7 @@ fun GeminiVoiceConversationSection(
                 Column {
                     if (lastVoiceQuery.isNotEmpty()) {
                         Text(
-                            text = "🗣️ سُمع منك: \"$lastVoiceQuery\"",
+                            text = "📝 النص المدخل: \"$lastVoiceQuery\"",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD54F)
@@ -211,7 +212,7 @@ fun GeminiVoiceConversationSection(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "🤖 رد Gemini الصوتي:",
+                                text = "🔊 قراءة الرد بصوت آلي:",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF38BDF8)
@@ -230,7 +231,7 @@ fun GeminiVoiceConversationSection(
                                 modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.VolumeUp,
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                     contentDescription = "إعادة التشغيل الصوتي",
                                     tint = Color.White,
                                     modifier = Modifier.size(16.dp)

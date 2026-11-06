@@ -19,15 +19,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.model.CityLocation
 import com.example.data.model.SyrianWeatherStation
+import com.example.data.model.canShowLiveMeasurements
+import com.example.data.model.canShowLiveTemperature
+import com.example.data.model.canShowLiveHumidity
+import com.example.data.model.canShowLiveWindSpeed
+import com.example.data.model.canShowLivePressure
+import com.example.data.model.StationMeasurementDisplayPolicy
 
 @Composable
 fun SyrianStationsSection(
     stations: List<SyrianWeatherStation>,
     onStationSelected: (SyrianWeatherStation) -> Unit,
+    dataStatusMessage: String? = null,
     modifier: Modifier = Modifier
 ) {
+    val nowEpochMillis = System.currentTimeMillis()
+    val hasFreshVerifiedReadings = stations.any { station ->
+        station.canShowLiveMeasurements(nowEpochMillis)
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -52,7 +63,11 @@ fun SyrianStationsSection(
                         color = Color.White
                     )
                     Text(
-                        text = "رصد حي ومباشر لمحطات المحافظات السورية (MCNC)",
+                        text = dataStatusMessage ?: if (hasFreshVerifiedReadings) {
+                            "توجد قراءات حديثة من مصادر موثقة"
+                        } else {
+                            "لا توجد حالياً قراءات حية موثقة — القيم غير المتاحة مخفية"
+                        },
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.75f)
                     )
@@ -65,6 +80,12 @@ fun SyrianStationsSection(
             contentPadding = PaddingValues(horizontal = 2.dp)
         ) {
             items(stations) { station ->
+                val hasVerifiedSource = station.hasVerifiedLiveData && !station.isDemoData
+                val canShowLiveMeasurements = station.canShowLiveMeasurements(nowEpochMillis)
+                val canShowTemperature = station.canShowLiveTemperature(nowEpochMillis)
+                val canShowHumidity = station.canShowLiveHumidity(nowEpochMillis)
+                val canShowWindSpeed = station.canShowLiveWindSpeed(nowEpochMillis)
+                val canShowPressure = station.canShowLivePressure(nowEpochMillis)
                 Column(
                     modifier = Modifier
                         .width(160.dp)
@@ -89,8 +110,34 @@ fun SyrianStationsSection(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(if (station.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                .background(
+                                    if (station.isDemoData) Color(0xFFFACC15)
+                                    else if (canShowLiveMeasurements) Color(0xFF4ADE80)
+                                    else Color(0xFFEF4444)
+                                )
                         )
+                    }
+
+                    if (hasVerifiedSource && !station.sourceName.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "المصدر: ${station.sourceName}",
+                            fontSize = 9.sp,
+                            color = Color(0xFF86EFAC),
+                            maxLines = 1
+                        )
+                    }
+
+                    if (hasVerifiedSource) {
+                        StationMeasurementDisplayPolicy.formatObservationTime(station.lastReadingTime)?.let { observedAt ->
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = "آخر رصد: $observedAt",
+                                fontSize = 9.sp,
+                                color = Color.White.copy(alpha = 0.72f),
+                                maxLines = 1
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(2.dp))
@@ -100,18 +147,34 @@ fun SyrianStationsSection(
                         color = Color.White.copy(alpha = 0.65f)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = when {
+                            station.isDemoData -> "بيانات تجريبية غير حية"
+                            !hasVerifiedSource -> "مصدر القياسات غير موثق"
+                            !station.isOnline -> "المحطة غير متصلة"
+                            canShowLiveMeasurements -> "متصلة — قراءة حديثة موثقة"
+                            station.lastReadingEpochMillis != null -> "القراءة قديمة أو توقيتها غير صالح"
+                            else -> "وقت آخر قراءة غير متاح"
+                        },
+                        fontSize = 9.sp,
+                        color = if (station.isDemoData) Color(0xFFFACC15)
+                        else if (canShowLiveMeasurements) Color(0xFF4ADE80)
+                        else Color(0xFFFCA5A5)
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = "${station.temperatureCelsius.toInt()}°",
+                            text = if (canShowTemperature) "${station.temperatureCelsius.toInt()}°" else "—",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD54F)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = station.conditionAr,
+                            text = if (canShowTemperature) station.conditionAr else "لا توجد قراءة حرارة صالحة",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.9f),
                             modifier = Modifier.padding(bottom = 6.dp),
@@ -126,16 +189,27 @@ fun SyrianStationsSection(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "رطوبة: ${station.humidity}%",
+                            text = if (canShowHumidity) "رطوبة: ${station.humidity}%" else "رطوبة: —",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "رياح: ${station.windSpeedKmh.toInt()} كم",
+                            text = if (canShowWindSpeed) "رياح: ${station.windSpeedKmh.toInt()} كم" else "رياح: —",
                             fontSize = 10.sp,
                             color = Color.White.copy(alpha = 0.8f)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = if (canShowPressure) {
+                            "الضغط: ${"%.1f".format(java.util.Locale.US, station.pressureHpa)} hPa"
+                        } else {
+                            "الضغط: —"
+                        },
+                        fontSize = 10.sp,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
                 }
             }
         }

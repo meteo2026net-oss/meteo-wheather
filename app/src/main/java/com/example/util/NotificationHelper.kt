@@ -38,21 +38,31 @@ object NotificationHelper {
     }
 
     fun hasNotificationPermission(context: Context): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
+        val runtimePermissionGranted =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+        return runtimePermissionGranted &&
             NotificationManagerCompat.from(context).areNotificationsEnabled()
-        }
     }
 
-    fun postSevereWeatherNotification(context: Context, alert: SevereWeatherAlert) {
+    /**
+     * Returns true only when the notification API accepted the request without a
+     * permission failure and the app's notification channel is enabled.
+     */
+    fun postSevereWeatherNotification(context: Context, alert: SevereWeatherAlert): Boolean {
         createNotificationChannel(context)
 
         if (!hasNotificationPermission(context)) {
-            return
+            return false
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = manager.getNotificationChannel(CHANNEL_ID) ?: return false
+            if (channel.importance == NotificationManager.IMPORTANCE_NONE) return false
         }
 
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -86,10 +96,12 @@ object NotificationHelper {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .build()
 
-        try {
+        return try {
             NotificationManagerCompat.from(context).notify(alert.id.hashCode(), notification)
+            true
         } catch (e: SecurityException) {
-            // Permission revoked at runtime
+            // Permission may be revoked between the permission check and notify().
+            false
         }
     }
 }

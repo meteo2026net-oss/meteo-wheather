@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,6 +25,11 @@ import com.example.data.model.AlertSeverity
 import com.example.data.model.CapAlertItem
 import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.SyrianWeatherStation
+import com.example.data.model.canShowLiveMeasurements
+import com.example.data.model.canShowLiveTemperature
+import com.example.data.model.canShowLiveHumidity
+import com.example.data.model.canShowLivePressure
+import com.example.data.model.canShowLiveWindSpeed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +98,7 @@ fun AdminDashboardScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "إدارة محطات الرصد، تنبيهات كاب (CAP)، ونشرk النشرات الصوتية",
+                            text = "إعدادات محلية تجريبية — لا يوجد بث مركزي أو تحقق صلاحيات",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.7f)
                         )
@@ -108,6 +114,12 @@ fun AdminDashboardScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "تنبيه: لوحة محلية تجريبية فقط؛ لا يوجد تحقق صلاحيات أو بث مركزي، ولا تستخدم لإرسال إنذارات رسمية.",
+                fontSize = 11.sp,
+                color = Color(0xFFFACC15)
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             // Admin Tabs
@@ -150,7 +162,7 @@ fun AdminDashboardScreen(
                     ) {
                         item {
                             Text(
-                                text = "إرسال تنبيه طوارئ بروتوكول كاب (CAP Broadcast)",
+                                text = "إنشاء تنبيه تجريبي محلي بصيغة مشابهة لـ CAP",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFFD54F)
@@ -225,8 +237,11 @@ fun AdminDashboardScreen(
                             Button(
                                 onClick = {
                                     val newAlert = CapAlertItem(
-                                        identifier = "MCNC_CAP_${System.currentTimeMillis()}",
+                                        identifier = "LOCAL_TEST_${System.currentTimeMillis()}",
+                                        sender = "local-demo@device.invalid",
                                         sentTimestamp = "الآن",
+                                        status = "Test",
+                                        scope = "Private",
                                         eventAr = alertTitle,
                                         severity = alertSeverity,
                                         areaDescAr = alertArea,
@@ -244,9 +259,9 @@ fun AdminDashboardScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA580C))
                             ) {
-                                Icon(imageVector = Icons.Default.Send, contentDescription = null)
+                                Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "بث الإنذار الفوري لجميع المستخدمين", fontWeight = FontWeight.Bold)
+                                Text(text = "إضافة التنبيه التجريبي لهذا الجهاز فقط", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -254,46 +269,78 @@ fun AdminDashboardScreen(
 
                 1 -> {
                     // Stations Telemetry View
+                    val nowEpochMillis = System.currentTimeMillis()
                     LazyColumn(
                         modifier = Modifier.heightIn(max = 360.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         item {
                             Text(
-                                text = "حالة ربط محطات الأرصاد الجوية السورية",
+                                text = "لا توجد حالياً وصلة قياس فعلية؛ البيانات المعروضة تجريبية.",
+                                fontSize = 11.sp,
+                                color = Color(0xFFFACC15)
+                            )
+                        }
+                        item {
+                            Text(
+                                text = "حالة بيانات المحطات (تجريبي)",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFFD54F)
                             )
                         }
                         items(stations) { st ->
-                            Row(
+                            val canShowLiveMeasurements = st.canShowLiveMeasurements(nowEpochMillis)
+                            val canShowLiveTemperature = st.canShowLiveTemperature(nowEpochMillis)
+                            val canShowLiveHumidity = st.canShowLiveHumidity(nowEpochMillis)
+                            val canShowLivePressure = st.canShowLivePressure(nowEpochMillis)
+                            val canShowLiveWindSpeed = st.canShowLiveWindSpeed(nowEpochMillis)
+                            val stationStatus = when {
+                                st.isDemoData -> "بيانات تجريبية"
+                                !st.hasVerifiedLiveData -> "مصدر غير موثق"
+                                !st.isOnline -> "المحطة غير متصلة"
+                                canShowLiveMeasurements -> "قراءة حديثة موثقة"
+                                else -> "قراءة قديمة أو توقيتها غير صالح"
+                            }
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(Color.White.copy(alpha = 0.08f))
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .clip(CircleShape)
-                                            .background(if (st.isOnline) Color(0xFF4ADE80) else Color(0xFFEF4444))
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(text = st.nameAr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(text = "${st.governorate} | ضغط: ${st.pressureHpa} hPa", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .clip(CircleShape)
+                                                .background(if (st.isDemoData) Color(0xFFFACC15) else if (canShowLiveMeasurements) Color(0xFF4ADE80) else Color(0xFFEF4444))
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Text(text = st.nameAr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text(text = "${st.governorate} | $stationStatus", fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f))
+                                        }
                                     }
+                                    Text(
+                                        text = if (canShowLiveTemperature) "${st.temperatureCelsius.toInt()}°C" else "—",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFFFD54F)
+                                    )
                                 }
                                 Text(
-                                    text = "${st.temperatureCelsius.toInt()}°C",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFFFD54F)
+                                    text = "الرطوبة: ${if (canShowLiveHumidity) "${st.humidity}%" else "—"}   " +
+                                        "الضغط: ${if (canShowLivePressure) "${"%.1f".format(java.util.Locale.US, st.pressureHpa)} hPa" else "—"}   " +
+                                        "الرياح: ${if (canShowLiveWindSpeed) "${"%.1f".format(java.util.Locale.US, st.windSpeedKmh)} كم/س" else "—"}",
+                                    fontSize = 10.sp,
+                                    color = Color.White.copy(alpha = 0.78f)
                                 )
                             }
                         }
@@ -308,7 +355,7 @@ fun AdminDashboardScreen(
                     ) {
                         item {
                             Text(
-                                text = "تحديث ونشر النشرة الصوتية اليومية (MCNC)",
+                                text = "تعديل نص النشرة الصوتية المحلية",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFFD54F)
@@ -362,7 +409,7 @@ fun AdminDashboardScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Mic, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "نشر وتحديث النشرة الصوتية فورياً", fontWeight = FontWeight.Bold)
+                                Text(text = "حفظ النشرة على هذا الجهاز فقط", fontWeight = FontWeight.Bold)
                             }
                         }
                     }

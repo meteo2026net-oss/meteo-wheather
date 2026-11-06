@@ -5,7 +5,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
 import com.example.data.repository.WeatherRepository
+import com.example.data.remote.SupabaseStationReadingsDataSource
+import com.example.data.model.canShowLiveMeasurements
+import java.time.Instant
 import com.example.util.NotificationHelper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +34,10 @@ data class WeatherUiState(
     val metricPreferences: List<MetricPreference> = WeatherRepository.DEFAULT_METRIC_PREFERENCES,
     val areAlertsEnabled: Boolean = true,
     val isLeafletMapScreenOpen: Boolean = false,
+    val cityMapForecasts: List<CityMapForecast> = emptyList(),
+    val isLoadingCityMapForecasts: Boolean = false,
+    val cityMapForecastError: String? = null,
     val userGoogleEmail: String? = null,
-    val geminiApiKey: String = "",
     val isGoogleSignInModalOpen: Boolean = false,
     val chatMessages: List<ChatMessageItem> = emptyList(),
     val isGeneratingAiChat: Boolean = false,
@@ -40,13 +46,15 @@ data class WeatherUiState(
     val lastVoiceQuery: String = "",
     val lastAiVoiceResponse: String = "",
     val syrianStations: List<SyrianWeatherStation> = emptyList(),
-    val audioBulletin: AudioBulletinItem = AudioBulletinItem("1", "النشرة الجوية الصباحية", "اليوم", 60, "رئيس التنبؤات (MCNC)", "جاري التحميل..."),
+    val stationDataStatus: String = "لم يبدأ الاتصال بقاعدة المحطات",
+    val audioBulletin: AudioBulletinItem = AudioBulletinItem("1", "نشرة تجريبية", "وقت النشر غير محدد", 0, "صوت آلي تجريبي", "لا يوجد نص نشرة محمل."),
     val customAdminAlerts: List<SevereWeatherAlert> = emptyList()
 )
 
 class WeatherViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = WeatherRepository(application)
+    private val supabaseStationReadings = SupabaseStationReadingsDataSource()
 
     private val _uiState = MutableStateFlow(
         WeatherUiState(
@@ -61,16 +69,34 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+    private var weatherJob: Job? = null
+    private var stationReadingsJob: Job? = null
 
     init {
         NotificationHelper.createNotificationChannel(application)
         val initialCity = _uiState.value.favoriteCities.firstOrNull() ?: WeatherRepository.DEFAULT_CITIES[0]
         loadWeather(initialCity)
+        loadSyrianCityMapForecasts()
+        loadVerifiedStationReadings()
     }
 
     fun loadWeather(city: CityLocation) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, selectedCity = city) }
+        // A newer city selection supersedes the previous request; do not let a slow
+        // response overwrite the weather currently selected by the user.
+        weatherJob?.cancel()
+        weatherJob = viewModelScope.launch {
+            _uiState.update { state ->
+                val retainPreviousWeather = WeatherLoadDataPolicy.shouldRetainPreviousData(
+                    previous = state.selectedCity,
+                    requested = city
+                )
+                state.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    selectedCity = city,
+                    weatherData = state.weatherData.takeIf { retainPreviousWeather }
+                )
+            }
             val result = repository.getFullWeather(city)
             result.onSuccess { data ->
                 // Prepend any custom admin CAP alerts if present
@@ -86,6 +112,8 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
             }.onFailure { error ->
+                // A superseded request must not publish a cancellation as a user-facing failure.
+                if (error is CancellationException) throw error
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -98,6 +126,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshWeather() {
         loadWeather(_uiState.value.selectedCity)
+        loadVerifiedStationReadings()
     }
 
     fun toggleUnit() {
@@ -132,6 +161,87 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     fun openLeafletMapScreen() {
         _uiState.update { it.copy(isLeafletMapScreenOpen = true) }
+        loadSyrianCityMapForecasts()
+    }
+
+
+    /**
+     * Replaces demo station values only when a complete, fresh, verified observation exists.
+     * Partial, stale, unknown-station, or invalid records never become live UI measurements.
+     */
+    fun loadVerifiedStationReadings() {
+        // A newer refresh supersedes the previous station request; prevent stale responses
+        // from overwriting the latest connection status or station measurements.
+        stationReadingsJob?.cancel()
+        stationReadingsJob = viewModelScope.launch {
+            _uiState.update { it.copy(stationDataStatus = "جارٍ الاتصال بقاعدة بيانات المحطات…") }
+            val result = supabaseStationReadings.fetchLatestVerifiedReadings()
+            result.onSuccess { observations ->
+                val now = System.currentTimeMillis()
+                var appliedCount = 0
+                val updatedStations = _uiState.value.syrianStations.map { station ->
+                    val reading = observations[station.id] ?: return@map station
+                    val temperature = reading.temperatureCelsius ?: return@map station
+                    val humidity = reading.relativeHumidityPercent ?: return@map station
+                    val pressure = reading.pressureHpa ?: return@map station
+                    val wind = reading.windSpeedKmh ?: return@map station
+                    val epochMillis = runCatching {
+                        Instant.parse(reading.observedAt).toEpochMilli()
+                    }.getOrNull() ?: return@map station
+
+                    val candidate = station.copy(
+                        temperatureCelsius = temperature,
+                        humidity = humidity,
+                        pressureHpa = pressure,
+                        windSpeedKmh = wind,
+                        conditionAr = "قراءة موثقة",
+                        isOnline = true,
+                        lastReadingTime = reading.observedAt,
+                        isDemoData = false,
+                        lastReadingEpochMillis = epochMillis,
+                        hasVerifiedLiveData = true,
+                        sourceName = reading.sourceName,
+                        sourceReference = reading.sourceReference
+                    )
+                    if (!candidate.canShowLiveMeasurements(now)) return@map station
+                    appliedCount++
+                    candidate
+                }
+                _uiState.update {
+                    it.copy(
+                        syrianStations = updatedStations,
+                        stationDataStatus = if (appliedCount > 0) {
+                            "Supabase متصل — تم تحميل $appliedCount قراءة حديثة موثقة"
+                        } else {
+                            "اتصل التطبيق بـ Supabase، لكن لا توجد قراءات كاملة وحديثة وموثقة للمحطات المعروضة"
+                        }
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        stationDataStatus = "تعذر تحميل قراءات Supabase؛ تُعرض البيانات التجريبية دون اعتبارها حية"
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadSyrianCityMapForecasts(forceRefresh: Boolean = false) {
+        if (_uiState.value.isLoadingCityMapForecasts) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingCityMapForecasts = true, cityMapForecastError = null) }
+            try {
+                val forecasts = repository.getSyrianCityMapForecasts(forceRefresh)
+                _uiState.update { it.copy(cityMapForecasts = forecasts, isLoadingCityMapForecasts = false) }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _uiState.update {
+                    it.copy(isLoadingCityMapForecasts = false, cityMapForecastError = error.localizedMessage ?: "تعذر تحميل توقعات المدن")
+                }
+            }
+        }
     }
 
     fun closeLeafletMapScreen() {
@@ -159,8 +269,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             severity = capAlert.severity,
             descriptionAr = capAlert.descriptionAr,
             safetyInstructionsAr = capAlert.instructionAr,
-            source = "المركز الوطني للأرصاد والمناخ (MCNC Admin)",
-            validUntil = capAlert.expires
+            source = "تنبيه تجريبي محلي — غير رسمي",
+            validUntil = capAlert.expires,
+            isOfficial = false,
+            isLocalDemo = true
         )
 
         // Post notification
@@ -206,23 +318,40 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         val updatedFavorites = repository.getSavedFavoriteCities()
         _uiState.update { state ->
             val updatedSearchResults = state.searchResults.map {
-                if (it.name.equals(city.name, ignoreCase = true)) it.copy(isFavorite = isFav) else it
+                if (CityFavoriteMatching.matches(
+                        savedName = it.name,
+                        savedCountry = it.country,
+                        queryName = city.name,
+                        queryCountry = city.country
+                    )
+                ) it.copy(isFavorite = isFav) else it
             }
             state.copy(
                 favoriteCities = updatedFavorites,
                 searchResults = updatedSearchResults,
-                selectedCity = if (state.selectedCity.name.equals(city.name, ignoreCase = true)) {
+                selectedCity = if (CityFavoriteMatching.matches(
+                        savedName = state.selectedCity.name,
+                        savedCountry = state.selectedCity.country,
+                        queryName = city.name,
+                        queryCountry = city.country
+                    )
+                ) {
                     state.selectedCity.copy(isFavorite = isFav)
                 } else state.selectedCity
             )
         }
     }
 
-    fun onGpsLocationReceived(latitude: Double, longitude: Double, cityName: String = "موقعي الحالي") {
+    fun onGpsLocationReceived(
+        latitude: Double,
+        longitude: Double,
+        cityName: String = "موقعي الحالي",
+        countryName: String = "غير محدد"
+    ) {
         val location = CityLocation(
             name = cityName,
             nameEn = "Current Location",
-            country = "سوريا",
+            country = countryName.ifBlank { "غير محدد" },
             latitude = latitude,
             longitude = longitude,
             isFavorite = false
@@ -238,59 +367,94 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         _uiState.update { it.copy(isGoogleSignInModalOpen = false) }
     }
 
-    fun setGeminiApiKey(key: String) {
-        _uiState.update { it.copy(geminiApiKey = key) }
-    }
-
-    fun simulateGoogleSignIn() {
-        val simulatedEmail = "meteo.student@gmail.com"
-        _uiState.update { it.copy(userGoogleEmail = simulatedEmail) }
-    }
-
     fun sendGeminiChatMessage(userText: String) {
+        val cleanText = userText.trim()
+        if (cleanText.isEmpty()) return
+
         val userMsg = ChatMessageItem(
             id = System.currentTimeMillis().toString(),
             sender = "user",
-            text = userText,
+            text = cleanText,
             timestamp = "الآن"
         )
-
-        val updatedList = _uiState.value.chatMessages + userMsg
-        _uiState.update { it.copy(chatMessages = updatedList, isGeneratingAiChat = true) }
+        _uiState.update { it.copy(chatMessages = it.chatMessages + userMsg, isGeneratingAiChat = true) }
 
         viewModelScope.launch {
-            delay(1200) // AI thinking time
-            val weather = _uiState.value.selectedCity
-            val temp = _uiState.value.weatherData?.current?.temperatureCelsius?.toInt() ?: 20
-            val condition = _uiState.value.weatherData?.current?.conditionNameAr ?: "مشمس"
+            delay(250)
+            val state = _uiState.value
+            val weather = state.weatherData
+            val current = weather?.current
+            val airQuality = weather?.airQuality
+            val pollen = weather?.pollen
+            val cityName = state.selectedCity.name
+            val rainProbability = weather?.hourly
+                ?.filter { it.precipitationProbabilityAvailable }
+                ?.maxOfOrNull { it.precipitationProb }
 
-            val aiResponseText = when {
-                userText.contains("ملابس") -> "بناءً على طقس مدينة ${weather.name} اليوم (درجة الحرارة $temp° مئوية والحالة $condition)، يُنصح بارتداء ملابس معتدلة نهاراً وسترة خفيفة في الساعات الليلة."
-                userText.contains("مطر") || userText.contains("أمطار") -> "تشير بيانات Open-Meteo في ${weather.name} إلى فرص هطول خفيفة في المناطق الساحلية (اللاذقية وطرطوس) وطقس مستقر في دمشق وبقية المحافظات."
-                userText.contains("رياح") || userText.contains("رطوبة") -> "تبلغ سرعة الرياح حالياً حوالي ${_uiState.value.weatherData?.current?.windSpeedKmh?.toInt() ?: 15} كم/ساعة والرطوبة ${_uiState.value.weatherData?.current?.humidity ?: 45}%."
-                userText.contains("زراعة") || userText.contains("أيام") -> "الطقس مناسب للعمليات الزراعية في المحافظات الوسطى والجنوبية خلال الأيام الـ 3 القادمة مع توصية بالري الفجري."
-                else -> "بناءً على بيانات Open-Meteo لمدينة ${weather.name}، درجة الحرارة الحالية هي $temp° مئوية والطقس $condition. هل لديك استفسار آخر عن المناخ والرياح؟"
+            val response = if (current == null) {
+                "لا تتوفر بيانات طقس محمّلة حالياً لمدينة $cityName. حدّث بيانات الطقس أولاً ثم أعد السؤال."
+            } else {
+                when {
+                    cleanText.contains("مطر") || cleanText.contains("أمطار") || cleanText.contains("هطول") ->
+                        if (rainProbability != null) {
+                            "في $cityName، أعلى احتمال هطول ضمن الساعات المتاحة في التوقعات هو $rainProbability%. هذه قراءة توقعية وليست رصداً مطرياً."
+                        } else {
+                            "بيانات احتمال الهطول للساعات القادمة غير متاحة حالياً لمدينة $cityName."
+                        }
+
+                    cleanText.contains("رياح") || cleanText.contains("رطوبة") ->
+                        "في $cityName، سرعة الرياح الحالية ${current.windSpeedKmh.toInt()} كم/س، والرطوبة النسبية ${current.humidity}%. القيم من بيانات الطقس الحالية المحمّلة."
+
+                    cleanText.contains("جودة الهواء") || cleanText.contains("تلوث") || cleanText.contains("هواء") ->
+                        if (airQuality?.isAqiAvailable == true) {
+                            "مؤشر جودة الهواء الأوروبي في $cityName هو ${airQuality.aqiValue} (${airQuality.categoryAr})."
+                        } else {
+                            "لا تتوفر قراءة موثوقة لمؤشر جودة الهواء حالياً في $cityName."
+                        }
+
+                    cleanText.contains("حبوب") || cleanText.contains("حساسية") ->
+                        if (pollen?.isAvailable == true) {
+                            pollen.adviceAr
+                        } else {
+                            "بيانات حبوب اللقاح غير متاحة حالياً لهذا الموقع أو الوقت."
+                        }
+
+                    cleanText.contains("زراعة") || cleanText.contains("ري") ->
+                        "البيانات الحالية لا تتضمن رطوبة التربة أو التبخر-نتح أو احتياجات المحاصيل؛ لذلك لا يمكن إصدار توصية ري موثوقة اعتماداً على الطقس وحده."
+
+                    cleanText.contains("ملابس") || cleanText.contains("ماذا ألبس") ->
+                        when {
+                            current.temperatureCelsius <= 10.0 -> "الحرارة الحالية في $cityName نحو ${current.temperatureCelsius.toInt()}°م؛ قد تكون طبقات الملابس الدافئة مناسبة."
+                            current.temperatureCelsius >= 30.0 -> "الحرارة الحالية في $cityName نحو ${current.temperatureCelsius.toInt()}°م؛ اختر ملابس مريحة وخفيفة، وقلّل التعرض للشمس وقت الذروة."
+                            else -> "الحرارة الحالية في $cityName نحو ${current.temperatureCelsius.toInt()}°م والجو ${current.conditionNameAr}؛ اختر ملابس مناسبة للطقس المتغير خلال اليوم."
+                        }
+
+                    else ->
+                        "في $cityName، درجة الحرارة الحالية ${current.temperatureCelsius.toInt()}°م، والحالة ${current.conditionNameAr}، والرياح ${current.windSpeedKmh.toInt()} كم/س. هذا رد محلي تجريبي مبني على البيانات المتاحة، وليس إجابة من Gemini."
+                }
             }
 
-            val aiMsg = ChatMessageItem(
+            val assistantMsg = ChatMessageItem(
                 id = (System.currentTimeMillis() + 1).toString(),
-                sender = "gemini",
-                text = aiResponseText,
+                sender = "demo",
+                text = response,
                 timestamp = "الآن"
             )
-
-            _uiState.update { it.copy(chatMessages = it.chatMessages + aiMsg, isGeneratingAiChat = false) }
+            _uiState.update {
+                it.copy(
+                    chatMessages = it.chatMessages + assistantMsg,
+                    isGeneratingAiChat = false,
+                    lastAiVoiceResponse = response
+                )
+            }
         }
     }
 
     fun handleVoiceInput(speechText: String) {
-        _uiState.update { it.copy(lastVoiceQuery = speechText, isVoiceListening = false, isVoiceSpeaking = true) }
-        sendGeminiChatMessage(speechText)
-        viewModelScope.launch {
-            delay(1400)
-            val responseText = _uiState.value.chatMessages.lastOrNull { it.sender == "gemini" }?.text ?: "الطقس في سوريا معتدل ومناسب لمختلف الأنشطة اليوم."
-            _uiState.update { it.copy(lastAiVoiceResponse = responseText) }
+        _uiState.update {
+            it.copy(lastVoiceQuery = speechText, isVoiceListening = false, isVoiceSpeaking = false)
         }
+        sendGeminiChatMessage(speechText)
     }
 
     fun setVoiceListening(listening: Boolean) {

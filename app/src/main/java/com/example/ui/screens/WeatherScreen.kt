@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,11 +39,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.model.DailyForecastSelection
+import com.example.data.model.GpsLocationFreshnessPolicy
+import com.example.data.model.NotificationPermissionDecision
+import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.WeatherConditionType
 import com.example.ui.components.*
 import com.example.ui.viewmodel.WeatherViewModel
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import java.util.Locale
 
 @SuppressLint("MissingPermission")
@@ -52,7 +62,9 @@ fun WeatherScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val scrollState = rememberScrollState()
+    var initialGpsFetchAttempted by remember { mutableStateOf(false) }
 
     // Location Permission launcher
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -61,15 +73,30 @@ fun WeatherScreen(
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
+            initialGpsFetchAttempted = true
             fetchGpsLocation(context, viewModel)
         }
     }
+
+    // Keep the permission request's intent separate: a test notification must
+    // never change the user's persistent severe-alert preference.
+    var pendingTestAlert by remember { mutableStateOf<SevereWeatherAlert?>(null) }
+    var pendingEnableAlerts by remember { mutableStateOf(false) }
 
     // Notification Permission launcher (Android 13+)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        viewModel.toggleAlertsNotification(isGranted)
+        val resolution = NotificationPermissionDecision.resolve(
+            permissionGranted = isGranted,
+            pendingTestAlert = pendingTestAlert,
+            pendingEnableAlerts = pendingEnableAlerts
+        )
+        pendingTestAlert = null
+        pendingEnableAlerts = false
+
+        resolution.testAlertToSend?.let(viewModel::testPushNotification)
+        resolution.alertsEnabled?.let(viewModel::toggleAlertsNotification)
     }
 
     val requestGpsAction = {
@@ -90,6 +117,29 @@ fun WeatherScreen(
                 )
             )
         }
+    }
+
+    // Resolve the device location once permission is available. This covers both
+    // first launch (after the Activity permission dialog) and later launches
+    // where Android has already retained the user's permission choice.
+    DisposableEffect(lifecycleOwner, context, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && !initialGpsFetchAttempted) {
+                val hasFine = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                val hasCoarse = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (hasFine || hasCoarse) {
+                    initialGpsFetchAttempted = true
+                    fetchGpsLocation(context, viewModel)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val weather = uiState.weatherData
@@ -147,7 +197,7 @@ fun WeatherScreen(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "جاري جلب تنبؤات المركز الوطني (MCNC)...",
+                            text = "جاري جلب التوقعات الجوية من Open-Meteo...",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White
@@ -208,6 +258,7 @@ fun WeatherScreen(
                         // Syrian Meteorological Stations Live Cards
                         SyrianStationsSection(
                             stations = uiState.syrianStations,
+                            dataStatusMessage = uiState.stationDataStatus,
                             onStationSelected = { st ->
                                 viewModel.loadWeather(
                                     com.example.data.model.CityLocation(
@@ -228,6 +279,7 @@ fun WeatherScreen(
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                                         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                                     ) {
+                                        pendingTestAlert = alert
                                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     } else {
                                         viewModel.testPushNotification(alert)
@@ -263,6 +315,11 @@ fun WeatherScreen(
                         // Interactive Weather Maps (Precipitation, Temperature, Wind, Clouds)
                         InteractiveWeatherMap(
                             currentCity = weather.location,
+                            cityForecasts = uiState.cityMapForecasts,
+                            isFahrenheit = uiState.isFahrenheit,
+                            isLoadingCityForecasts = uiState.isLoadingCityMapForecasts,
+                            cityForecastError = uiState.cityMapForecastError,
+                            onRefreshCityForecasts = { viewModel.loadSyrianCityMapForecasts(forceRefresh = true) },
                             onCitySelected = { viewModel.loadWeather(it) }
                         )
 
@@ -283,9 +340,7 @@ fun WeatherScreen(
                             isSpeaking = uiState.isVoiceSpeaking,
                             lastVoiceQuery = uiState.lastVoiceQuery,
                             lastAiVoiceResponse = uiState.lastAiVoiceResponse,
-                            onStartListeningClick = {
-                                viewModel.setVoiceListening(!uiState.isVoiceListening)
-                            },
+                            onStartListeningClick = { },
                             onStopVoiceClick = {
                                 viewModel.stopVoiceSpeaking()
                             }
@@ -304,7 +359,7 @@ fun WeatherScreen(
                             }
                         )
 
-                        // Simulated Precipitation Radar
+                        // Third-party RainViewer radar layer
                         InteractiveRadarView(cityName = weather.location.name)
                     }
                 }
@@ -312,12 +367,7 @@ fun WeatherScreen(
                 // Google Sign In & Gemini API Link Modal Sheet
                 GoogleSignInModal(
                     isOpen = uiState.isGoogleSignInModalOpen,
-                    onDismiss = { viewModel.closeGoogleSignInModal() },
-                    userEmail = uiState.userGoogleEmail,
-                    apiKeyInput = uiState.geminiApiKey,
-                    onApiKeyChange = { viewModel.setGeminiApiKey(it) },
-                    onGoogleSignInClick = { viewModel.simulateGoogleSignIn() },
-                    onSaveApiKeyClick = { viewModel.closeGoogleSignInModal() }
+                    onDismiss = { viewModel.closeGoogleSignInModal() }
                 )
 
                 // City Search Bottom Sheet Modal
@@ -344,6 +394,7 @@ fun WeatherScreen(
                         if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                         ) {
+                            pendingEnableAlerts = true
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
                             viewModel.toggleAlertsNotification(enabled)
@@ -369,8 +420,13 @@ fun WeatherScreen(
                 if (uiState.isLeafletMapScreenOpen) {
                     LeafletWeatherMapScreen(
                         currentCity = uiState.selectedCity,
+                        cityForecasts = uiState.cityMapForecasts,
+                        isLoadingCityForecasts = uiState.isLoadingCityMapForecasts,
+                        cityForecastError = uiState.cityMapForecastError,
+                        onRefreshCityForecasts = { viewModel.loadSyrianCityMapForecasts(forceRefresh = true) },
                         onCitySelected = { viewModel.loadWeather(it) },
-                        onBackClick = { viewModel.closeLeafletMapScreen() }
+                        onBackClick = { viewModel.closeLeafletMapScreen() },
+                        isFahrenheit = uiState.isFahrenheit
                     )
                 }
             }
@@ -406,16 +462,20 @@ fun WeatherTopBar(
         label = "spin"
     )
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 18.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // City Name & Search Trigger
+        // City header gets its own line so actions never compete with the city name.
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // City Name & Search Trigger
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
                 .clickable { onSearchClick() }
@@ -452,9 +512,13 @@ fun WeatherTopBar(
                 )
             }
         }
+        }
 
-        // Action Buttons Row
+        // Scrollable action rail keeps every control reachable on narrow phones.
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -471,7 +535,7 @@ fun WeatherTopBar(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = if (userEmail != null) Icons.Default.AccountCircle else Icons.Default.Login,
+                        imageVector = if (userEmail != null) Icons.Default.AccountCircle else Icons.AutoMirrored.Filled.Login,
                         contentDescription = "حساب Google",
                         tint = Color.White,
                         modifier = Modifier.size(17.dp)
@@ -698,7 +762,7 @@ fun MainWeatherHero(
     isFahrenheit: Boolean
 ) {
     val current = weather.current
-    val today = weather.daily.firstOrNull()
+    val today = DailyForecastSelection.forCurrentDate(weather.daily, weather.currentDateRaw)
 
     val currentTemp = if (isFahrenheit) {
         (current.temperatureCelsius * 9 / 5 + 32).toInt()
@@ -710,35 +774,35 @@ fun MainWeatherHero(
     } else {
         current.feelsLikeCelsius.toInt()
     }
-    val maxTemp = if (isFahrenheit) {
-        ((today?.maxTempCelsius ?: current.temperatureCelsius) * 9 / 5 + 32).toInt()
-    } else {
-        (today?.maxTempCelsius ?: current.temperatureCelsius).toInt()
+    // Do not present the current temperature as a forecast high/low when
+    // the provider did not return a valid daily forecast for today.
+    val maxTemp = today?.maxTempCelsius?.let { value ->
+        if (isFahrenheit) (value * 9 / 5 + 32).toInt() else value.toInt()
     }
-    val minTemp = if (isFahrenheit) {
-        ((today?.minTempCelsius ?: current.temperatureCelsius) * 9 / 5 + 32).toInt()
-    } else {
-        (today?.minTempCelsius ?: current.temperatureCelsius).toInt()
+    val minTemp = today?.minTempCelsius?.let { value ->
+        if (isFahrenheit) (value * 9 / 5 + 32).toInt() else value.toInt()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val compactLayout = maxWidth < 360.dp
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.verticalGradient(
                     listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.12f))
                 )
             )
             .border(1.5.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(28.dp))
-            .padding(vertical = 22.dp, horizontal = 18.dp),
+                .padding(vertical = 22.dp, horizontal = if (compactLayout) 12.dp else 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Interactive Animated Icon (Tap it to trigger spring bounce!)
         AnimatedWeatherIcon(
             condition = current.conditionType,
             isDay = current.isDay,
-            size = 125.dp,
+            size = if (compactLayout) 104.dp else 125.dp,
             interactiveTapEnabled = true,
             modifier = Modifier.testTag("hero_weather_icon")
         )
@@ -749,7 +813,7 @@ fun MainWeatherHero(
         Row(verticalAlignment = Alignment.Top) {
             Text(
                 text = "$currentTemp",
-                fontSize = 76.sp,
+                fontSize = if (compactLayout) 64.sp else 76.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -795,7 +859,7 @@ fun MainWeatherHero(
                     modifier = Modifier.size(15.dp)
                 )
                 Text(
-                    text = "$maxTemp°",
+                    text = maxTemp?.let { "$it°" } ?: "—",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -808,21 +872,21 @@ fun MainWeatherHero(
                     modifier = Modifier.size(15.dp)
                 )
                 Text(
-                    text = "$minTemp°",
+                    text = minTemp?.let { "$it°" } ?: "—",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(if (compactLayout) 8.dp else 16.dp))
             Box(
                 modifier = Modifier
                     .width(1.dp)
                     .height(14.dp)
                     .background(Color.White.copy(alpha = 0.35f))
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(if (compactLayout) 8.dp else 16.dp))
 
             // Feels Like
             Text(
@@ -926,33 +990,69 @@ fun SmartAdviceCard(
 private fun fetchGpsLocation(context: Context, viewModel: WeatherViewModel) {
     try {
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
-        fusedClient.lastLocation.addOnSuccessListener { loc ->
-            if (loc != null) {
-                var detectedName = "موقعي الحالي"
-                try {
-                    val geocoder = Geocoder(context, Locale("ar"))
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        geocoder.getFromLocation(loc.latitude, loc.longitude, 1) { list ->
-                            list.firstOrNull()?.let { addr ->
-                                val name = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
-                                viewModel.onGpsLocationReceived(loc.latitude, loc.longitude, name)
-                            }
-                        }
-                        return@addOnSuccessListener
-                    } else {
-                        @Suppress("DEPRECATION")
-                        val list = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
-                        list?.firstOrNull()?.let { addr ->
-                            detectedName = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
-                        }
+
+        fun deliverLocation(loc: android.location.Location) {
+            var detectedName = "موقعي الحالي"
+            var detectedCountry = "غير محدد"
+            try {
+                val geocoder = Geocoder(context, Locale.forLanguageTag("ar"))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    geocoder.getFromLocation(loc.latitude, loc.longitude, 1) { list ->
+                        val address = list.firstOrNull()
+                        val name = address?.let {
+                            it.locality ?: it.subAdminArea ?: it.adminArea
+                        }?.takeIf { it.isNotBlank() } ?: "موقعي الحالي"
+                        val country = address?.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
+                        // Always deliver the coordinates, even when reverse geocoding returns no address.
+                        viewModel.onGpsLocationReceived(
+                            loc.latitude, loc.longitude, name, country
+                        )
                     }
-                } catch (e: Exception) {
-                    // Ignore geocoder failure, use fallback name
+                    return
+                } else {
+                    @Suppress("DEPRECATION")
+                    val list = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                    list?.firstOrNull()?.let { addr ->
+                        detectedName = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "موقعي الحالي"
+                        detectedCountry = addr.countryName?.takeIf { it.isNotBlank() } ?: "غير محدد"
+                    }
                 }
-                viewModel.onGpsLocationReceived(loc.latitude, loc.longitude, detectedName)
+            } catch (e: Exception) {
+                // Ignore geocoder failure, use an explicit unknown-country fallback.
+            }
+            viewModel.onGpsLocationReceived(
+                loc.latitude, loc.longitude, detectedName, detectedCountry
+            )
+        }
+
+        fun requestCurrentLocation() {
+            fusedClient.getCurrentLocation(
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                null
+            ).addOnSuccessListener { currentLocation ->
+                if (currentLocation != null) deliverLocation(currentLocation)
             }
         }
+
+        fusedClient.lastLocation
+            .addOnSuccessListener { lastLocation ->
+                if (
+                    lastLocation != null &&
+                    GpsLocationFreshnessPolicy.isFresh(
+                        locationTimeMillis = lastLocation.time,
+                        nowMillis = System.currentTimeMillis()
+                    )
+                ) {
+                    deliverLocation(lastLocation)
+                } else {
+                    // Never silently use an old cached position for current weather.
+                    requestCurrentLocation()
+                }
+            }
+            .addOnFailureListener {
+                requestCurrentLocation()
+            }
     } catch (e: Exception) {
-        // Fallback
+        // Location services may be unavailable; keep the current selected city unchanged.
     }
 }

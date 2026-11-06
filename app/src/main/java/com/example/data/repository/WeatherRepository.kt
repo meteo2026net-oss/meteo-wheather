@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.example.data.api.NetworkClient
 import com.example.data.model.*
 import com.example.util.NotificationHelper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -58,58 +59,108 @@ class WeatherRepository(private val context: Context) {
                     latitude = location.latitude,
                     longitude = location.longitude
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
 
-            val currentDto = forecastDto.current ?: CurrentWeatherDto()
-            val conditionType = mapWeatherCodeToType(currentDto.weatherCode)
-            val conditionNameAr = mapWeatherCodeToAr(currentDto.weatherCode)
-            val isDay = currentDto.isDay == 1
+            val currentDto = forecastDto.current ?: throw IllegalStateException("بيانات الطقس الحالية غير متاحة من مزود الخدمة")
 
-            val visMeters = forecastDto.hourly?.visibility?.firstOrNull() ?: 10000.0
-            val visibilityKm = (visMeters / 1000.0).coerceIn(0.5, 30.0)
+            // Missing core measurements must not silently become plausible defaults (0 °C, 0%,
+            // calm wind, or standard pressure). Reject an incomplete current observation clearly.
+            val currentTime = currentDto.time.orEmpty()
+            val currentDateRaw = ForecastValueValidation.validIsoDate(currentTime.take(10))
+            val currentTemperature = ForecastValueValidation.temperatureCelsius(currentDto.temperature)
+                ?: throw IllegalStateException("درجة الحرارة الحالية غير متاحة أو غير صالحة")
+            val currentHumidity = currentDto.relativeHumidity?.takeIf { it in 0..100 }
+                ?: throw IllegalStateException("الرطوبة الحالية غير متاحة أو غير صالحة")
+            val currentApparentTemperature = ForecastValueValidation.temperatureCelsius(currentDto.apparentTemperature)
+                ?: throw IllegalStateException("درجة الحرارة المحسوسة غير متاحة أو غير صالحة")
+            val currentIsDay = currentDto.isDay?.takeIf { it == 0 || it == 1 }
+                ?: throw IllegalStateException("حالة النهار الحالية غير متاحة أو غير صالحة")
+            val currentPrecipitation = currentDto.precipitation?.takeIf { it.isFinite() && it >= 0.0 }
+                ?: throw IllegalStateException("الهطول الحالي غير متاح أو غير صالح")
+            val currentWeatherCode = ForecastValueValidation.weatherCode(currentDto.weatherCode)
+                ?: throw IllegalStateException("رمز حالة الطقس الحالية غير متاح أو غير صالح")
+            val currentPressure = ForecastValueValidation.pressureHpa(currentDto.surfacePressure)
+                ?: throw IllegalStateException("الضغط السطحي الحالي غير متاح أو غير صالح")
+            val currentWindSpeed = ForecastValueValidation.windSpeedKmh(currentDto.windSpeed)
+                ?: throw IllegalStateException("سرعة الرياح الحالية غير متاحة أو غير صالحة")
+            val currentWindDirection = ForecastValueValidation.windDirectionDegrees(currentDto.windDirection)
+                ?: throw IllegalStateException("اتجاه الرياح الحالي غير متاح أو غير صالح")
+
+            val currentCloudCover = ForecastValueValidation.cloudCoverPercent(currentDto.cloudCover)
+
+            val conditionType = mapWeatherCodeToType(currentWeatherCode)
+            val conditionNameAr = mapWeatherCodeToAr(currentWeatherCode)
+            val isDay = currentIsDay == 1
+
+            val hourlyTimes = forecastDto.hourly?.time ?: emptyList()
+            val fallbackHourPrefix = SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
+            val startIndex = ForecastValueValidation.currentHourIndex(
+                hourlyTimes = hourlyTimes,
+                currentTime = currentTime,
+                fallbackHourPrefix = fallbackHourPrefix
+            )
+            // Visibility is an hourly value too: use the same current-hour slot as the
+            // hourly forecast instead of accidentally displaying the day's first slot.
+            val visMeters = ForecastValueValidation.visibilityMeters(
+                forecastDto.hourly?.visibility?.getOrNull(startIndex)
+            )
+            val visibilityAvailable = visMeters != null
+            val visibilityKm = visMeters?.let { (it / 1000.0).coerceIn(0.0, 30.0) } ?: 0.0
 
             val currentWeather = CurrentWeather(
-                temperatureCelsius = currentDto.temperature,
-                feelsLikeCelsius = currentDto.apparentTemperature,
-                humidity = currentDto.relativeHumidity,
-                windSpeedKmh = currentDto.windSpeed,
-                windDirectionDegrees = currentDto.windDirection,
-                pressureHpa = currentDto.surfacePressure,
-                uvIndex = currentDto.uvIndex,
-                weatherCode = currentDto.weatherCode,
+                temperatureCelsius = currentTemperature,
+                feelsLikeCelsius = currentApparentTemperature,
+                humidity = currentHumidity,
+                windSpeedKmh = currentWindSpeed,
+                windDirectionDegrees = currentWindDirection,
+                pressureHpa = currentPressure,
+                uvIndex = ForecastValueValidation.uvIndex(currentDto.uvIndex) ?: 0.0,
+                weatherCode = currentWeatherCode,
                 conditionType = conditionType,
                 conditionNameAr = conditionNameAr,
-                conditionNameEn = mapWeatherCodeToEn(currentDto.weatherCode),
+                conditionNameEn = mapWeatherCodeToEn(currentWeatherCode),
                 isDay = isDay,
-                precipitationMm = currentDto.precipitation,
-                visibilityKm = visibilityKm
+                precipitationMm = currentPrecipitation,
+                visibilityKm = visibilityKm,
+                visibilityAvailable = visibilityAvailable,
+                uvIndexAvailable = ForecastValueValidation.uvIndex(currentDto.uvIndex) != null,
+                cloudCoverPercent = currentCloudCover ?: 0,
+                cloudCoverAvailable = currentCloudCover != null
             )
 
             // Parse hourly forecasts (next 24 hours from current time)
             val hourlyList = mutableListOf<HourlyForecast>()
-            val hourlyTimes = forecastDto.hourly?.time ?: emptyList()
             val hourlyTemps = forecastDto.hourly?.temperature ?: emptyList()
             val hourlyCodes = forecastDto.hourly?.weatherCode ?: emptyList()
             val hourlyPrecip = forecastDto.hourly?.precipitationProbability ?: emptyList()
+            val hourlyPrecipitation = forecastDto.hourly?.precipitation ?: emptyList()
             val hourlyHum = forecastDto.hourly?.relativeHumidity ?: emptyList()
             val hourlyWind = forecastDto.hourly?.windSpeed ?: emptyList()
 
-            val nowIsoPrefix = SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
-            var startIndex = hourlyTimes.indexOfFirst { it.startsWith(nowIsoPrefix) }
-            if (startIndex < 0) startIndex = 0
-
-            val endIndex = (startIndex + 24).coerceAtMost(hourlyTimes.size)
-            for (i in startIndex until endIndex) {
+            val validHourlyIndices = HourlyForecastSelection.validIndices(
+                times = hourlyTimes,
+                weatherCodes = hourlyCodes,
+                startIndex = startIndex
+            )
+            for (i in validHourlyIndices) {
                 val rawTime = hourlyTimes[i]
+                val hourOfDay = ForecastValueValidation.hourOfDay(rawTime) ?: continue
                 val hourLabel = formatHourLabel(rawTime, i == startIndex)
-                val code = hourlyCodes.getOrElse(i) { currentDto.weatherCode }
-                val temp = hourlyTemps.getOrElse(i) { currentDto.temperature }
-                val precip = hourlyPrecip.getOrElse(i) { 0 }
-                val hum = hourlyHum.getOrElse(i) { currentDto.relativeHumidity }
-                val wind = hourlyWind.getOrElse(i) { currentDto.windSpeed }
-                val hourOfDay = try { rawTime.substring(11, 13).toInt() } catch (e: Exception) { 12 }
+                val code = hourlyCodes.getOrNull(i) ?: continue
+                // Treat non-finite provider measurements as missing, not as displayable readings.
+                val tempValue = ForecastValueValidation.temperatureCelsius(hourlyTemps.getOrNull(i))
+                val precipValue = ForecastValueValidation.probabilityPercent(hourlyPrecip.getOrNull(i))
+                val humidityValue = ForecastValueValidation.humidityPercent(hourlyHum.getOrNull(i))
+                val windValue = ForecastValueValidation.windSpeedKmh(hourlyWind.getOrNull(i))
+                val precipitationAmount = ForecastValueValidation.nonNegativeFinite(hourlyPrecipitation.getOrNull(i))
+                val temp = tempValue ?: currentTemperature
+                val precip = precipValue ?: 0
+                val hum = humidityValue ?: currentHumidity
+                val wind = windValue ?: currentWindSpeed
                 val hourIsDay = hourOfDay in 6..18
 
                 hourlyList.add(
@@ -122,29 +173,49 @@ class WeatherRepository(private val context: Context) {
                         precipitationProb = precip,
                         humidity = hum,
                         windSpeedKmh = wind,
-                        isDay = hourIsDay
+                        isDay = hourIsDay,
+                        temperatureAvailable = tempValue != null,
+                        precipitationProbabilityAvailable = precipValue != null,
+                        humidityAvailable = humidityValue != null,
+                        windSpeedAvailable = windValue != null,
+                        precipitationMm = precipitationAmount ?: 0.0,
+                        precipitationAvailable = precipitationAmount != null
                     )
                 )
             }
 
-            // Parse daily forecasts (next 7 days)
+            // Parse the full 16-day forecast window supported by the free Open-Meteo API.
             val dailyList = mutableListOf<DailyForecast>()
             val dailyTimes = forecastDto.daily?.time ?: emptyList()
             val dailyCodes = forecastDto.daily?.weatherCode ?: emptyList()
             val dailyMax = forecastDto.daily?.temperatureMax ?: emptyList()
             val dailyMin = forecastDto.daily?.temperatureMin ?: emptyList()
             val dailyPrecip = forecastDto.daily?.precipitationProbabilityMax ?: emptyList()
+            val dailyPrecipitationSum = forecastDto.daily?.precipitationSum ?: emptyList()
             val dailyUv = forecastDto.daily?.uvIndexMax ?: emptyList()
             val dailySunrise = forecastDto.daily?.sunrise ?: emptyList()
             val dailySunset = forecastDto.daily?.sunset ?: emptyList()
 
-            for (i in dailyTimes.indices) {
-                if (i >= 7) break
+            val validDailyIndices = DailyForecastSelection.validIndices(
+                dates = dailyTimes,
+                weatherCodes = dailyCodes,
+                maxTemperatures = dailyMax,
+                minTemperatures = dailyMin,
+                limit = 16
+            )
+            for (i in validDailyIndices) {
                 val dateRaw = dailyTimes[i]
-                val code = dailyCodes.getOrElse(i) { 0 }
-                val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, i == 0)
-                val sunriseFormatted = formatSunTime(dailySunrise.getOrNull(i))
-                val sunsetFormatted = formatSunTime(dailySunset.getOrNull(i))
+                val code = dailyCodes.getOrNull(i) ?: continue
+                val (dayAr, dayEn, formattedDate) = formatDayLabels(dateRaw, dateRaw == currentDateRaw)
+                val sunriseFormatted = ForecastValueValidation.formatSunTime(dailySunrise.getOrNull(i)) ?: "--:--"
+                val sunsetFormatted = ForecastValueValidation.formatSunTime(dailySunset.getOrNull(i)) ?: "--:--"
+                // Reject NaN and infinite provider values just like current UV readings.
+                val dailyUvValue = ForecastValueValidation.uvIndex(dailyUv.getOrNull(i))
+                val dailyTemperatureRange = ForecastValueValidation.temperatureRange(
+                    dailyMax.getOrNull(i), dailyMin.getOrNull(i)
+                ) ?: continue
+                val dailyPrecipValue = ForecastValueValidation.probabilityPercent(dailyPrecip.getOrNull(i))
+                val dailyPrecipitationSumValue = ForecastValueValidation.nonNegativeFinite(dailyPrecipitationSum.getOrNull(i))
 
                 dailyList.add(
                     DailyForecast(
@@ -155,58 +226,109 @@ class WeatherRepository(private val context: Context) {
                         conditionType = mapWeatherCodeToType(code),
                         weatherCode = code,
                         conditionNameAr = mapWeatherCodeToAr(code),
-                        maxTempCelsius = dailyMax.getOrElse(i) { 25.0 },
-                        minTempCelsius = dailyMin.getOrElse(i) { 18.0 },
-                        precipitationProb = dailyPrecip.getOrElse(i) { 0 },
-                        uvIndexMax = dailyUv.getOrElse(i) { 5.0 },
+                        maxTempCelsius = dailyTemperatureRange.first,
+                        minTempCelsius = dailyTemperatureRange.second,
+                        precipitationProb = dailyPrecipValue ?: 0,
+                        uvIndexMax = dailyUvValue ?: 0.0,
                         sunrise = sunriseFormatted,
-                        sunset = sunsetFormatted
+                        sunset = sunsetFormatted,
+                        precipitationProbabilityAvailable = dailyPrecipValue != null,
+                        uvIndexAvailable = dailyUvValue != null,
+                        sunriseAvailable = sunriseFormatted != "--:--",
+                        sunsetAvailable = sunsetFormatted != "--:--",
+                        precipitationSumMm = dailyPrecipitationSumValue ?: 0.0,
+                        precipitationSumAvailable = dailyPrecipitationSumValue != null
                     )
                 )
             }
 
-            // Air Quality
-            val aqiVal = airQualityDto?.current?.europeanAqi ?: 35
-            val pm25Val = airQualityDto?.current?.pm25 ?: 12.0
-            val pm10Val = airQualityDto?.current?.pm10 ?: 25.0
-            val ozoneVal = airQualityDto?.current?.ozone ?: 38.0
-            val no2Val = airQualityDto?.current?.nitrogenDioxide ?: 16.0
-            val (aqiCat, aqiAdvice) = getAqiDescription(aqiVal)
+            // Air Quality: validate provider measurements in one tested, pure mapper.
+            val airCurrent = airQualityDto?.current
+            val airMeasurements = AirQualityMeasurementMapper.map(airCurrent)
+            val aqiAvailable = airMeasurements.europeanAqi != null
+            val aqiVal = airMeasurements.europeanAqi ?: -1
+            val (aqiCat, aqiAdvice) = if (airMeasurements.europeanAqi != null)
+                getAqiDescription(aqiVal)
+            else "غير متاح" to "لا تتوفر قراءة لمؤشر جودة الهواء حالياً."
 
             val airQuality = AirQualityInfo(
                 aqiValue = aqiVal,
                 categoryAr = aqiCat,
                 adviceAr = aqiAdvice,
-                pm25 = pm25Val,
-                pm10 = pm10Val,
-                ozone = ozoneVal,
-                no2 = no2Val
+                pm25 = airMeasurements.pm25 ?: 0.0,
+                pm10 = airMeasurements.pm10 ?: 0.0,
+                ozone = airMeasurements.ozone ?: 0.0,
+                no2 = airMeasurements.nitrogenDioxide ?: 0.0,
+                isAvailable = airMeasurements.isAvailable,
+                isAqiAvailable = airMeasurements.europeanAqi != null,
+                pm25Available = airMeasurements.pm25 != null,
+                pm10Available = airMeasurements.pm10 != null,
+                ozoneAvailable = airMeasurements.ozone != null,
+                no2Available = airMeasurements.nitrogenDioxide != null,
+                carbonMonoxide = airMeasurements.carbonMonoxide ?: 0.0,
+                carbonMonoxideAvailable = airMeasurements.carbonMonoxide != null
             )
 
             // Pollen Information
-            val grass = airQualityDto?.current?.grassPollen ?: 8.0
-            val birch = airQualityDto?.current?.birchPollen ?: 3.0
-            val olive = airQualityDto?.current?.olivePollen ?: 12.0
-            val ragweed = airQualityDto?.current?.ragweedPollen ?: 4.0
-            val pollenInfo = calculatePollenInfo(grass, birch, olive, ragweed)
+            val grassValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.grassPollen)
+            val birchValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.birchPollen)
+            val oliveValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.olivePollen)
+            val ragweedValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.ragweedPollen)
+            val pollenAvailable = listOf(grassValue, birchValue, oliveValue, ragweedValue).any { it != null }
+            val pollenComplete = listOf(grassValue, birchValue, oliveValue, ragweedValue).all { it != null }
+            val pollenInfo = if (pollenComplete) {
+                calculatePollenInfo(grassValue!!, birchValue!!, oliveValue!!, ragweedValue!!)
+                    .copy(isAvailable = true, grassAvailable = true, birchAvailable = true,
+                        oliveAvailable = true, ragweedAvailable = true)
+            } else {
+                PollenInfo(
+                    grassPollen = grassValue ?: 0.0,
+                    birchPollen = birchValue ?: 0.0,
+                    olivePollen = oliveValue ?: 0.0,
+                    ragweedPollen = ragweedValue ?: 0.0,
+                    overallLevelAr = if (pollenAvailable) "بيانات جزئية" else "غير متاح",
+                    adviceAr = if (pollenAvailable)
+                        "البيانات المتاحة جزئية؛ لا يمكن إصدار تقييم إجمالي موثوق لحبوب اللقاح."
+                    else "لا تتوفر بيانات حبوب اللقاح لهذا الموقع أو الوقت حالياً.",
+                    isAvailable = pollenAvailable,
+                    grassAvailable = grassValue != null,
+                    birchAvailable = birchValue != null,
+                    oliveAvailable = oliveValue != null,
+                    ragweedAvailable = ragweedValue != null
+                )
+            }
 
             // Severe Weather Alerts detection
-            val alerts = detectSevereWeatherAlerts(location, currentWeather, dailyList, aqiVal, pollenInfo)
+            val alerts = detectSevereWeatherAlerts(location, currentWeather, dailyList, if (aqiAvailable) aqiVal else -1, pollenInfo)
 
-            // Push notifications if enabled and severe alerts exist
-            if (areAlertsEnabled()) {
-                alerts.firstOrNull { it.severity == AlertSeverity.WARNING || it.severity == AlertSeverity.EMERGENCY }?.let { alert ->
-                    // Notify once per alert ID
-                    val lastNotifiedId = prefs.getString("last_notified_alert_id", "")
-                    if (lastNotifiedId != alert.id) {
-                        NotificationHelper.postSevereWeatherNotification(context, alert)
-                        prefs.edit().putString("last_notified_alert_id", alert.id).apply()
-                    }
-                }
+            // Track active notifications per location. Clear the history while alerts
+            // are disabled so re-enabling starts a fresh notification tracking period.
+            val notificationStateKey =
+                "active_weather_alert_ids_${location.latitude}_${location.longitude}"
+            if (!areAlertsEnabled()) {
+                prefs.edit().remove(notificationStateKey).apply()
+            } else {
+                val previouslyNotifiedIds =
+                    prefs.getStringSet(notificationStateKey, emptySet())?.toSet().orEmpty()
+                val alertsToNotify = SevereAlertNotificationPolicy.alertsRequiringNotification(
+                    alerts,
+                    previouslyNotifiedIds
+                )
+                val successfullyPostedIds = alertsToNotify
+                    .filter { NotificationHelper.postSevereWeatherNotification(context, it) }
+                    .map { it.id }
+                    .toSet()
+                val updatedNotifiedIds = SevereAlertNotificationPolicy.updatedNotifiedIds(
+                    alerts = alerts,
+                    previouslyNotifiedIds = previouslyNotifiedIds,
+                    successfullyPostedIds = successfullyPostedIds
+                )
+                prefs.edit().putStringSet(notificationStateKey, updatedNotifiedIds).apply()
             }
 
             // Weather Insights
-            val insights = generateInsights(currentWeather, dailyList.firstOrNull())
+            val todayForecast = DailyForecastSelection.forCurrentDate(dailyList, currentDateRaw)
+            val insights = generateInsights(currentWeather, todayForecast)
 
             Result.success(
                 FullWeatherData(
@@ -217,12 +339,43 @@ class WeatherRepository(private val context: Context) {
                     airQuality = airQuality,
                     pollen = pollenInfo,
                     alerts = alerts,
-                    insights = insights
+                    insights = insights,
+                    currentDateRaw = currentDateRaw
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private var cachedCityMapForecasts: List<CityMapForecast> = emptyList()
+    private var cityMapForecastsFetchedAtMs: Long = 0L
+
+    /** Retrieves the 13 Syrian city forecasts in a single request, cached for ten minutes. */
+    suspend fun getSyrianCityMapForecasts(forceRefresh: Boolean = false): List<CityMapForecast> = withContext(Dispatchers.IO) {
+        val cacheAgeMs = System.currentTimeMillis() - cityMapForecastsFetchedAtMs
+        if (!forceRefresh && cachedCityMapForecasts.isNotEmpty() &&
+            cacheAgeMs in 0 until 10 * 60 * 1000L
+        ) return@withContext cachedCityMapForecasts
+
+        val cities = DEFAULT_CITIES
+        val responses = NetworkClient.forecastApi.getMultiLocationCurrent(
+            latitude = cities.joinToString(",") { it.latitude.toString() },
+            longitude = cities.joinToString(",") { it.longitude.toString() }
+        )
+        val matchedResponses = MapForecastResponseMatching.match(cities, responses)
+            ?: throw IllegalStateException(
+                "تعذر مطابقة استجابات الطقس مع المدن المطلوبة اعتماداً على إحداثيات خلايا النموذج"
+            )
+
+        val forecasts = matchedResponses.map { (city, response) ->
+            CityMapForecastMapper.map(city, response)
+        }
+        cachedCityMapForecasts = forecasts
+        cityMapForecastsFetchedAtMs = System.currentTimeMillis()
+        forecasts
     }
 
     suspend fun searchCities(query: String): List<CityLocation> = withContext(Dispatchers.IO) {
@@ -240,6 +393,8 @@ class WeatherRepository(private val context: Context) {
                     isFavorite = isCityFavorite(dto.name, dto.country ?: "")
                 )
             } ?: emptyList()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             DEFAULT_CITIES.filter {
                 it.name.contains(query, ignoreCase = true) ||
@@ -264,10 +419,10 @@ class WeatherRepository(private val context: Context) {
                     CityLocation(
                         name = obj.getString("name"),
                         nameEn = obj.optString("nameEn", ""),
-                        country = obj.getString("country"),
+                        country = obj.optString("country", ""),
                         latitude = obj.getDouble("latitude"),
                         longitude = obj.getDouble("longitude"),
-                        admin1 = obj.optString("admin1", null),
+                        admin1 = obj.optString("admin1").takeIf { it.isNotBlank() },
                         isFavorite = true
                     )
                 )
@@ -299,7 +454,12 @@ class WeatherRepository(private val context: Context) {
 
     fun isCityFavorite(name: String, country: String): Boolean {
         return getSavedFavoriteCities().any {
-            it.name.equals(name, ignoreCase = true)
+            CityFavoriteMatching.matches(
+                savedName = it.name,
+                savedCountry = it.country,
+                queryName = name,
+                queryCountry = country
+            )
         }
     }
 
@@ -411,8 +571,8 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WARNING,
                     descriptionAr = "نشاط لخلايا رعدية مصحوبة برياح هابطة قوية وهطول غزير للأمطار، مع احتمالية تساقط حبات البَرَد.",
                     safetyInstructionsAr = "ابتعد عن الأماكن المكشوفة وأعمدة الإنارة، وتجنب النزول للأودية وتجمعات المياه.",
-                    source = "المركز الوطني للأرصاد والإنذار المبكر",
-                    validUntil = "خلال الـ 6 ساعات القادمة"
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -426,8 +586,8 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WARNING,
                     descriptionAr = "توقعات بهطول أمطار غزيرة تؤدي إلى ارتفاع منسوب المياه وضعف مدى الرؤية الأفقية على الطرق.",
                     safetyInstructionsAr = "توخَّ الحيطة أثناء القيادة، واترك مسافة أمان كافية، وابتعد تماماً عن مجاري السيول.",
-                    source = "الرصد الهيدرولوجي والأرصاد الجوية",
-                    validUntil = "حتى منتصف الليل"
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -441,8 +601,8 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WATCH,
                     descriptionAr = "ارتفاع ملموس على درجات الحرارة يتجاوز المعدلات الموسمية، مع طقس شديد الحرارة وضربات شمس محتملة.",
                     safetyInstructionsAr = "تجنب التعرض المباشر لأشعة الشمس بين 11 صباحاً و 4 عصراً، واحرص على شرب السوائل بوفرة.",
-                    source = "إدارة الطوارئ والأرصاد",
-                    validUntil = "مستمرة حتى مساء اليوم"
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -452,12 +612,12 @@ class WeatherRepository(private val context: Context) {
             list.add(
                 SevereWeatherAlert(
                     id = "wind_${location.name}",
-                    titleAr = "تنبيه رياح نشطة وعواصف ترابية",
+                    titleAr = "تنبيه رياح نشطة في ${location.name}",
                     severity = AlertSeverity.ADVISORY,
-                    descriptionAr = "رياح شديدة السرعة تتجاوز ${current.windSpeedKmh.toInt()} كم/س مع هبات قوية قد تثير الأتربة والغبار وتعيق حركة السير.",
+                    descriptionAr = "رياح نشطة بسرعة ${current.windSpeedKmh.toInt()} كم/س؛ قد تؤثر في الأنشطة الخارجية وحركة السير. لا تكفي سرعة الرياح وحدها لإثبات حدوث عاصفة ترابية.",
                     safetyInstructionsAr = "تثبيت الأجسام القابلة للتطاير والحذر عند القيادة على الطرق السريعة المفتوحة.",
-                    source = "هيئة الأرصاد وحماية البيئة",
-                    validUntil = "خلال الساعات المقبلة"
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -471,23 +631,23 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.WARNING,
                     descriptionAr = "تساقط متواصل للثلوج مع تشكل طبقات جليدية وانزلاقات خطيرة على المرتفعات والطرق.",
                     safetyInstructionsAr = "استخدم سلاسل الإطارات وتجنب السفر غير الضروري حتى انقشاع الحالة الجوية.",
-                    source = "مكتب الأرصاد الشتوية",
-                    validUntil = "حتى صباح الغد"
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
 
-        // 6. Dust Storm / Hazardous AQI Alert
+        // 6. Poor air quality. AQI alone does not identify the pollution source.
         if (aqi >= 75) {
             list.add(
                 SevereWeatherAlert(
                     id = "air_quality_${location.name}",
-                    titleAr = "تنبيه تلوث هواء وعوالق ترابية",
+                    titleAr = "تنبيه بشأن تراجع جودة الهواء",
                     severity = AlertSeverity.ADVISORY,
-                    descriptionAr = "جودة الهواء منخفضة بسبب العوالق والجسيمات الدقيقة في الجو (AQI: $aqi).",
-                    safetyInstructionsAr = "ارتداء كمامة لمرضى الجهاز التنفسي والحد من الأنشطة البدنية في الخارج.",
-                    source = "مؤشر الرصد البيئي وجودة الهواء",
-                    validUntil = "طوال فترة بقاء العوالق"
+                    descriptionAr = "تشير قراءة مؤشر جودة الهواء الأوروبي إلى تراجع جودة الهواء (European AQI: $aqi). لا تحدد هذه القراءة وحدها مصدر الملوثات.",
+                    safetyInstructionsAr = "قلّل الأنشطة البدنية الشاقة في الخارج، واتبع الإرشادات الصحية المحلية، خصوصاً إذا كنت من الفئات الحساسة.",
+                    source = "Open-Meteo European AQI — تقدير آلي غير رسمي",
+                    validUntil = "مدة صلاحية التوقع غير محددة من هذا المصدر"
                 )
             )
         }
@@ -501,8 +661,8 @@ class WeatherRepository(private val context: Context) {
                     severity = AlertSeverity.ADVISORY,
                     descriptionAr = "تسجيل تركيزات استثنائية لحبوب اللقاح والأعشاب المسببة للحساسية الموسمية.",
                     safetyInstructionsAr = "إحكام إغلاق النوافذ، وغسل الوجه والعينين بعد العودة للمنزل، واستشارة الصيدلي.",
-                    source = "شبكة مراقبة حبوب اللقاح والحساسية",
-                    validUntil = "مستمر خلال موسم التزهير"
+                    source = "Open-Meteo — تقدير آلي غير رسمي",
+                    validUntil = "وقت انتهاء التنبيه غير محدد من البيانات المتاحة"
                 )
             )
         }
@@ -510,73 +670,14 @@ class WeatherRepository(private val context: Context) {
         return list
     }
 
-    private fun mapWeatherCodeToType(code: Int): WeatherConditionType {
-        return when (code) {
-            0 -> WeatherConditionType.CLEAR
-            1, 2 -> WeatherConditionType.PARTLY_CLOUDY
-            3 -> WeatherConditionType.CLOUDY
-            45, 48 -> WeatherConditionType.FOG
-            51, 53, 55 -> WeatherConditionType.DRIZZLE
-            56, 57 -> WeatherConditionType.DRIZZLE
-            61, 63 -> WeatherConditionType.RAIN
-            65 -> WeatherConditionType.HEAVY_RAIN
-            66, 67 -> WeatherConditionType.RAIN
-            71, 73, 75, 77 -> WeatherConditionType.SNOW
-            80, 81 -> WeatherConditionType.RAIN
-            82 -> WeatherConditionType.HEAVY_RAIN
-            85, 86 -> WeatherConditionType.SNOW
-            95, 96, 99 -> WeatherConditionType.THUNDERSTORM
-            else -> WeatherConditionType.PARTLY_CLOUDY
-        }
-    }
+    private fun mapWeatherCodeToType(code: Int): WeatherConditionType =
+        WeatherCodeMapping.description(code).conditionType
 
-    private fun mapWeatherCodeToAr(code: Int): String {
-        return when (code) {
-            0 -> "صافٍ ومشرق"
-            1 -> "صافٍ غالباً"
-            2 -> "غائم جزئياً"
-            3 -> "غائم كلياً"
-            45 -> "ضباب خفيف"
-            48 -> "ضباب متجمد كثيف"
-            51 -> "رذاذ خفيف"
-            53 -> "رذاذ معتدل"
-            55 -> "رذاذ كثيف"
-            56, 57 -> "رذاذ متجمد"
-            61 -> "أمطار خفيفة"
-            63 -> "أمطار معتدلة"
-            65 -> "أمطار غزيرة"
-            66, 67 -> "أمطار جليدية"
-            71 -> "ثلوج خفيفة"
-            73 -> "تساقط ثلوج"
-            75 -> "ثلوج كثيفة"
-            77 -> "حبيبات ثلجية"
-            80 -> "زخات مطر خفيفة"
-            81 -> "زخات مطر معتدلة"
-            82 -> "زخات مطر عنيفة"
-            85, 86 -> "زخات ثلجية"
-            95 -> "عاصفة رعدية"
-            96, 99 -> "عاصفة رعدية مع بَرَد"
-            else -> "معتدل"
-        }
-    }
+    private fun mapWeatherCodeToAr(code: Int): String =
+        WeatherCodeMapping.description(code).arabic
 
-    private fun mapWeatherCodeToEn(code: Int): String {
-        return when (code) {
-            0 -> "Clear Sky"
-            1 -> "Mainly Clear"
-            2 -> "Partly Cloudy"
-            3 -> "Overcast"
-            45, 48 -> "Foggy"
-            51, 53, 55 -> "Drizzle"
-            61, 63 -> "Rain"
-            65 -> "Heavy Rain"
-            71, 73, 75 -> "Snow"
-            80, 81, 82 -> "Rain Showers"
-            95, 96, 99 -> "Thunderstorm"
-            else -> "Variable"
-        }
-    }
-
+    private fun mapWeatherCodeToEn(code: Int): String =
+        WeatherCodeMapping.description(code).english
     private fun formatHourLabel(isoString: String, isNow: Boolean): String {
         if (isNow) return "الآن"
         return try {
@@ -620,36 +721,13 @@ class WeatherRepository(private val context: Context) {
         }
     }
 
-    private fun formatSunTime(raw: String?): String {
-        if (raw.isNullOrEmpty()) return "--:--"
-        return try {
-            val timePart = raw.substringAfter("T").take(5)
-            val parts = timePart.split(":")
-            val hour = parts[0].toInt()
-            val minute = parts[1]
-            if (hour < 12) {
-                "${if (hour == 0) 12 else hour}:$minute ص"
-            } else {
-                "${if (hour == 12) 12 else hour - 12}:$minute م"
-            }
-        } catch (e: Exception) {
-            raw
-        }
-    }
-
-    private fun getAqiDescription(aqi: Int): Pair<String, String> {
-        return when {
-            aqi <= 20 -> "ممتاز" to "جودة الهواء نقية جداً ومثالية للأنشطة الخارجية والرياضة."
-            aqi <= 40 -> "جيد" to "جودة هواء مقبولة ومناسبة للجميع دون أي مخاطر صحية."
-            aqi <= 60 -> "معتدل" to "الهواء مقبول، قد يشعر الحساسون جداً بتهيج خفيف."
-            aqi <= 80 -> "غير صحي للحساسين" to "يفضل تقليل الأنشطة الشاقة في الهواء الطلق لمن يعانون من الحساسية."
-            else -> "غير صحي" to "ينصح بارتداء كمامة وتجنب البقاء في الهواء الطلق لفترات طويلة."
-        }
-    }
+    private fun getAqiDescription(aqi: Int): Pair<String, String> = EuropeanAqi.describe(aqi)
 
     private fun generateInsights(current: CurrentWeather, today: DailyForecast?): WeatherInsights {
         val temp = current.temperatureCelsius
-        val uv = current.uvIndex
+        // A missing UV measurement is not a zero reading and must not
+        // produce "low UV" or "ideal for outdoor activity" advice.
+        val uv = current.uvIndex.takeIf { current.uvIndexAvailable }
         val rain = current.precipitationMm > 0.5 || (today?.precipitationProb ?: 0) > 40
         val wind = current.windSpeedKmh
 
@@ -666,14 +744,14 @@ class WeatherRepository(private val context: Context) {
         val activityScore = when {
             rain || current.conditionType == WeatherConditionType.THUNDERSTORM -> "يفضل البقاء بالداخل"
             wind > 45.0 -> "رياح نشطة - احذر القيادة"
-            temp in 18.0..28.0 && uv < 7 -> "مثالي للمشي والرياضة"
-            temp > 35.0 || uv >= 8.0 -> "تجنب التعرض المباشر للشمس"
+            temp in 18.0..28.0 && uv != null && uv < 7.0 -> "مثالي للمشي والرياضة"
+            temp > 35.0 || (uv ?: 0.0) >= 8.0 -> "تجنب التعرض المباشر للشمس"
             else -> "طقس ملائم للأنشطة"
         }
 
         val title = when {
             umbrellaNeeded -> "فرصة لهطول الأمطار ☔"
-            uv >= 8 -> "تحذير أشعة شمس قوية ☀️"
+            uv != null && uv >= 8.0 -> "تحذير أشعة شمس قوية ☀️"
             wind > 40 -> "رياح نشطة وموجات هواء 💨"
             temp in 20.0..27.0 -> "أجواء مثالية للخروج 🌿"
             temp > 35.0 -> "طقس حار وموجة دافئة 🌡️"
@@ -682,7 +760,7 @@ class WeatherRepository(private val context: Context) {
 
         val summary = buildString {
             if (umbrellaNeeded) append("احرص على أخذ مظلتك اليوم لاحتمال هطول الأمطار. ")
-            if (uv >= 8) append("المؤشر فوق البنفسجي مرتفع (${uv.toInt()})؛ استخدم واقي الشمس. ")
+            if (uv != null && uv >= 8.0) append("المؤشر فوق البنفسجي مرتفع (${uv.toInt()})؛ استخدم واقي الشمس. ")
             if (wind > 35) append("سرعة الرياح تصل إلى ${wind.toInt()} كم/س. ")
             if (isEmpty()) append("استمتع بأجواء ${current.conditionNameAr} طوال اليوم.")
         }
@@ -699,32 +777,33 @@ class WeatherRepository(private val context: Context) {
     // Syrian Weather Stations (محطات الأرصاد الجوية السورية)
     fun getSyrianWeatherStations(): List<SyrianWeatherStation> {
         return listOf(
-            SyrianWeatherStation("st_damascus", "محطة دمشق الدولي", "محطة رئيسية - دمشق", 33.5138, 36.2765, 24.0, 45, 1014.2, 14.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_aleppo", "محطة حلب الدولي", "محطة رئيسية - حلب", 36.2021, 37.1343, 21.0, 52, 1013.8, 16.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_latakia", "محطة اللاذقية البحرية", "محطة ساحلية - اللاذقية", 35.5317, 35.7915, 26.0, 78, 1012.5, 22.0, "رذاذ خفيف", WeatherConditionType.DRIZZLE, true),
-            SyrianWeatherStation("st_homs", "محطة حمص المركزية", "محطة داخلية - حمص", 34.7324, 36.7137, 23.0, 50, 1013.0, 18.0, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_tartus", "محطة طرطوس الميناء", "محطة ساحلية - طرطوس", 34.8890, 35.8866, 25.0, 74, 1012.8, 19.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_hama", "محطة حماة الزراعية", "محطة داخلية - حماة", 35.1318, 36.7578, 24.0, 48, 1013.2, 15.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_deir", "محطة دير الزور", "محطة الشرق - دير الزور", 35.3333, 40.1500, 28.0, 35, 1011.5, 12.0, "مشمس وجاف", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_qamishli", "محطة القامشلي", "محطة الجزيرة - القامشلي", 37.0494, 41.2268, 22.0, 42, 1013.5, 17.0, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_sweida", "محطة السويداء", "محطة الجبل - السويداء", 32.7130, 36.5694, 19.0, 55, 1015.0, 13.0, "لطيف", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_deraa", "محطة درعا السهل", "محطة الجنوب - درعا", 32.6186, 36.1011, 23.0, 46, 1014.0, 16.0, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_idlib", "محطة إدلب", "محطة الشمال - إدلب", 35.9306, 36.6339, 21.0, 58, 1013.1, 14.0, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, true),
-            SyrianWeatherStation("st_raqqa", "محطة الرقة", "محطة الفرات - الرقة", 35.9556, 39.0078, 27.0, 38, 1012.0, 15.5, "صافٍ", WeatherConditionType.CLEAR, true),
-            SyrianWeatherStation("st_palmyra", "محطة تدمر الأثرية", "محطة البادية - تدمر", 34.5577, 38.2753, 29.0, 30, 1011.0, 18.5, "مشمس", WeatherConditionType.CLEAR, true)
+            SyrianWeatherStation("st_damascus", "محطة دمشق الدولي", "محطة رئيسية - دمشق", 33.5138, 36.2765, 24.0, 45, 1014.2, 14.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_aleppo", "محطة حلب الدولي", "محطة رئيسية - حلب", 36.2021, 37.1343, 21.0, 52, 1013.8, 16.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_latakia", "محطة اللاذقية البحرية", "محطة ساحلية - اللاذقية", 35.5317, 35.7915, 26.0, 78, 1012.5, 22.0, "رذاذ خفيف", WeatherConditionType.DRIZZLE, false),
+            SyrianWeatherStation("st_homs", "محطة حمص المركزية", "محطة داخلية - حمص", 34.7324, 36.7137, 23.0, 50, 1013.0, 18.0, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_tartus", "محطة طرطوس الميناء", "محطة ساحلية - طرطوس", 34.8890, 35.8866, 25.0, 74, 1012.8, 19.5, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_hama", "محطة حماة الزراعية", "محطة داخلية - حماة", 35.1318, 36.7578, 24.0, 48, 1013.2, 15.0, "صافٍ ومشرق", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_deir", "محطة دير الزور", "محطة الشرق - دير الزور", 35.3333, 40.1500, 28.0, 35, 1011.5, 12.0, "مشمس وجاف", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_qamishli", "محطة القامشلي", "محطة الجزيرة - القامشلي", 37.0494, 41.2268, 22.0, 42, 1013.5, 17.0, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_sweida", "محطة السويداء", "محطة الجبل - السويداء", 32.7130, 36.5694, 19.0, 55, 1015.0, 13.0, "لطيف", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_deraa", "محطة درعا السهل", "محطة الجنوب - درعا", 32.6186, 36.1011, 23.0, 46, 1014.0, 16.0, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_idlib", "محطة إدلب", "محطة الشمال - إدلب", 35.9306, 36.6339, 21.0, 58, 1013.1, 14.0, "غائم جزئياً", WeatherConditionType.PARTLY_CLOUDY, false),
+            SyrianWeatherStation("st_raqqa", "محطة الرقة", "محطة الفرات - الرقة", 35.9556, 39.0078, 27.0, 38, 1012.0, 15.5, "صافٍ", WeatherConditionType.CLEAR, false),
+            SyrianWeatherStation("st_palmyra", "محطة تدمر الأثرية", "محطة البادية - تدمر", 34.5577, 38.2753, 29.0, 30, 1011.0, 18.5, "مشمس", WeatherConditionType.CLEAR, false)
         )
     }
 
     fun getAudioBulletin(): AudioBulletinItem {
-        val title = prefs.getString("admin_bulletin_title", "النشرة الجوية الصباحية الشاملة - المركز الوطني للأرصاد والمناخ") ?: "النشرة الجوية الصباحية الشاملة"
-        val script = prefs.getString("admin_bulletin_script", "تستمر درجات الحرارة حول معدلاتها لمثل هذه الفترة من السنة، والجو صيفياً مائلاً للاعتدال في المناطق الجبلية وحاراً نسبياً في البادية والشرقية، مع ظهور بعض السحب المتفرقة على الساحل السوري وتكون الرياح غربية إلى شمالية غربية معتدلة السرعة تنشط أحياناً بعد الظهر. تحذير من التعرض المباشر لأشعة الشمس في أوقات الذروة.") ?: ""
+        val title = prefs.getString("admin_bulletin_title", "نشرة تجريبية غير معتمدة") ?: "نشرة تجريبية غير معتمدة"
+        val script = prefs.getString("admin_bulletin_script", "هذه نشرة تجريبية للتوضيح فقط، ولا تمثل توقعات جوية أو نشرة رسمية صادرة عن المركز الوطني للأرصاد والمناخ.") ?: ""
         return AudioBulletinItem(
             id = "bulletin_mcnc_01",
             title = title,
-            dateFormatted = "اليوم، 07:30 صباحاً",
-            durationSec = 54,
-            announcerName = "رئيس قسم التنبؤات (MCNC)",
-            bulletinScriptAr = script
+            dateFormatted = "وقت النشر غير محدد",
+            durationSec = 0,
+            announcerName = "صوت آلي تجريبي",
+            bulletinScriptAr = script,
+            isDemoData = true
         )
     }
 
