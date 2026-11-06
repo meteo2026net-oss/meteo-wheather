@@ -116,7 +116,7 @@ class WeatherRepository(private val context: Context) {
                 windSpeedKmh = currentWindSpeed,
                 windDirectionDegrees = currentWindDirection,
                 pressureHpa = currentPressure,
-                uvIndex = ForecastValueValidation.nonNegativeFinite(currentDto.uvIndex) ?: 0.0,
+                uvIndex = ForecastValueValidation.uvIndex(currentDto.uvIndex) ?: 0.0,
                 weatherCode = currentWeatherCode,
                 conditionType = conditionType,
                 conditionNameAr = conditionNameAr,
@@ -125,7 +125,7 @@ class WeatherRepository(private val context: Context) {
                 precipitationMm = currentPrecipitation,
                 visibilityKm = visibilityKm,
                 visibilityAvailable = visibilityAvailable,
-                uvIndexAvailable = ForecastValueValidation.nonNegativeFinite(currentDto.uvIndex) != null
+                uvIndexAvailable = ForecastValueValidation.uvIndex(currentDto.uvIndex) != null
             )
 
             // Parse hourly forecasts (next 24 hours from current time)
@@ -201,7 +201,7 @@ class WeatherRepository(private val context: Context) {
                 val sunriseFormatted = ForecastValueValidation.formatSunTime(dailySunrise.getOrNull(i)) ?: "--:--"
                 val sunsetFormatted = ForecastValueValidation.formatSunTime(dailySunset.getOrNull(i)) ?: "--:--"
                 // Reject NaN and infinite provider values just like current UV readings.
-                val dailyUvValue = ForecastValueValidation.nonNegativeFinite(dailyUv.getOrNull(i))
+                val dailyUvValue = ForecastValueValidation.uvIndex(dailyUv.getOrNull(i))
                 val dailyTemperatureRange = ForecastValueValidation.temperatureRange(
                     dailyMax.getOrNull(i), dailyMin.getOrNull(i)
                 ) ?: continue

@@ -15,6 +15,18 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun uvIndexAcceptsPlausibleValuesAndRejectsCorruptValues() {
+        assertEquals(0.0, ForecastValueValidation.uvIndex(0.0)!!, 0.0)
+        assertEquals(11.5, ForecastValueValidation.uvIndex(11.5)!!, 0.0)
+        assertEquals(30.0, ForecastValueValidation.uvIndex(30.0)!!, 0.0)
+        assertNull(ForecastValueValidation.uvIndex(null))
+        assertNull(ForecastValueValidation.uvIndex(-0.1))
+        assertNull(ForecastValueValidation.uvIndex(30.1))
+        assertNull(ForecastValueValidation.uvIndex(Double.NaN))
+        assertNull(ForecastValueValidation.uvIndex(Double.POSITIVE_INFINITY))
+    }
+
+    @Test
     fun nonNegativeFiniteRejectsNegativeAndNonFiniteMeasurements() {
         assertNull(ForecastValueValidation.nonNegativeFinite(-0.1))
         assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))

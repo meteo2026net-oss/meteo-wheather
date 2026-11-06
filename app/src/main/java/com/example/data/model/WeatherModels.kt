@@ -80,6 +80,9 @@ object ForecastValueValidation {
     fun finite(value: Double?): Double? = value?.takeIf { it.isFinite() }
     fun nonNegativeFinite(value: Double?): Double? = value?.takeIf { it.isFinite() && it >= 0.0 }
 
+    /** UV index is dimensionless; values above 30 are treated as corrupt provider data. */
+    fun uvIndex(value: Double?): Double? = value?.takeIf { it.isFinite() && it in 0.0..30.0 }
+
     // Broad physical plausibility bounds: reject corrupt provider values without
     // excluding credible global weather extremes.
     fun temperatureCelsius(value: Double?): Double? =
