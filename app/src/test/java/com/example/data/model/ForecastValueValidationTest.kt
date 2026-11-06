@@ -27,6 +27,18 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun visibilityMetersRejectsMissingNegativeNonFiniteAndImplausibleValues() {
+        assertEquals(0.0, ForecastValueValidation.visibilityMeters(0.0)!!, 0.0)
+        assertEquals(24_100.0, ForecastValueValidation.visibilityMeters(24_100.0)!!, 0.0)
+        assertEquals(100_000.0, ForecastValueValidation.visibilityMeters(100_000.0)!!, 0.0)
+        assertNull(ForecastValueValidation.visibilityMeters(null))
+        assertNull(ForecastValueValidation.visibilityMeters(-1.0))
+        assertNull(ForecastValueValidation.visibilityMeters(100_000.1))
+        assertNull(ForecastValueValidation.visibilityMeters(Double.NaN))
+        assertNull(ForecastValueValidation.visibilityMeters(Double.POSITIVE_INFINITY))
+    }
+
+    @Test
     fun nonNegativeFiniteRejectsNegativeAndNonFiniteMeasurements() {
         assertNull(ForecastValueValidation.nonNegativeFinite(-0.1))
         assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))

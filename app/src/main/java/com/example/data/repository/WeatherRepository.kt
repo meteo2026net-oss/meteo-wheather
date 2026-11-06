@@ -103,7 +103,7 @@ class WeatherRepository(private val context: Context) {
             )
             // Visibility is an hourly value too: use the same current-hour slot as the
             // hourly forecast instead of accidentally displaying the day's first slot.
-            val visMeters = ForecastValueValidation.nonNegativeFinite(
+            val visMeters = ForecastValueValidation.visibilityMeters(
                 forecastDto.hourly?.visibility?.getOrNull(startIndex)
             )
             val visibilityAvailable = visMeters != null
