@@ -251,4 +251,29 @@ class CapXmlParserTest {
         }
     }
 
+    @Test
+    fun rejectsDuplicateSingletonEnvelopeElementsInsteadOfChoosingTheFirstValue() {
+        val duplicateIdentifier = cap().replace(
+            "<identifier>sy-test-001</identifier>",
+            "<identifier>sy-test-001</identifier><identifier>spoofed-second-id</identifier>"
+        )
+        val duplicateSent = cap().replace(
+            "<sent>2026-11-04T06:00:00+03:00</sent>",
+            "<sent>2026-11-04T06:00:00+03:00</sent><sent>2026-11-04T06:01:00+03:00</sent>"
+        )
+        val duplicateReferences = cap(messageType = "Update").replace(
+            "<scope>Public</scope>",
+            "<scope>Public</scope><references>issuer@example.gov.sy,base-001,2026-11-04T05:00:00+03:00</references><references>issuer@example.gov.sy,base-002,2026-11-04T05:15:00+03:00</references>"
+        )
+
+        listOf(duplicateIdentifier, duplicateSent, duplicateReferences).forEach { xml ->
+            try {
+                CapXmlParser.parse(xml)
+                throw AssertionError("Duplicate singleton CAP envelope elements must be rejected")
+            } catch (_: IllegalArgumentException) {
+                // Expected: ambiguous envelope values must fail closed.
+            }
+        }
+    }
+
 }

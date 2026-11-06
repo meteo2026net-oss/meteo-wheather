@@ -100,16 +100,13 @@ object CapXmlParser {
             root.namespaceURI == CAP_NAMESPACE && root.localTagName() == "alert"
         ) { "Root element is not a CAP 1.2 alert" }
 
-        val identifier = root.directText("identifier").orEmpty()
-        require(identifier.isNotBlank()) { "CAP identifier is missing" }
-        val sender = root.directText("sender").orEmpty()
-        require(sender.isNotBlank()) { "CAP sender is missing" }
-        val status = root.directText("status").orEmpty()
-        require(status.isNotBlank()) { "CAP status is missing" }
-        val messageType = root.directText("msgType").orEmpty()
-        require(messageType.isNotBlank()) { "CAP message type is missing" }
-        val scope = root.directText("scope").orEmpty()
-        require(scope.isNotBlank()) { "CAP scope is missing" }
+        // CAP envelope fields are singleton elements. Reject duplicates rather than
+        // silently trusting the first value and ignoring conflicting later values.
+        val identifier = root.requiredSingleText("identifier")
+        val sender = root.requiredSingleText("sender")
+        val status = root.requiredSingleText("status")
+        val messageType = root.requiredSingleText("msgType")
+        val scope = root.requiredSingleText("scope")
         require(status in setOf("Actual", "Exercise", "System", "Test", "Draft")) {
             "CAP status is not a recognized CAP 1.2 value"
         }
@@ -128,8 +125,7 @@ object CapXmlParser {
         } ?: infos.firstOrNull()
 
         val area = info?.directChildren("area")?.firstOrNull()
-        val sent = root.directText("sent")
-            ?: throw IllegalArgumentException("CAP sent timestamp is missing")
+        val sent = root.requiredSingleText("sent")
         val sentAt = try {
             OffsetDateTime.parse(sent).toInstant()
         } catch (error: Exception) {
@@ -144,7 +140,7 @@ object CapXmlParser {
             }
         }
 
-        val references = root.directText("references")
+        val references = root.optionalSingleText("references")
             ?.split(Regex("\\s+"))
             ?.filter { it.isNotBlank() }
             .orEmpty()
@@ -211,6 +207,24 @@ object CapXmlParser {
             }
         }
         return result
+    }
+
+    private fun Element.requiredSingleText(name: String): String {
+        val elements = directChildren(name)
+        require(elements.size == 1) {
+            "CAP $name must appear exactly once in the alert envelope"
+        }
+        return elements.single().textContent.trim().also {
+            require(it.isNotEmpty()) { "CAP $name is empty" }
+        }
+    }
+
+    private fun Element.optionalSingleText(name: String): String? {
+        val elements = directChildren(name)
+        require(elements.size <= 1) {
+            "CAP $name must not appear more than once in the alert envelope"
+        }
+        return elements.firstOrNull()?.textContent?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     private fun Element.directText(name: String): String? =
