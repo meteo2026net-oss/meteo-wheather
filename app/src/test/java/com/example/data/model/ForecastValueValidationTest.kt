@@ -39,6 +39,16 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun cloudCoverValidatorAcceptsOnlyPercentagesFromZeroToOneHundred() {
+        assertEquals(0, ForecastValueValidation.cloudCoverPercent(0))
+        assertEquals(50, ForecastValueValidation.cloudCoverPercent(50))
+        assertEquals(100, ForecastValueValidation.cloudCoverPercent(100))
+        assertNull(ForecastValueValidation.cloudCoverPercent(null))
+        assertNull(ForecastValueValidation.cloudCoverPercent(-1))
+        assertNull(ForecastValueValidation.cloudCoverPercent(101))
+    }
+
+    @Test
     fun nonNegativeFiniteRejectsNegativeAndNonFiniteMeasurements() {
         assertNull(ForecastValueValidation.nonNegativeFinite(-0.1))
         assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))

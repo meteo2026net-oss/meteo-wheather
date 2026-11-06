@@ -279,7 +279,7 @@ private fun RenderMetricCard(
 
         WeatherMetricType.HUMIDITY -> {
             MetricCard(
-                title = "الرطوبة النسبية",
+                title = "الرطوبة والغطاء السحابي",
                 icon = Icons.Default.WaterDrop,
                 iconTint = Color(0xFF38BDF8)
             ) {
@@ -319,6 +319,20 @@ private fun RenderMetricCard(
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("الغطاء السحابي", fontSize = 11.sp, color = Color.White.copy(alpha = 0.75f))
+                    Text(
+                        text = if (current.cloudCoverAvailable) "${current.cloudCoverPercent}%" else "غير متاح",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
             }
         }
 

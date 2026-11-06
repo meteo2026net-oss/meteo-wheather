@@ -104,6 +104,7 @@ object ForecastValueValidation {
     /** Open-Meteo uses WMO weather interpretation codes in the inclusive 0..99 range. */
     fun weatherCode(value: Int?): Int? = value?.takeIf { it in 0..99 }
     fun humidityPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
+    fun cloudCoverPercent(value: Int?): Int? = value?.takeIf { it in 0..100 }
     fun nonNegativeInt(value: Int?): Int? = value?.takeIf { it >= 0 }
 
     /** Returns an ISO calendar date only when its month/day combination is valid. */
@@ -272,7 +273,9 @@ data class CurrentWeather(
     val precipitationMm: Double,
     val visibilityKm: Double = 0.0,
     val visibilityAvailable: Boolean = false,
-    val uvIndexAvailable: Boolean = false
+    val uvIndexAvailable: Boolean = false,
+    val cloudCoverPercent: Int = 0,
+    val cloudCoverAvailable: Boolean = false
 )
 
 data class HourlyForecast(

@@ -90,6 +90,8 @@ class WeatherRepository(private val context: Context) {
             val currentWindDirection = ForecastValueValidation.windDirectionDegrees(currentDto.windDirection)
                 ?: throw IllegalStateException("اتجاه الرياح الحالي غير متاح أو غير صالح")
 
+            val currentCloudCover = ForecastValueValidation.cloudCoverPercent(currentDto.cloudCover)
+
             val conditionType = mapWeatherCodeToType(currentWeatherCode)
             val conditionNameAr = mapWeatherCodeToAr(currentWeatherCode)
             val isDay = currentIsDay == 1
@@ -125,7 +127,9 @@ class WeatherRepository(private val context: Context) {
                 precipitationMm = currentPrecipitation,
                 visibilityKm = visibilityKm,
                 visibilityAvailable = visibilityAvailable,
-                uvIndexAvailable = ForecastValueValidation.uvIndex(currentDto.uvIndex) != null
+                uvIndexAvailable = ForecastValueValidation.uvIndex(currentDto.uvIndex) != null,
+                cloudCoverPercent = currentCloudCover ?: 0,
+                cloudCoverAvailable = currentCloudCover != null
             )
 
             // Parse hourly forecasts (next 24 hours from current time)
