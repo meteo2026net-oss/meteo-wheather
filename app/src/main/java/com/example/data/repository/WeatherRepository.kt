@@ -241,6 +241,7 @@ class WeatherRepository(private val context: Context) {
             // Air Quality: validate provider measurements in one tested, pure mapper.
             val airCurrent = airQualityDto?.current
             val airMeasurements = AirQualityMeasurementMapper.map(airCurrent)
+            val aqiAvailable = airMeasurements.europeanAqi != null
             val aqiVal = airMeasurements.europeanAqi ?: -1
             val (aqiCat, aqiAdvice) = if (airMeasurements.europeanAqi != null)
                 getAqiDescription(aqiVal)
