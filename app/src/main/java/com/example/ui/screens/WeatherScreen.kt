@@ -783,24 +783,26 @@ fun MainWeatherHero(
         if (isFahrenheit) (value * 9 / 5 + 32).toInt() else value.toInt()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val compactLayout = maxWidth < 360.dp
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.verticalGradient(
                     listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.12f))
                 )
             )
             .border(1.5.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(28.dp))
-            .padding(vertical = 22.dp, horizontal = 18.dp),
+                .padding(vertical = 22.dp, horizontal = if (compactLayout) 12.dp else 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Interactive Animated Icon (Tap it to trigger spring bounce!)
         AnimatedWeatherIcon(
             condition = current.conditionType,
             isDay = current.isDay,
-            size = 125.dp,
+            size = if (compactLayout) 104.dp else 125.dp,
             interactiveTapEnabled = true,
             modifier = Modifier.testTag("hero_weather_icon")
         )
@@ -811,7 +813,7 @@ fun MainWeatherHero(
         Row(verticalAlignment = Alignment.Top) {
             Text(
                 text = "$currentTemp",
-                fontSize = 76.sp,
+                fontSize = if (compactLayout) 64.sp else 76.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -877,14 +879,14 @@ fun MainWeatherHero(
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(if (compactLayout) 8.dp else 16.dp))
             Box(
                 modifier = Modifier
                     .width(1.dp)
                     .height(14.dp)
                     .background(Color.White.copy(alpha = 0.35f))
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(if (compactLayout) 8.dp else 16.dp))
 
             // Feels Like
             Text(
