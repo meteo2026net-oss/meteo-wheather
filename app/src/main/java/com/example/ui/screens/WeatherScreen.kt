@@ -43,6 +43,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.DailyForecastSelection
+import com.example.data.model.GpsLocationFreshnessPolicy
 import com.example.data.model.NotificationPermissionDecision
 import com.example.data.model.SevereWeatherAlert
 import com.example.data.model.WeatherConditionType
@@ -1023,10 +1024,16 @@ private fun fetchGpsLocation(context: Context, viewModel: WeatherViewModel) {
 
         fusedClient.lastLocation
             .addOnSuccessListener { lastLocation ->
-                if (lastLocation != null) {
+                if (
+                    lastLocation != null &&
+                    GpsLocationFreshnessPolicy.isFresh(
+                        locationTimeMillis = lastLocation.time,
+                        nowMillis = System.currentTimeMillis()
+                    )
+                ) {
                     deliverLocation(lastLocation)
                 } else {
-                    // A device may have no cached fix; request a fresh location instead.
+                    // Never silently use an old cached position for current weather.
                     requestCurrentLocation()
                 }
             }
