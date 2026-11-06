@@ -1,6 +1,7 @@
 package com.example.data.remote
 
 import com.example.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -57,6 +58,9 @@ class SupabaseStationReadingsDataSource(
                         ?: throw IOException("Supabase returned an empty response")
                     parseLatestReadings(JSONArray(payload))
                 }
+            }.onFailure { error ->
+                // Cancellation belongs to the caller; never turn it into an ordinary data error.
+                if (error is CancellationException) throw error
             }
         }
 
