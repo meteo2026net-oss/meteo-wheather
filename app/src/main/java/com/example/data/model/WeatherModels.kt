@@ -37,6 +37,7 @@ data class HourlyWeatherDto(
     @param:Json(name = "temperature_2m") val temperature: List<Double?> = emptyList(),
     @param:Json(name = "relative_humidity_2m") val relativeHumidity: List<Int?> = emptyList(),
     @param:Json(name = "precipitation_probability") val precipitationProbability: List<Int>? = emptyList(),
+    val precipitation: List<Double?>? = emptyList(),
     @param:Json(name = "weather_code") val weatherCode: List<Int?> = emptyList(),
     @param:Json(name = "wind_speed_10m") val windSpeed: List<Double?> = emptyList(),
     @param:Json(name = "visibility") val visibility: List<Double?>? = emptyList()
@@ -322,7 +323,9 @@ data class HourlyForecast(
     val temperatureAvailable: Boolean = true,
     val precipitationProbabilityAvailable: Boolean = true,
     val humidityAvailable: Boolean = true,
-    val windSpeedAvailable: Boolean = true
+    val windSpeedAvailable: Boolean = true,
+    val precipitationMm: Double = 0.0,
+    val precipitationAvailable: Boolean = false
 )
 
 data class DailyForecast(

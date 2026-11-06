@@ -168,6 +168,39 @@ fun HourlyForecastSection(
             }
         }
 
+        // Hourly precipitation amount is distinct from probability of rain.
+        selectedHour?.let { hour ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF0284C7).copy(alpha = 0.18f))
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.WaterDrop,
+                        contentDescription = null,
+                        tint = Color(0xFF67E8F9),
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("كمية الهطول المتوقعة خلال الساعة", fontSize = 12.sp, color = Color.White)
+                }
+                Text(
+                    text = if (hour.precipitationAvailable)
+                        String.format(java.util.Locale.ROOT, "%.1f مم", hour.precipitationMm)
+                    else "غير متاح",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF67E8F9)
+                )
+            }
+        }
+
         // Detailed Inspector for Selected Hour
         selectedHour?.let { hour ->
             Spacer(modifier = Modifier.height(14.dp))

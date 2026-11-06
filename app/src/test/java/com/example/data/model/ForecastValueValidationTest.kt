@@ -49,6 +49,16 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun hourlyPrecipitationAmountAcceptsZeroAndPositiveMillimetersButRejectsInvalidValues() {
+        assertEquals(0.0, ForecastValueValidation.nonNegativeFinite(0.0)!!, 0.0)
+        assertEquals(2.75, ForecastValueValidation.nonNegativeFinite(2.75)!!, 0.0)
+        assertNull(ForecastValueValidation.nonNegativeFinite(-0.01))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.POSITIVE_INFINITY))
+        assertNull(ForecastValueValidation.nonNegativeFinite(null))
+    }
+
+    @Test
     fun nonNegativeFiniteRejectsNegativeAndNonFiniteMeasurements() {
         assertNull(ForecastValueValidation.nonNegativeFinite(-0.1))
         assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))

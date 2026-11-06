@@ -137,6 +137,7 @@ class WeatherRepository(private val context: Context) {
             val hourlyTemps = forecastDto.hourly?.temperature ?: emptyList()
             val hourlyCodes = forecastDto.hourly?.weatherCode ?: emptyList()
             val hourlyPrecip = forecastDto.hourly?.precipitationProbability ?: emptyList()
+            val hourlyPrecipitation = forecastDto.hourly?.precipitation ?: emptyList()
             val hourlyHum = forecastDto.hourly?.relativeHumidity ?: emptyList()
             val hourlyWind = forecastDto.hourly?.windSpeed ?: emptyList()
 
@@ -155,6 +156,7 @@ class WeatherRepository(private val context: Context) {
                 val precipValue = ForecastValueValidation.probabilityPercent(hourlyPrecip.getOrNull(i))
                 val humidityValue = ForecastValueValidation.humidityPercent(hourlyHum.getOrNull(i))
                 val windValue = ForecastValueValidation.windSpeedKmh(hourlyWind.getOrNull(i))
+                val precipitationAmount = ForecastValueValidation.nonNegativeFinite(hourlyPrecipitation.getOrNull(i))
                 val temp = tempValue ?: currentTemperature
                 val precip = precipValue ?: 0
                 val hum = humidityValue ?: currentHumidity
@@ -175,7 +177,9 @@ class WeatherRepository(private val context: Context) {
                         temperatureAvailable = tempValue != null,
                         precipitationProbabilityAvailable = precipValue != null,
                         humidityAvailable = humidityValue != null,
-                        windSpeedAvailable = windValue != null
+                        windSpeedAvailable = windValue != null,
+                        precipitationMm = precipitationAmount ?: 0.0,
+                        precipitationAvailable = precipitationAmount != null
                     )
                 )
             }
