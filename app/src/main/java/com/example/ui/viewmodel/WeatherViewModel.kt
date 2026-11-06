@@ -112,6 +112,8 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
             }.onFailure { error ->
+                // A superseded request must not publish a cancellation as a user-facing failure.
+                if (error is CancellationException) throw error
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -124,6 +126,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshWeather() {
         loadWeather(_uiState.value.selectedCity)
+        loadVerifiedStationReadings()
     }
 
     fun toggleUnit() {
