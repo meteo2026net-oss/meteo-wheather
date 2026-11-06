@@ -70,6 +70,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     private var searchJob: Job? = null
     private var weatherJob: Job? = null
+    private var stationReadingsJob: Job? = null
 
     init {
         NotificationHelper.createNotificationChannel(application)
@@ -166,7 +167,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
      * Partial, stale, unknown-station, or invalid records never become live UI measurements.
      */
     fun loadVerifiedStationReadings() {
-        viewModelScope.launch {
+        // A newer refresh supersedes the previous station request; prevent stale responses
+        // from overwriting the latest connection status or station measurements.
+        stationReadingsJob?.cancel()
+        stationReadingsJob = viewModelScope.launch {
             _uiState.update { it.copy(stationDataStatus = "جارٍ الاتصال بقاعدة بيانات المحطات…") }
             val result = supabaseStationReadings.fetchLatestVerifiedReadings()
             result.onSuccess { observations ->
