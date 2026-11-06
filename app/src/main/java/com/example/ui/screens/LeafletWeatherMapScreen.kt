@@ -795,8 +795,10 @@ private fun generateLeafletScreenHtml(
                 // both a valid wind speed and a meteorological direction.
                 // Open-Meteo direction is the direction wind comes FROM; rotate the
                 // arrow by 180 degrees so it points toward the direction of travel.
-                var windFlowLayer = L.layerGroup().addTo(map);
+                var windFlowLayer = L.layerGroup();
                 syrianCities.forEach(function(city) {
+                    if (city.wind === null || city.wind === undefined ||
+                        city.windDirection === null || city.windDirection === undefined) return;
                     var speed = Number(city.wind);
                     var direction = Number(city.windDirection);
                     if (!Number.isFinite(speed) || speed < 0 || speed > 300 ||
