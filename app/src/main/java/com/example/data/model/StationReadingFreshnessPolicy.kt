@@ -14,7 +14,11 @@ object StationReadingFreshnessPolicy {
         maxAgeMillis: Long = DEFAULT_MAX_AGE_MILLIS
     ): Boolean {
         if (observedAtEpochMillis == null || maxAgeMillis < 0L) return false
-        val ageMillis = nowEpochMillis - observedAtEpochMillis
+        val ageMillis = try {
+            Math.subtractExact(nowEpochMillis, observedAtEpochMillis)
+        } catch (_: ArithmeticException) {
+            return false
+        }
         return ageMillis >= -MAX_FUTURE_SKEW_MILLIS && ageMillis <= maxAgeMillis
     }
 }

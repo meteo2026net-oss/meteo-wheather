@@ -53,6 +53,17 @@ class StationReadingFreshnessPolicyTest {
     }
 
     @Test
+    fun timestampArithmeticOverflowIsRejected() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(Long.MIN_VALUE, Long.MAX_VALUE))
+        assertFalse(StationReadingFreshnessPolicy.isFresh(Long.MAX_VALUE, Long.MIN_VALUE))
+    }
+
+    @Test
+    fun negativeFreshnessWindowIsRejected() {
+        assertFalse(StationReadingFreshnessPolicy.isFresh(now, now, maxAgeMillis = -1L))
+    }
+
+    @Test
     fun customFreshnessWindowIsRespected() {
         assertFalse(StationReadingFreshnessPolicy.isFresh(now - 11_000L, now, maxAgeMillis = 10_000L))
     }
