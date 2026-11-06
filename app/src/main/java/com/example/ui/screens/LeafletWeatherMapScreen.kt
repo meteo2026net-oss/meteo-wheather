@@ -787,7 +787,9 @@ private fun generateLeafletScreenHtml(
                             clouds: 'ألوان الغطاء السحابي المتوقع (%)',
                             precipitation: 'ألوان الهطول المتوقع (مم)'
                         };
-                        legend.textContent = titles[overlayType] || 'ألوان توقعات المدن';
+                        legend.textContent = overlayType === 'wind'
+                            ? 'اتجاه السهم = جهة الحركة · حجم السهم = سرعة الرياح · كم/س'
+                            : (titles[overlayType] || 'ألوان توقعات المدن');
                     }
                 }
 
@@ -804,18 +806,28 @@ private fun generateLeafletScreenHtml(
                     if (!Number.isFinite(speed) || speed < 0 || speed > 300 ||
                         !Number.isFinite(direction) || direction < 0 || direction > 360) return;
 
+                    var arrowSize = Math.round(24 + Math.min(speed, 80) / 80 * 16);
+                    var arrowColor = forecastValueColor(speed, 'wind');
                     var arrow = L.marker([city.lat, city.lng], {
-                        interactive: false,
+                        interactive: true,
                         keyboard: false,
+                        title: city.name + ': ' + speed.toFixed(1) + ' كم/س',
                         icon: L.divIcon({
                             className: '',
-                            html: '<div class="wind-flow-marker"><span class="wind-flow-arrow" style="transform:rotate(' +
+                            html: '<div class="wind-flow-marker" style="width:' + arrowSize +
+                                'px;height:' + arrowSize + 'px;background:' + arrowColor +
+                                '"><span class="wind-flow-arrow" style="transform:rotate(' +
                                 (direction + 180) + 'deg)">↑</span></div>',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
+                            iconSize: [arrowSize, arrowSize],
+                            iconAnchor: [arrowSize / 2, arrowSize / 2]
                         }),
                         zIndexOffset: 500
                     });
+                    arrow.bindTooltip(
+                        city.name + '<br>' + speed.toFixed(1) + ' كم/س · اتجاه الحركة ' +
+                            ((direction + 180) % 360).toFixed(0) + '°',
+                        { direction: 'top', className: 'city-popup' }
+                    );
                     windFlowLayer.addLayer(arrow);
                 });
 
