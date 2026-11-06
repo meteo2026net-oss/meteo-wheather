@@ -246,6 +246,52 @@ fun DailyForecastSection(
                             color = Color(0xFFFFD54F)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
+                        Text(text = if (day.precipitationSumAvailable) "هطول اليوم: ${'                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.WbSunny,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFCA28),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "شروق: ${if (day.sunriseAvailable) day.sunrise else "—"}",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.WbTwilight,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFF7043),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "غروب: ${if (day.sunsetAvailable) day.sunset else "—"}",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
+
+                            Text(
+                                text = "مؤشر UV: ${if (day.uvIndexAvailable) day.uvIndexMax.toInt().toString() else "—"}",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+}{String.format(java.util.Locale.ROOT, "%.1f مم", day.precipitationSumMm)}" else "هطول اليوم: غير متاح", fontSize = 12.sp, color = Color(0xFF67E8F9), fontWeight = FontWeight.SemiBold)
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

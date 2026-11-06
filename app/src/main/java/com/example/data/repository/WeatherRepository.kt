@@ -191,6 +191,7 @@ class WeatherRepository(private val context: Context) {
             val dailyMax = forecastDto.daily?.temperatureMax ?: emptyList()
             val dailyMin = forecastDto.daily?.temperatureMin ?: emptyList()
             val dailyPrecip = forecastDto.daily?.precipitationProbabilityMax ?: emptyList()
+            val dailyPrecipitationSum = forecastDto.daily?.precipitationSum ?: emptyList()
             val dailyUv = forecastDto.daily?.uvIndexMax ?: emptyList()
             val dailySunrise = forecastDto.daily?.sunrise ?: emptyList()
             val dailySunset = forecastDto.daily?.sunset ?: emptyList()
@@ -214,6 +215,7 @@ class WeatherRepository(private val context: Context) {
                     dailyMax.getOrNull(i), dailyMin.getOrNull(i)
                 ) ?: continue
                 val dailyPrecipValue = ForecastValueValidation.probabilityPercent(dailyPrecip.getOrNull(i))
+                val dailyPrecipitationSumValue = ForecastValueValidation.nonNegativeFinite(dailyPrecipitationSum.getOrNull(i))
 
                 dailyList.add(
                     DailyForecast(
@@ -233,7 +235,9 @@ class WeatherRepository(private val context: Context) {
                         precipitationProbabilityAvailable = dailyPrecipValue != null,
                         uvIndexAvailable = dailyUvValue != null,
                         sunriseAvailable = sunriseFormatted != "--:--",
-                        sunsetAvailable = sunsetFormatted != "--:--"
+                        sunsetAvailable = sunsetFormatted != "--:--",
+                        precipitationSumMm = dailyPrecipitationSumValue ?: 0.0,
+                        precipitationSumAvailable = dailyPrecipitationSumValue != null
                     )
                 )
             }

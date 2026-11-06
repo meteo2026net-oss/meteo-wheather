@@ -52,7 +52,8 @@ data class DailyWeatherDto(
     val sunrise: List<String?> = emptyList(),
     val sunset: List<String?> = emptyList(),
     @param:Json(name = "uv_index_max") val uvIndexMax: List<Double?>? = emptyList(),
-    @param:Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int?>? = emptyList()
+    @param:Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int?>? = emptyList(),
+    @param:Json(name = "precipitation_sum") val precipitationSum: List<Double?>? = emptyList()
 )
 
 /**
@@ -345,7 +346,9 @@ data class DailyForecast(
     val precipitationProbabilityAvailable: Boolean = true,
     val uvIndexAvailable: Boolean = true,
     val sunriseAvailable: Boolean = true,
-    val sunsetAvailable: Boolean = true
+    val sunsetAvailable: Boolean = true,
+    val precipitationSumMm: Double = 0.0,
+    val precipitationSumAvailable: Boolean = false
 )
 
 data class AirQualityInfo(

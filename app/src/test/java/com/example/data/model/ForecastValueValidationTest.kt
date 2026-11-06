@@ -59,6 +59,16 @@ class ForecastValueValidationTest {
     }
 
     @Test
+    fun dailyPrecipitationSumAcceptsValidMillimetersAndRejectsInvalidValues() {
+        assertEquals(0.0, ForecastValueValidation.nonNegativeFinite(0.0)!!, 0.0)
+        assertEquals(24.6, ForecastValueValidation.nonNegativeFinite(24.6)!!, 0.0)
+        assertNull(ForecastValueValidation.nonNegativeFinite(-0.1))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))
+        assertNull(ForecastValueValidation.nonNegativeFinite(Double.NEGATIVE_INFINITY))
+        assertNull(ForecastValueValidation.nonNegativeFinite(null))
+    }
+
+    @Test
     fun nonNegativeFiniteRejectsNegativeAndNonFiniteMeasurements() {
         assertNull(ForecastValueValidation.nonNegativeFinite(-0.1))
         assertNull(ForecastValueValidation.nonNegativeFinite(Double.NaN))
