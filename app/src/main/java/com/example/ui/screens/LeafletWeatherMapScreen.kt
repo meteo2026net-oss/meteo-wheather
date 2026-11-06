@@ -797,6 +797,10 @@ private fun generateLeafletScreenHtml(
                     var humidityText = Number.isFinite(c.humidity) ? c.humidity + '%' : '—';
                     var windText = Number.isFinite(c.wind) ? c.wind.toFixed(1) + ' كم/س' : '—';
                     var cloudText = Number.isFinite(c.clouds) ? c.clouds + '%' : '—';
+                    var precipitationText = Number.isFinite(c.precip) ? c.precip.toFixed(1) + ' مم' : '—';
+                    var windDirectionText = Number.isFinite(c.windDirection)
+                        ? Math.round(c.windDirection) + '°'
+                        : '—';
                     var popupContent = document.createElement('div');
                     popupContent.className = 'city-popup';
                     var cityTitle = document.createElement('div');
@@ -808,6 +812,8 @@ private fun generateLeafletScreenHtml(
                         '<b>الحرارة المتوقعة:</b> ' + tempText + '<br/>' +
                         '<b>الرطوبة:</b> ' + humidityText + '<br/>' +
                         '<b>الرياح:</b> ' + windText + '<br/>' +
+                        '<b>اتجاه الرياح:</b> ' + windDirectionText + '<br/>' +
+                        '<b>الهطول المتوقع:</b> ' + precipitationText + '<br/>' +
                         '<b>الغطاء السحابي:</b> ' + cloudText + '<br/>' +
                         '<small>توقعات نموذج Open-Meteo وليست رصداً لمحطة</small>';
                     popupContent.appendChild(forecastDetails);
