@@ -293,7 +293,6 @@ fun DailyForecastSection(
         }
     }
 }
-}{String.format(java.util.Locale.ROOT, "%.1f مم", day.precipitationSumMm)}" else "هطول اليوم: غير متاح", fontSize = 12.sp, color = Color(0xFF67E8F9), fontWeight = FontWeight.SemiBold)
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
