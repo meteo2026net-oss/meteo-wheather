@@ -5,6 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
 import com.example.data.repository.WeatherRepository
+import com.example.data.remote.SupabaseStationReadingsDataSource
+import com.example.data.model.canShowLiveMeasurements
+import java.time.Instant
 import com.example.util.NotificationHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -43,6 +46,7 @@ data class WeatherUiState(
     val lastVoiceQuery: String = "",
     val lastAiVoiceResponse: String = "",
     val syrianStations: List<SyrianWeatherStation> = emptyList(),
+    val stationDataStatus: String = "لم يبدأ الاتصال بقاعدة المحطات",
     val audioBulletin: AudioBulletinItem = AudioBulletinItem("1", "نشرة تجريبية", "وقت النشر غير محدد", 0, "صوت آلي تجريبي", "لا يوجد نص نشرة محمل."),
     val customAdminAlerts: List<SevereWeatherAlert> = emptyList()
 )
@@ -50,6 +54,7 @@ data class WeatherUiState(
 class WeatherViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = WeatherRepository(application)
+    private val supabaseStationReadings = SupabaseStationReadingsDataSource()
 
     private val _uiState = MutableStateFlow(
         WeatherUiState(
@@ -71,6 +76,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         val initialCity = _uiState.value.favoriteCities.firstOrNull() ?: WeatherRepository.DEFAULT_CITIES[0]
         loadWeather(initialCity)
         loadSyrianCityMapForecasts()
+        loadVerifiedStationReadings()
     }
 
     fun loadWeather(city: CityLocation) {
@@ -152,6 +158,64 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     fun openLeafletMapScreen() {
         _uiState.update { it.copy(isLeafletMapScreenOpen = true) }
         loadSyrianCityMapForecasts()
+    }
+
+
+    /**
+     * Replaces demo station values only when a complete, fresh, verified observation exists.
+     * Partial, stale, unknown-station, or invalid records never become live UI measurements.
+     */
+    fun loadVerifiedStationReadings() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(stationDataStatus = "جارٍ الاتصال بقاعدة بيانات المحطات…") }
+            val result = supabaseStationReadings.fetchLatestVerifiedReadings()
+            result.onSuccess { observations ->
+                val now = System.currentTimeMillis()
+                var appliedCount = 0
+                val updatedStations = _uiState.value.syrianStations.map { station ->
+                    val reading = observations[station.id] ?: return@map station
+                    val temperature = reading.temperatureCelsius ?: return@map station
+                    val humidity = reading.relativeHumidityPercent ?: return@map station
+                    val pressure = reading.pressureHpa ?: return@map station
+                    val wind = reading.windSpeedKmh ?: return@map station
+                    val epochMillis = runCatching {
+                        Instant.parse(reading.observedAt).toEpochMilli()
+                    }.getOrNull() ?: return@map station
+
+                    val candidate = station.copy(
+                        temperatureCelsius = temperature,
+                        humidity = humidity,
+                        pressureHpa = pressure,
+                        windSpeedKmh = wind,
+                        conditionAr = "قراءة موثقة",
+                        isOnline = true,
+                        lastReadingTime = reading.observedAt,
+                        isDemoData = false,
+                        lastReadingEpochMillis = epochMillis,
+                        hasVerifiedLiveData = true
+                    )
+                    if (!candidate.canShowLiveMeasurements(now)) return@map station
+                    appliedCount++
+                    candidate
+                }
+                _uiState.update {
+                    it.copy(
+                        syrianStations = updatedStations,
+                        stationDataStatus = if (appliedCount > 0) {
+                            "Supabase متصل — تم تحميل $appliedCount قراءة حديثة موثقة"
+                        } else {
+                            "اتصل التطبيق بـ Supabase، لكن لا توجد قراءات كاملة وحديثة وموثقة للمحطات المعروضة"
+                        }
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        stationDataStatus = "تعذر تحميل قراءات Supabase؛ تُعرض البيانات التجريبية دون اعتبارها حية"
+                    )
+                }
+            }
+        }
     }
 
     fun loadSyrianCityMapForecasts(forceRefresh: Boolean = false) {

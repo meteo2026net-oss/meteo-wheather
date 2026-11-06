@@ -29,6 +29,7 @@ import com.example.data.model.canShowLiveWindSpeed
 fun SyrianStationsSection(
     stations: List<SyrianWeatherStation>,
     onStationSelected: (SyrianWeatherStation) -> Unit,
+    dataStatusMessage: String? = null,
     modifier: Modifier = Modifier
 ) {
     val nowEpochMillis = System.currentTimeMillis()
@@ -60,7 +61,7 @@ fun SyrianStationsSection(
                         color = Color.White
                     )
                     Text(
-                        text = if (hasFreshVerifiedReadings) {
+                        text = dataStatusMessage ?: if (hasFreshVerifiedReadings) {
                             "توجد قراءات حديثة من مصادر موثقة"
                         } else {
                             "لا توجد حالياً قراءات حية موثقة — القيم غير المتاحة مخفية"

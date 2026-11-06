@@ -227,6 +227,7 @@ fun WeatherScreen(
                         // Syrian Meteorological Stations Live Cards
                         SyrianStationsSection(
                             stations = uiState.syrianStations,
+                            dataStatusMessage = uiState.stationDataStatus,
                             onStationSelected = { st ->
                                 viewModel.loadWeather(
                                     com.example.data.model.CityLocation(
