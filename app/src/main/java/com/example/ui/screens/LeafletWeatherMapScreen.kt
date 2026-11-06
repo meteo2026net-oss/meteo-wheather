@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -314,16 +315,28 @@ fun LeafletWeatherMapScreen(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
                         WebView(ctx).apply {
+                            // JavaScript is required by Leaflet, but the map does not need
+                            // file/content access, popups, geolocation, or third-party cookies.
                             settings.javaScriptEnabled = true
-                        settings.javaScriptCanOpenWindowsAutomatically = false
-                        settings.allowFileAccess = false
-                        settings.allowContentAccess = false
+                            settings.javaScriptCanOpenWindowsAutomatically = false
+                            settings.setSupportMultipleWindows(false)
+                            settings.allowFileAccess = false
+                            settings.allowContentAccess = false
+                            settings.allowFileAccessFromFileURLs = false
+                            settings.allowUniversalAccessFromFileURLs = false
+                            settings.databaseEnabled = false
                             settings.domStorageEnabled = true
-                                settings.loadWithOverviewMode = true
+                            settings.setGeolocationEnabled(false)
+                            settings.mediaPlaybackRequiresUserGesture = true
+                            settings.loadWithOverviewMode = true
                             settings.useWideViewPort = true
                             settings.builtInZoomControls = false
                             settings.setSupportZoom(true)
                             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                settings.safeBrowsingEnabled = true
+                            }
+                            CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
 
                             addJavascriptInterface(
                                 LeafletJsBridge { cityName, _, _, lat, lng ->
