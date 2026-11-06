@@ -246,7 +246,9 @@ fun DailyForecastSection(
                             color = Color(0xFFFFD54F)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text(text = if (day.precipitationSumAvailable) "هطول اليوم: ${'                            modifier = Modifier.fillMaxWidth(),
+                        Text(text = if (day.precipitationSumAvailable) "هطول اليوم: " + String.format(java.util.Locale.ROOT, "%.1f مم", day.precipitationSumMm) else "هطول اليوم: غير متاح", fontSize = 12.sp, color = Color(0xFF67E8F9), fontWeight = FontWeight.SemiBold)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
