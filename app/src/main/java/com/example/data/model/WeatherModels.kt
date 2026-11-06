@@ -327,7 +327,9 @@ data class AirQualityInfo(
     val pm25Available: Boolean = false,
     val pm10Available: Boolean = false,
     val ozoneAvailable: Boolean = false,
-    val no2Available: Boolean = false
+    val no2Available: Boolean = false,
+    val carbonMonoxide: Double = 0.0,
+    val carbonMonoxideAvailable: Boolean = false
 )
 
 data class PollenInfo(

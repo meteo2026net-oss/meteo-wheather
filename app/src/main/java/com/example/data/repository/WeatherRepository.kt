@@ -244,11 +244,13 @@ class WeatherRepository(private val context: Context) {
             val pm10Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.pm10)
             val ozoneValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.ozone)
             val no2Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.nitrogenDioxide)
+            val carbonMonoxideValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.carbonMonoxide)
             val pm25Val = pm25Value ?: 0.0
             val pm10Val = pm10Value ?: 0.0
             val ozoneVal = ozoneValue ?: 0.0
             val no2Val = no2Value ?: 0.0
-            val airAvailable = listOf(pm25Value, pm10Value, ozoneValue, no2Value, aqiValue)
+            val carbonMonoxideVal = carbonMonoxideValue ?: 0.0
+            val airAvailable = listOf(pm25Value, pm10Value, ozoneValue, no2Value, carbonMonoxideValue, aqiValue)
                 .any { it != null }
             val (aqiCat, aqiAdvice) = if (aqiAvailable) getAqiDescription(aqiVal)
                 else "غير متاح" to "لا تتوفر قراءة لمؤشر جودة الهواء حالياً."
@@ -266,7 +268,9 @@ class WeatherRepository(private val context: Context) {
                 pm25Available = pm25Value != null,
                 pm10Available = pm10Value != null,
                 ozoneAvailable = ozoneValue != null,
-                no2Available = no2Value != null
+                no2Available = no2Value != null,
+                carbonMonoxide = carbonMonoxideVal,
+                carbonMonoxideAvailable = carbonMonoxideValue != null
             )
 
             // Pollen Information

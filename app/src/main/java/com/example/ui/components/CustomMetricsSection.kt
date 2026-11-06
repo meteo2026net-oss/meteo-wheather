@@ -191,7 +191,7 @@ private fun RenderMetricCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "PM2.5: ${if (airQuality.pm25Available) airQuality.pm25.toInt().toString() else "—"} | PM10: ${if (airQuality.pm10Available) airQuality.pm10.toInt().toString() else "—"} | O₃: ${if (airQuality.ozoneAvailable) airQuality.ozone.toInt().toString() else "—"} | NO₂: ${if (airQuality.no2Available) airQuality.no2.toInt().toString() else "—"}",
+                    text = "PM2.5: ${if (airQuality.pm25Available) airQuality.pm25.toInt().toString() else "—"} | PM10: ${if (airQuality.pm10Available) airQuality.pm10.toInt().toString() else "—"} | O₃: ${if (airQuality.ozoneAvailable) airQuality.ozone.toInt().toString() else "—"} | NO₂: ${if (airQuality.no2Available) airQuality.no2.toInt().toString() else "—"} | CO: ${if (airQuality.carbonMonoxideAvailable) airQuality.carbonMonoxide.toInt().toString() else "—"} μg/m³",
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
