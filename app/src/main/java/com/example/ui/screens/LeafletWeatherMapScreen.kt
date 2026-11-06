@@ -500,6 +500,30 @@ private fun generateLeafletScreenHtml(
                 html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #090D1A; }
                 .leaflet-container { background: #090D1A; font-family: system-ui, sans-serif; }
                 .city-popup { text-align: right; direction: rtl; font-size: 13px; line-height: 1.6; }
+                .wind-flow-marker {
+                    width: 30px;
+                    height: 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid rgba(255,255,255,0.85);
+                    border-radius: 50%;
+                    background: rgba(14, 165, 233, 0.82);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+                    animation: wind-flow-pulse 1.8s ease-in-out infinite;
+                }
+                .wind-flow-arrow {
+                    display: block;
+                    color: #fff;
+                    font-size: 23px;
+                    line-height: 1;
+                    font-weight: 900;
+                    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+                }
+                @keyframes wind-flow-pulse {
+                    0%, 100% { transform: scale(0.92); opacity: 0.82; }
+                    50% { transform: scale(1.08); opacity: 1; }
+                }
                 .city-title { font-size: 15px; font-weight: bold; color: #38BDF8; margin-bottom: 4px; }
                 .leaflet-popup-content-wrapper { background: #0F172A; color: #FFF; border-radius: 12px; border: 1.5px solid #0284C7; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
                 .leaflet-popup-tip { background: #0F172A; }
@@ -767,6 +791,37 @@ private fun generateLeafletScreenHtml(
                     }
                 }
 
+                // Direction arrows are placed only where the city forecast contains
+                // both a valid wind speed and a meteorological direction.
+                // Open-Meteo direction is the direction wind comes FROM; rotate the
+                // arrow by 180 degrees so it points toward the direction of travel.
+                var windFlowLayer = L.layerGroup().addTo(map);
+                syrianCities.forEach(function(city) {
+                    var speed = Number(city.wind);
+                    var direction = Number(city.windDirection);
+                    if (!Number.isFinite(speed) || speed < 0 || speed > 300 ||
+                        !Number.isFinite(direction) || direction < 0 || direction > 360) return;
+
+                    var arrow = L.marker([city.lat, city.lng], {
+                        interactive: false,
+                        keyboard: false,
+                        icon: L.divIcon({
+                            className: '',
+                            html: '<div class="wind-flow-marker"><span class="wind-flow-arrow" style="transform:rotate(' +
+                                (direction + 180) + 'deg)">↑</span></div>',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        }),
+                        zIndexOffset: 500
+                    });
+                    windFlowLayer.addLayer(arrow);
+                });
+
+                function setWindFlowVisibility(visible) {
+                    if (visible && !map.hasLayer(windFlowLayer)) windFlowLayer.addTo(map);
+                    if (!visible && map.hasLayer(windFlowLayer)) map.removeLayer(windFlowLayer);
+                }
+
                 var forecastLegendControl = L.control({ position: 'bottomright' });
                 forecastLegendControl.onAdd = function() {
                     var div = L.DomUtil.create('div', 'radar-status');
@@ -866,6 +921,9 @@ private fun generateLeafletScreenHtml(
                     } else if (radarLayer && map.hasLayer(radarLayer)) {
                         map.removeLayer(radarLayer);
                     }
+                    // Wind arrows visualize forecast direction at city points;
+                    // they are not a continuous gridded wind field.
+                    setWindFlowVisibility(overlayType === 'wind');
                     // Marker colors are forecast-based, not raster weather layers.
                     styleCityMarkers(overlayType);
                 }
