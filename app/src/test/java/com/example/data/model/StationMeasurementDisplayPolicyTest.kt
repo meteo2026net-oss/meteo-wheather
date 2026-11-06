@@ -6,6 +6,22 @@ import org.junit.Test
 
 class StationMeasurementDisplayPolicyTest {
     @Test
+    fun observationTimeFormatsValidIsoTimestampAndRejectsInvalidInput() {
+        assertTrue(
+            StationMeasurementDisplayPolicy.formatObservationTime(
+                "2026-11-06T18:05:00Z",
+                java.time.ZoneId.of("UTC")
+            ) == "06/11/2026 18:05"
+        )
+        assertTrue(
+            StationMeasurementDisplayPolicy.formatObservationTime(
+                "not-a-timestamp",
+                java.time.ZoneId.of("UTC")
+            ) == null
+        )
+    }
+
+    @Test
     fun temperatureAcceptsBroadPhysicalRangeAndRejectsInvalidValues() {
         assertTrue(StationMeasurementDisplayPolicy.temperatureCelsius(-90.0))
         assertTrue(StationMeasurementDisplayPolicy.temperatureCelsius(0.0))

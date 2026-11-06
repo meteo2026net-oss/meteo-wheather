@@ -25,6 +25,7 @@ import com.example.data.model.canShowLiveTemperature
 import com.example.data.model.canShowLiveHumidity
 import com.example.data.model.canShowLiveWindSpeed
 import com.example.data.model.canShowLivePressure
+import com.example.data.model.StationMeasurementDisplayPolicy
 
 @Composable
 fun SyrianStationsSection(
@@ -125,6 +126,18 @@ fun SyrianStationsSection(
                             color = Color(0xFF86EFAC),
                             maxLines = 1
                         )
+                    }
+
+                    if (hasVerifiedSource) {
+                        StationMeasurementDisplayPolicy.formatObservationTime(station.lastReadingTime)?.let { observedAt ->
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = "آخر رصد: $observedAt",
+                                fontSize = 9.sp,
+                                color = Color.White.copy(alpha = 0.72f),
+                                maxLines = 1
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(2.dp))

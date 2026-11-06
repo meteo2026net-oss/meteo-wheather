@@ -1,5 +1,10 @@
 package com.example.data.model
 
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
 /**
  * Field-level guards for legacy station records.
  *
@@ -7,6 +12,15 @@ package com.example.data.model
  * measurement must also be finite and within a deliberately broad valid range.
  */
 object StationMeasurementDisplayPolicy {
+    /** Formats a provider timestamp for station cards; invalid timestamps stay hidden. */
+    fun formatObservationTime(
+        observedAt: String,
+        zoneId: ZoneId = ZoneId.systemDefault()
+    ): String? = runCatching {
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.getDefault())
+        Instant.parse(observedAt).atZone(zoneId).format(formatter)
+    }.getOrNull()
+
     fun temperatureCelsius(value: Double): Boolean =
         value.isFinite() && value in -100.0..70.0
 
