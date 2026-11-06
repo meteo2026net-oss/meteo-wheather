@@ -233,6 +233,37 @@ data class AirQualityCurrentDto(
     @field:Json(name = "ragweed_pollen") val ragweedPollen: Double? = null
 )
 
+/**
+ * Validates provider air-quality readings once, preserving null as unavailable.
+ * Concentrations are not clamped: only negative and non-finite values are rejected.
+ */
+data class ValidatedAirQualityMeasurements(
+    val europeanAqi: Int?,
+    val pm25: Double?,
+    val pm10: Double?,
+    val ozone: Double?,
+    val nitrogenDioxide: Double?,
+    val carbonMonoxide: Double?
+) {
+    val isAvailable: Boolean
+        get() = listOf(europeanAqi, pm25, pm10, ozone, nitrogenDioxide, carbonMonoxide)
+            .any { it != null }
+}
+
+/** Pure provider-to-domain measurement mapping, kept independent of Android/UI code. */
+object AirQualityMeasurementMapper {
+    fun map(current: AirQualityCurrentDto?): ValidatedAirQualityMeasurements =
+        ValidatedAirQualityMeasurements(
+            europeanAqi = ForecastValueValidation.nonNegativeInt(current?.europeanAqi),
+            pm25 = ForecastValueValidation.nonNegativeFinite(current?.pm25),
+            pm10 = ForecastValueValidation.nonNegativeFinite(current?.pm10),
+            ozone = ForecastValueValidation.nonNegativeFinite(current?.ozone),
+            nitrogenDioxide = ForecastValueValidation.nonNegativeFinite(current?.nitrogenDioxide),
+            carbonMonoxide = ForecastValueValidation.nonNegativeFinite(current?.carbonMonoxide)
+        )
+}
+
+
 // Domain Models used in the UI
 enum class WeatherConditionType {
     CLEAR,

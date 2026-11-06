@@ -369,3 +369,78 @@ class HourlyForecastSelectionTest {
         ))
     }
 }
+
+
+class AirQualityMeasurementMapperTest {
+    @Test
+    fun mapsAllAvailableAirQualityReadingsWithoutChangingTheirValues() {
+        val mapped = AirQualityMeasurementMapper.map(
+            AirQualityCurrentDto(
+                pm25 = 12.4,
+                pm10 = 21.8,
+                ozone = 83.0,
+                nitrogenDioxide = 17.2,
+                carbonMonoxide = 245.0,
+                europeanAqi = 42
+            )
+        )
+
+        assertEquals(42, mapped.europeanAqi)
+        assertEquals(12.4, mapped.pm25!!, 0.0)
+        assertEquals(21.8, mapped.pm10!!, 0.0)
+        assertEquals(83.0, mapped.ozone!!, 0.0)
+        assertEquals(17.2, mapped.nitrogenDioxide!!, 0.0)
+        assertEquals(245.0, mapped.carbonMonoxide!!, 0.0)
+        assertEquals(true, mapped.isAvailable)
+    }
+
+    @Test
+    fun rejectsNegativeAndNonFinitePollutantsAndNegativeAqi() {
+        val mapped = AirQualityMeasurementMapper.map(
+            AirQualityCurrentDto(
+                pm25 = -0.1,
+                pm10 = Double.NaN,
+                ozone = Double.POSITIVE_INFINITY,
+                nitrogenDioxide = -3.0,
+                carbonMonoxide = Double.NEGATIVE_INFINITY,
+                europeanAqi = -1
+            )
+        )
+
+        assertNull(mapped.europeanAqi)
+        assertNull(mapped.pm25)
+        assertNull(mapped.pm10)
+        assertNull(mapped.ozone)
+        assertNull(mapped.nitrogenDioxide)
+        assertNull(mapped.carbonMonoxide)
+        assertEquals(false, mapped.isAvailable)
+    }
+
+    @Test
+    fun keepsPartialReadingsAvailableWithoutInventingMissingValues() {
+        val mapped = AirQualityMeasurementMapper.map(
+            AirQualityCurrentDto(pm25 = 0.0, carbonMonoxide = 0.0)
+        )
+
+        assertEquals(0.0, mapped.pm25!!, 0.0)
+        assertEquals(0.0, mapped.carbonMonoxide!!, 0.0)
+        assertNull(mapped.pm10)
+        assertNull(mapped.ozone)
+        assertNull(mapped.nitrogenDioxide)
+        assertNull(mapped.europeanAqi)
+        assertEquals(true, mapped.isAvailable)
+    }
+
+    @Test
+    fun missingAirQualityResponseRemainsUnavailable() {
+        val mapped = AirQualityMeasurementMapper.map(null)
+
+        assertNull(mapped.europeanAqi)
+        assertNull(mapped.pm25)
+        assertNull(mapped.pm10)
+        assertNull(mapped.ozone)
+        assertNull(mapped.nitrogenDioxide)
+        assertNull(mapped.carbonMonoxide)
+        assertEquals(false, mapped.isAvailable)
+    }
+}

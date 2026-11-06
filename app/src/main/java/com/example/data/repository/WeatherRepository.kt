@@ -234,43 +234,30 @@ class WeatherRepository(private val context: Context) {
                 )
             }
 
-            // Air Quality
+            // Air Quality: validate provider measurements in one tested, pure mapper.
             val airCurrent = airQualityDto?.current
-            // Reject invalid provider values; keep the availability flags tied to validated data.
-            val aqiValue = ForecastValueValidation.nonNegativeInt(airCurrent?.europeanAqi)
-            val aqiAvailable = aqiValue != null
-            val aqiVal = aqiValue ?: -1
-            val pm25Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.pm25)
-            val pm10Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.pm10)
-            val ozoneValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.ozone)
-            val no2Value = ForecastValueValidation.nonNegativeFinite(airCurrent?.nitrogenDioxide)
-            val carbonMonoxideValue = ForecastValueValidation.nonNegativeFinite(airCurrent?.carbonMonoxide)
-            val pm25Val = pm25Value ?: 0.0
-            val pm10Val = pm10Value ?: 0.0
-            val ozoneVal = ozoneValue ?: 0.0
-            val no2Val = no2Value ?: 0.0
-            val carbonMonoxideVal = carbonMonoxideValue ?: 0.0
-            val airAvailable = listOf(pm25Value, pm10Value, ozoneValue, no2Value, carbonMonoxideValue, aqiValue)
-                .any { it != null }
-            val (aqiCat, aqiAdvice) = if (aqiAvailable) getAqiDescription(aqiVal)
-                else "غير متاح" to "لا تتوفر قراءة لمؤشر جودة الهواء حالياً."
+            val airMeasurements = AirQualityMeasurementMapper.map(airCurrent)
+            val aqiVal = airMeasurements.europeanAqi ?: -1
+            val (aqiCat, aqiAdvice) = if (airMeasurements.europeanAqi != null)
+                getAqiDescription(aqiVal)
+            else "غير متاح" to "لا تتوفر قراءة لمؤشر جودة الهواء حالياً."
 
             val airQuality = AirQualityInfo(
                 aqiValue = aqiVal,
                 categoryAr = aqiCat,
                 adviceAr = aqiAdvice,
-                pm25 = pm25Val,
-                pm10 = pm10Val,
-                ozone = ozoneVal,
-                no2 = no2Val,
-                isAvailable = airAvailable,
-                isAqiAvailable = aqiAvailable,
-                pm25Available = pm25Value != null,
-                pm10Available = pm10Value != null,
-                ozoneAvailable = ozoneValue != null,
-                no2Available = no2Value != null,
-                carbonMonoxide = carbonMonoxideVal,
-                carbonMonoxideAvailable = carbonMonoxideValue != null
+                pm25 = airMeasurements.pm25 ?: 0.0,
+                pm10 = airMeasurements.pm10 ?: 0.0,
+                ozone = airMeasurements.ozone ?: 0.0,
+                no2 = airMeasurements.nitrogenDioxide ?: 0.0,
+                isAvailable = airMeasurements.isAvailable,
+                isAqiAvailable = airMeasurements.europeanAqi != null,
+                pm25Available = airMeasurements.pm25 != null,
+                pm10Available = airMeasurements.pm10 != null,
+                ozoneAvailable = airMeasurements.ozone != null,
+                no2Available = airMeasurements.nitrogenDioxide != null,
+                carbonMonoxide = airMeasurements.carbonMonoxide ?: 0.0,
+                carbonMonoxideAvailable = airMeasurements.carbonMonoxide != null
             )
 
             // Pollen Information
