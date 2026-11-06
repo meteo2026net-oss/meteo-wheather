@@ -319,8 +319,8 @@ fun LeafletWeatherMapScreen(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
                         WebView(ctx).apply {
-                            // JavaScript is required by Leaflet, but the map does not need
-                            // file/content access, popups, geolocation, or third-party cookies.
+                            // JavaScript and geolocation are used by the map. File/content access,
+                            // popups, and third-party cookies remain disabled for security.
                             settings.javaScriptEnabled = true
                             settings.javaScriptCanOpenWindowsAutomatically = false
                             settings.setSupportMultipleWindows(false)

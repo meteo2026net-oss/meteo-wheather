@@ -38,6 +38,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.DailyForecastSelection
 import com.example.data.model.NotificationPermissionDecision
@@ -57,7 +60,9 @@ fun WeatherScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val scrollState = rememberScrollState()
+    var initialGpsFetchAttempted by remember { mutableStateOf(false) }
 
     // Location Permission launcher
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -109,6 +114,29 @@ fun WeatherScreen(
                 )
             )
         }
+    }
+
+    // Resolve the device location once permission is available. This covers both
+    // first launch (after the Activity permission dialog) and later launches
+    // where Android has already retained the user's permission choice.
+    DisposableEffect(lifecycleOwner, context, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && !initialGpsFetchAttempted) {
+                val hasFine = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                val hasCoarse = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (hasFine || hasCoarse) {
+                    initialGpsFetchAttempted = true
+                    fetchGpsLocation(context, viewModel)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val weather = uiState.weatherData
